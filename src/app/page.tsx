@@ -12,16 +12,18 @@ import EditorView from '@/components/views/editor-view';
 import ScenesView from '@/components/views/scenes-view';
 import CharactersView from '@/components/views/characters-view';
 import NotesView from '@/components/views/notes-view';
+import type { ScriptElement } from '@/components/script-editor';
 
 export type View = 'editor' | 'scenes' | 'characters' | 'notes';
 
 export default function Home() {
   const [view, setView] = React.useState<View>('editor');
+  const [activeScriptElement, setActiveScriptElement] = React.useState<ScriptElement | null>(null);
 
   const renderView = () => {
     switch (view) {
       case 'editor':
-        return <EditorView />;
+        return <EditorView onActiveLineTypeChange={setActiveScriptElement} />;
       case 'scenes':
         return <ScenesView />;
       case 'characters':
@@ -29,14 +31,18 @@ export default function Home() {
       case 'notes':
         return <NotesView />;
       default:
-        return <EditorView />;
+        return <EditorView onActiveLineTypeChange={setActiveScriptElement} />;
     }
   };
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen">
-        <AppSidebar activeView={view} setActiveView={setView} />
+        <AppSidebar 
+            activeView={view} 
+            setActiveView={setView} 
+            activeScriptElement={view === 'editor' ? activeScriptElement : null}
+        />
         <SidebarInset className="flex-1">
           <AppHeader />
           <main className="p-4 sm:p-6 lg:p-8">{renderView()}</main>

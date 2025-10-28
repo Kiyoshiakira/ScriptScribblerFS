@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import AiAssistant from '@/components/ai-assistant';
-import ScriptEditor from '@/components/script-editor';
+import ScriptEditor, { ScriptElement } from '@/components/script-editor';
 
 const initialScript = `FADE IN:
 
@@ -26,7 +26,11 @@ The moment is broken. Jane returns to her screen, a faint smile on her lips. Leo
 FADE OUT.
 `;
 
-export default function EditorView() {
+interface EditorViewProps {
+  onActiveLineTypeChange: (type: ScriptElement | null) => void;
+}
+
+export default function EditorView({ onActiveLineTypeChange }: EditorViewProps) {
   const [scriptContent, setScriptContent] = useState(initialScript);
 
   return (
@@ -35,6 +39,7 @@ export default function EditorView() {
         <ScriptEditor
           scriptContent={scriptContent}
           setScriptContent={setScriptContent}
+          onActiveLineTypeChange={onActiveLineTypeChange}
         />
       </div>
       <div className="lg:col-span-4 xl:col-span-3">

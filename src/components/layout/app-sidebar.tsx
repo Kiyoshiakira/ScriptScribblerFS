@@ -7,6 +7,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import {
   Film,
@@ -17,12 +18,18 @@ import {
   BookText,
   Clapperboard,
   StickyNote,
+  CaseSensitive,
 } from 'lucide-react';
 import type { View } from '@/app/page';
+import type { ScriptElement } from '../script-editor';
+import { Badge } from '../ui/badge';
+import { cn } from '@/lib/utils';
+
 
 interface AppSidebarProps {
   activeView: View;
   setActiveView: (view: View) => void;
+  activeScriptElement: ScriptElement | null;
 }
 
 const Logo = () => (
@@ -44,7 +51,12 @@ const Logo = () => (
 );
 
 
-export default function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
+export default function AppSidebar({ activeView, setActiveView, activeScriptElement }: AppSidebarProps) {
+  const formatElementName = (name: string | null) => {
+    if (!name) return 'N/A';
+    return name.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
+
   return (
     <Sidebar variant="sidebar" collapsible="icon" side="left">
       <SidebarHeader>
@@ -96,6 +108,21 @@ export default function AppSidebar({ activeView, setActiveView }: AppSidebarProp
         </SidebarMenuItem>
       </SidebarMenu>
       <SidebarFooter>
+        <div 
+          className={cn(
+            "p-2 space-y-2 transition-opacity duration-200", 
+            !activeScriptElement && "opacity-0",
+            "[&[data-collapsed=true]]:hidden"
+          )}
+          data-collapsed={!activeScriptElement}
+        >
+            <SidebarSeparator />
+            <div className="text-xs text-sidebar-foreground/70 px-2 font-medium">Active Element</div>
+            <div className='px-2 flex items-center gap-2'>
+              <CaseSensitive className="w-4 h-4 text-sidebar-primary" />
+              <span className='font-semibold text-sm text-sidebar-foreground'>{formatElementName(activeScriptElement)}</span>
+            </div>
+        </div>
         <SidebarMenu className="p-2">
           <SidebarMenuItem>
             <SidebarMenuButton tooltip="Settings">

@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Clock, Film } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type ScriptElement = 'scene-heading' | 'action' | 'character' | 'parenthetical' | 'dialogue' | 'transition';
+export type ScriptElement = 'scene-heading' | 'action' | 'character' | 'parenthetical' | 'dialogue' | 'transition';
 
 const SCRIPT_ELEMENTS_CYCLE: ScriptElement[] = [
   'scene-heading',
@@ -25,6 +25,7 @@ interface ScriptLine {
 interface ScriptEditorProps {
   scriptContent: string;
   setScriptContent: (content: string) => void;
+  onActiveLineTypeChange: (type: ScriptElement | null) => void;
 }
 
 interface ScriptLineComponentProps {
@@ -56,14 +57,6 @@ const ScriptLineComponent = React.memo(({
       }
     }
   }, [isFocused]);
-
-  // This effect ensures that if the text is changed from OUTSIDE the component
-  // (e.g., undo, or some other programmatic change), the div's content is updated.
-  useEffect(() => {
-    if (ref.current && line.text !== ref.current.innerHTML) {
-      ref.current.innerHTML = line.text;
-    }
-  }, [line.text]);
 
   const getElementStyling = (type: ScriptElement) => {
     switch (type) {
@@ -105,8 +98,6 @@ const ScriptLineComponent = React.memo(({
     />
   );
 }, (prevProps, nextProps) => {
-    // Only re-render if essential props change. Crucially, ignore text changes
-    // while the component is focused, as the inner div manages its own state.
     return (
         prevProps.isFocused === nextProps.isFocused &&
         prevProps.line.id === nextProps.line.id &&
@@ -117,12 +108,11 @@ const ScriptLineComponent = React.memo(({
 
 ScriptLineComponent.displayName = 'ScriptLineComponent';
 
-export default function ScriptEditor({ scriptContent, setScriptContent }: ScriptEditorProps) {
+export default function ScriptEditor({ scriptContent, setScriptContent, onActiveLineTypeChange }: ScriptEditorProps) {
   const [lines, setLines] = useState<ScriptLine[]>([]);
   const [wordCount, setWordCount] = useState(0);
   const [estimatedMinutes, setEstimatedMinutes] = useState(0);
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
-  const [popup, setPopup] = useState<{ visible: boolean, text: string, top: number, left: number }>({ visible: false, text: '', top: 0, left: 0 });
   const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -152,6 +142,13 @@ export default function ScriptEditor({ scriptContent, setScriptContent }: Script
     setEstimatedMinutes(minutes);
   }, [lines, setScriptContent]);
 
+  useEffect(() => {
+    if (activeLineId) {
+      const activeLine = lines.find(line => line.id === activeLineId);
+      onActiveLineTypeChange(activeLine ? activeLine.type : null);
+    }
+  }, [activeLineId, lines, onActiveLineTypeChange]);
+
   const handleTextChange = (id: string, text: string) => {
     setLines(prevLines => {
       const newLines = [...prevLines];
@@ -163,28 +160,9 @@ export default function ScriptEditor({ scriptContent, setScriptContent }: Script
     });
   };
 
-  const showPopup = (type: ScriptElement) => {
-      if(editorRef.current) {
-        const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) return;
-
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-        const editorRect = editorRef.current.getBoundingClientRect();
-
-        const top = rect.top - editorRect.top - 28; // Position above the cursor with an offset
-        const left = rect.left - editorRect.left;
-
-        setPopup({ visible: true, text: type.replace('-', ' ').toUpperCase(), top, left });
-
-        setTimeout(() => setPopup(p => ({...p, visible: false, top: 0, left: 0})), 1500);
-      }
-  };
-
   const handleTypeChange = (id: string, type: ScriptElement) => {
     setLines(prevLines => prevLines.map(line => {
       if (line.id === id) {
-        showPopup(type);
         return { ...line, type };
       }
       return line;
@@ -292,14 +270,6 @@ export default function ScriptEditor({ scriptContent, setScriptContent }: Script
               </div>
           ))}
         </div>
-         {popup.visible && (
-            <div 
-                className="absolute bg-foreground text-background text-xs font-bold py-1 px-2 rounded-md shadow-lg pointer-events-none"
-                style={{ top: `${popup.top}px`, left: `${popup.left}px` }}
-            >
-                {popup.text}
-            </div>
-        )}
       </CardContent>
       <CardFooter className="text-sm text-muted-foreground justify-end gap-6">
         <span>{wordCount} words</span>
