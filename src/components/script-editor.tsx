@@ -27,7 +27,7 @@ interface ScriptEditorProps {
   setScriptContent: (content: string) => void;
 }
 
-const ScriptLineComponent = ({
+const ScriptLineComponent = React.memo(({
   line,
   onTextChange,
   onKeyDown,
@@ -39,6 +39,7 @@ const ScriptLineComponent = ({
   isFocused: boolean;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
+  const lastText = useRef(line.text);
 
   useEffect(() => {
     if (isFocused && ref.current) {
@@ -53,6 +54,14 @@ const ScriptLineComponent = ({
       }
     }
   }, [isFocused]);
+
+  // Update content only if it has changed from outside
+  useEffect(() => {
+    if (ref.current && line.text !== ref.current.innerHTML) {
+        ref.current.innerHTML = line.text;
+        lastText.current = line.text;
+    }
+  }, [line.text]);
 
   const getElementStyling = (type: ScriptElement) => {
     switch (type) {
@@ -73,13 +82,21 @@ const ScriptLineComponent = ({
     }
   };
 
+  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const newText = e.currentTarget.innerHTML;
+    if (newText !== lastText.current) {
+      lastText.current = newText;
+      onTextChange(line.id, e.currentTarget.textContent || '');
+    }
+  };
+
   return (
     <div
       ref={ref}
       contentEditable
       suppressContentEditableWarning
       onKeyDown={(e) => onKeyDown(e, line.id)}
-      onInput={(e) => onTextChange(line.id, e.currentTarget.textContent || '')}
+      onInput={handleInput}
       onBlur={(e) => onTextChange(line.id, e.currentTarget.textContent || '')}
       className={cn(
         'w-full outline-none focus:bg-primary/10 rounded-sm px-2 py-1',
@@ -88,7 +105,16 @@ const ScriptLineComponent = ({
       dangerouslySetInnerHTML={{ __html: line.text }}
     />
   );
-};
+}, (prevProps, nextProps) => {
+    // Only re-render if essential props change.
+    // Prevents re-render on parent's state change when this component's content is being edited.
+    return prevProps.isFocused === nextProps.isFocused &&
+           prevProps.line.id === nextProps.line.id &&
+           prevProps.line.type === nextProps.line.type &&
+           prevProps.line.text === nextProps.line.text;
+});
+
+ScriptLineComponent.displayName = 'ScriptLineComponent';
 
 export default function ScriptEditor({ scriptContent, setScriptContent }: ScriptEditorProps) {
   const [lines, setLines] = useState<ScriptLine[]>([]);
@@ -204,8 +230,11 @@ export default function ScriptEditor({ scriptContent, setScriptContent }: Script
         e.preventDefault();
         const prevLine = lines[currentIndex - 1];
         if (!prevLine) return;
-
+        
+        const newText = prevLine.text;
+        
         const newLines = lines.filter(line => line.id !== id);
+        newLines[currentIndex - 1] = { ...prevLine, text: newText };
         setLines(newLines);
 
         setTimeout(() => {
