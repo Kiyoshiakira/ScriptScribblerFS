@@ -43,12 +43,11 @@ const ScriptLineComponent = ({
   useEffect(() => {
     if (isFocused && ref.current) {
       ref.current.focus();
-      // Move cursor to the end
       const range = document.createRange();
       const sel = window.getSelection();
       if (sel) {
         range.selectNodeContents(ref.current);
-        range.collapse(false);
+        range.collapse(false); // Move cursor to the end
         sel.removeAllRanges();
         sel.addRange(range);
       }
@@ -201,19 +200,17 @@ export default function ScriptEditor({ scriptContent, setScriptContent }: Script
         if (currentIndex < lines.length - 1) {
             setActiveLineId(lines[currentIndex + 1].id);
         }
-    } else if (e.key === 'Backspace' && lines[currentIndex].text === '') {
+    } else if (e.key === 'Backspace' && lines[currentIndex].text === '' && lines.length > 1) {
         e.preventDefault();
-        if(lines.length > 1) {
-            const newLines = lines.filter(line => line.id !== id);
-            setLines(newLines);
-            if (currentIndex > 0) {
-              setActiveLineId(lines[currentIndex - 1].id);
-            } else if (newLines.length > 0) {
-              setActiveLineId(newLines[0].id);
-            } else {
-              setActiveLineId(null);
-            }
-        }
+        const prevLine = lines[currentIndex - 1];
+        if (!prevLine) return;
+
+        const newLines = lines.filter(line => line.id !== id);
+        setLines(newLines);
+
+        setTimeout(() => {
+            setActiveLineId(prevLine.id);
+        }, 0);
     }
   };
   
