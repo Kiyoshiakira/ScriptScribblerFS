@@ -27,39 +27,55 @@ interface ScriptEditorProps {
   setScriptContent: (content: string) => void;
 }
 
+function shouldComponentUpdate(prevProps: ScriptLineComponentProps, nextProps: ScriptLineComponentProps) {
+  // Don't re-render if the component is focused (being edited) and the text hasn't changed.
+  if (nextProps.isFocused) {
+    return false;
+  }
+  // Re-render if any of these props change.
+  return (
+    prevProps.isFocused !== nextProps.isFocused ||
+    prevProps.line.id !== nextProps.line.id ||
+    prevProps.line.type !== nextProps.line.type ||
+    prevProps.line.text !== nextProps.line.text
+  );
+}
+
+interface ScriptLineComponentProps {
+  line: ScriptLine;
+  onTextChange: (id: string, text: string) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>, id: string) => void;
+  isFocused: boolean;
+}
+
 const ScriptLineComponent = React.memo(({
   line,
   onTextChange,
   onKeyDown,
   isFocused,
-}: {
-  line: ScriptLine;
-  onTextChange: (id: string, text: string) => void;
-  onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>, id: string) => void;
-  isFocused: boolean;
-}) => {
+}: ScriptLineComponentProps) => {
   const ref = useRef<HTMLDivElement>(null);
-  const lastText = useRef(line.text);
 
   useEffect(() => {
     if (isFocused && ref.current) {
       ref.current.focus();
+      // Move cursor to the end when focused
       const range = document.createRange();
       const sel = window.getSelection();
       if (sel) {
         range.selectNodeContents(ref.current);
-        range.collapse(false); // Move cursor to the end
+        range.collapse(false);
         sel.removeAllRanges();
         sel.addRange(range);
       }
     }
   }, [isFocused]);
 
-  // Update content only if it has changed from outside
+  // This effect ensures that if the text is changed from OUTSIDE the component
+  // (e.g., undo, or some other programmatic change), the div's content is updated.
   useEffect(() => {
-    if (ref.current && line.text !== ref.current.innerHTML) {
-        ref.current.innerHTML = line.text;
-        lastText.current = line.text;
+    if (ref.current && line.text !== ref.current.textContent) {
+      ref.current.textContent = line.text;
     }
   }, [line.text]);
 
@@ -83,13 +99,11 @@ const ScriptLineComponent = React.memo(({
   };
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    const newText = e.currentTarget.innerHTML;
-    if (newText !== lastText.current) {
-      lastText.current = newText;
-      onTextChange(line.id, e.currentTarget.textContent || '');
-    }
+    const newText = e.currentTarget.textContent || '';
+    // Call onTextChange to update parent state, but don't cause a re-render here.
+    onTextChange(line.id, newText);
   };
-
+  
   return (
     <div
       ref={ref}
@@ -97,22 +111,20 @@ const ScriptLineComponent = React.memo(({
       suppressContentEditableWarning
       onKeyDown={(e) => onKeyDown(e, line.id)}
       onInput={handleInput}
+      // Use textContent on blur for final state update.
       onBlur={(e) => onTextChange(line.id, e.currentTarget.textContent || '')}
       className={cn(
         'w-full outline-none focus:bg-primary/10 rounded-sm px-2 py-1',
         getElementStyling(line.type)
       )}
-      dangerouslySetInnerHTML={{ __html: line.text }}
-    />
+      // Set initial content with textContent to avoid dangerouslySetInnerHTML re-renders
+      // and let the browser manage the inner content during editing.
+      defaultValue={line.text}
+    >
+      {line.text}
+    </div>
   );
-}, (prevProps, nextProps) => {
-    // Only re-render if essential props change.
-    // Prevents re-render on parent's state change when this component's content is being edited.
-    return prevProps.isFocused === nextProps.isFocused &&
-           prevProps.line.id === nextProps.line.id &&
-           prevProps.line.type === nextProps.line.type &&
-           prevProps.line.text === nextProps.line.text;
-});
+}, shouldComponentUpdate);
 
 ScriptLineComponent.displayName = 'ScriptLineComponent';
 
