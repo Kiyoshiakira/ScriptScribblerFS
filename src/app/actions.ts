@@ -1,0 +1,40 @@
+'use server';
+
+import {
+  aiSuggestSceneImprovements,
+  type AiSuggestSceneImprovementsInput,
+} from '@/ai/flows/ai-suggest-scene-improvements';
+import {
+  generateCharacterProfiles,
+  type GenerateCharacterProfilesInput,
+} from '@/ai/flows/ai-generate-character-profiles';
+
+export async function getAiSuggestions(
+  input: AiSuggestSceneImprovementsInput
+) {
+  try {
+    const result = await aiSuggestSceneImprovements(input);
+    return { data: result, error: null };
+  } catch (error) {
+    console.error(error);
+    return {
+      data: null,
+      error: 'An error occurred while fetching AI suggestions.',
+    };
+  }
+}
+
+export async function getAiCharacterProfile(
+  input: GenerateCharacterProfilesInput
+) {
+  try {
+    const result = await generateCharacterProfiles(input);
+    return { data: result, error: null };
+  } catch (error) {
+    console.error(error);
+    return {
+      data: null,
+      error: 'An error occurred while generating the character profile.',
+    };
+  }
+}
