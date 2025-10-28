@@ -1,4 +1,5 @@
 'use client';
+import 'regenerator-runtime/runtime'; // Direct import to fix speech recognition error
 import { useState, useEffect, useRef } from 'react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { getAiSuggestions, getAiDeepAnalysis, runAiAgent } from '@/app/actions';
@@ -299,3 +300,5 @@ export default function AiAssistant({ scriptContent }: AiAssistantProps) {
     </Card>
   );
 }
+
+    
