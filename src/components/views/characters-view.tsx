@@ -75,6 +75,17 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [open, setOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (open) {
+      setName(character?.name || '');
+      setDescription(character?.description || '');
+      setProfile(character?.profile || '');
+      setImageUrl(character?.imageUrl || character?.imageId && getImage(character.imageId)?.imageUrl || '');
+    }
+  }, [open, character]);
+
 
   const handleGenerate = async () => {
     if (!description) {
@@ -87,6 +98,7 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
     }
     setIsGenerating(true);
     setProfile('');
+    setName('');
     const result = await getAiCharacterProfile({ characterDescription: description });
     setIsGenerating(false);
     if (result.error) {
@@ -96,7 +108,8 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
         description: result.error,
       });
     } else if (result.data) {
-      setProfile(result.data.characterProfile);
+      setProfile(result.data.profile);
+      setName(result.data.name);
     }
   };
 
@@ -117,6 +130,7 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
       scenes: character?.scenes || 0,
       imageId: character?.imageId || `character${Date.now()}`,
     });
+    setOpen(false);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,7 +146,7 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
 
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
@@ -166,10 +180,6 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
           </div>
           <div className="col-span-3 space-y-4">
               <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" placeholder="Character's Name" value={name} onChange={e => setName(e.target.value)} />
-              </div>
-              <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="description">One-line Description</Label>
                 <Textarea
                     id="description"
@@ -179,21 +189,32 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
                     rows={2}
                 />
               </div>
-          </div>
-          <div className="col-span-4 space-y-2">
-            <div className='flex justify-between items-center'>
-                <Label htmlFor="profile">Character Profile</Label>
+              <div className='flex justify-end items-center'>
                 <Button size="sm" variant="outline" onClick={handleGenerate} disabled={isGenerating}>
                     <Sparkles className="mr-2 h-4 w-4" />
                     {isGenerating ? 'Generating...' : 'Generate with AI'}
                 </Button>
             </div>
+          </div>
+          <div className="col-span-4 space-y-2">
+            <div className='flex justify-between items-center'>
+                <Label htmlFor="name">Character Name</Label>
+            </div>
             {isGenerating ? (
-                <div className='space-y-2'>
-                    <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-10 w-2/3" />
+            ) : (
+                <Input id="name" placeholder="Character's Name" value={name} onChange={e => setName(e.target.value)} />
+            )}
+          </div>
+          <div className="col-span-4 space-y-2">
+            <Label htmlFor="profile">Character Profile</Label>
+            {isGenerating ? (
+                <div className='space-y-2 pt-2'>
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-4/5" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/5" />
                 </div>
             ) : (
                 <Textarea
@@ -235,6 +256,7 @@ export default function CharactersView() {
         <h1 className="text-3xl font-bold font-headline">Characters</h1>
         <CharacterDialog
           onSave={handleSaveCharacter}
+          character={null}
           trigger={
             <Button>
               <Plus className="mr-2 h-4 w-4" />

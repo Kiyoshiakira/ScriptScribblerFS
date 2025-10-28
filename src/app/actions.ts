@@ -7,6 +7,7 @@ import {
 import {
   generateCharacterProfiles,
   type GenerateCharacterProfilesInput,
+  type GenerateCharacterProfilesOutput,
 } from '@/ai/flows/ai-generate-character-profiles';
 import {
   aiDeepAnalysis,
@@ -30,7 +31,7 @@ export async function getAiSuggestions(
 
 export async function getAiCharacterProfile(
   input: GenerateCharacterProfilesInput
-) {
+): Promise<{ data: GenerateCharacterProfilesOutput | null, error: string | null }> {
   try {
     const result = await generateCharacterProfiles(input);
     return { data: result, error: null };
