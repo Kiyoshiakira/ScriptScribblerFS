@@ -30,24 +30,28 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    turbo: {
-      dangerouslyAllowModules: ['regenerator-runtime'],
-    },
-  },
   webpack: (config, { isServer }) => {
     // This is required for react-speech-recognition to work.
     // See: https://github.com/JamesBrill/react-speech-recognition/issues/287
-    if (!isServer) {
-        const originalEntry = config.entry as () => Promise<Record<string, string[]>>;
-        config.entry = async () => {
-            const entries = await originalEntry();
-            if (entries['main-app'] && !entries['main-app'].includes('regenerator-runtime/runtime.js')) {
-                entries['main-app'].unshift('regenerator-runtime/runtime.js');
-            }
-            return entries;
-        };
-    }
+    const originalEntry = config.entry;
+    config.entry = async () => {
+      const entries = await originalEntry();
+      
+      if (entries['main-app'] && !entries['main-app'].includes('regenerator-runtime/runtime.js')) {
+        entries['main-app'].unshift('regenerator-runtime/runtime.js');
+      }
+
+      if (entries['main-app'] && !isServer) {
+        if (Array.isArray(entries['main-app']) && !entries['main-app'].includes('regenerator-runtime/runtime.js')) {
+            entries['main-app'].unshift('regenerator-runtime/runtime.js');
+        } else if (typeof entries['main-app'] === 'string' && !entries['main-app'].includes('regenerator-runtime/runtime.js')) {
+            entries['main-app'] = ['regenerator-runtime/runtime.js', entries['main-app']];
+        }
+      }
+      
+      return entries;
+    };
+    
     return config;
   },
 };
