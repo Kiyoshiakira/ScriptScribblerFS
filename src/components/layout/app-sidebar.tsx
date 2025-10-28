@@ -16,6 +16,7 @@ import {
   Settings,
   BookText,
   Clapperboard,
+  StickyNote,
 } from 'lucide-react';
 import type { View } from '@/app/page';
 
@@ -81,6 +82,16 @@ export default function AppSidebar({ activeView, setActiveView }: AppSidebarProp
           >
             <Users />
             <span>Characters</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            onClick={() => setActiveView('notes')}
+            isActive={activeView === 'notes'}
+            tooltip="Notes"
+          >
+            <StickyNote />
+            <span>Notes</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

@@ -11,8 +11,9 @@ import AppHeader from '@/components/layout/app-header';
 import EditorView from '@/components/views/editor-view';
 import ScenesView from '@/components/views/scenes-view';
 import CharactersView from '@/components/views/characters-view';
+import NotesView from '@/components/views/notes-view';
 
-export type View = 'editor' | 'scenes' | 'characters';
+export type View = 'editor' | 'scenes' | 'characters' | 'notes';
 
 export default function Home() {
   const [view, setView] = React.useState<View>('editor');
@@ -25,6 +26,8 @@ export default function Home() {
         return <ScenesView />;
       case 'characters':
         return <CharactersView />;
+      case 'notes':
+        return <NotesView />;
       default:
         return <EditorView />;
     }
