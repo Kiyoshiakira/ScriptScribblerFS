@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, Film } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
 
 export type ScriptElement = 'scene-heading' | 'action' | 'character' | 'parenthetical' | 'dialogue' | 'transition';
 
@@ -32,6 +34,7 @@ interface ScriptLineComponentProps {
   line: ScriptLine;
   onTextChange: (id: string, text: string) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>, id: string) => void;
+  onContextMenu: (e: React.MouseEvent<HTMLDivElement>, id: string) => void;
   isFocused: boolean;
 }
 
@@ -40,23 +43,31 @@ const ScriptLineComponent = React.memo(({
   onTextChange,
   onKeyDown,
   isFocused,
+  onContextMenu,
 }: ScriptLineComponentProps) => {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isFocused && ref.current) {
-      ref.current.focus();
-      // Move cursor to the end when focused
-      const range = document.createRange();
-      const sel = window.getSelection();
-      if (sel) {
-        range.selectNodeContents(ref.current);
-        range.collapse(false);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
+        ref.current.focus();
+        const range = document.createRange();
+        const sel = window.getSelection();
+        if (sel) {
+            range.selectNodeContents(ref.current);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
     }
   }, [isFocused]);
+
+  useEffect(() => {
+    // This effect ensures that if the text is changed externally (e.g., by changing type),
+    // the div's content is updated.
+    if (ref.current && ref.current.innerHTML !== line.text) {
+        ref.current.innerHTML = line.text;
+    }
+  }, [line.text]);
 
   const getElementStyling = (type: ScriptElement) => {
     switch (type) {
@@ -88,8 +99,8 @@ const ScriptLineComponent = React.memo(({
       suppressContentEditableWarning
       onKeyDown={(e) => onKeyDown(e, line.id)}
       onInput={handleInput}
-      // Use textContent on blur for final state update.
       onBlur={(e) => onTextChange(line.id, e.currentTarget.innerHTML)}
+      onContextMenu={(e) => onContextMenu(e, line.id)}
       className={cn(
         'w-full outline-none focus:bg-primary/10 rounded-sm px-2 py-1',
         getElementStyling(line.type)
@@ -98,11 +109,13 @@ const ScriptLineComponent = React.memo(({
     />
   );
 }, (prevProps, nextProps) => {
+    // Only re-render if focus changes or line ID changes.
+    // Text changes are handled by the useEffect hook to avoid cursor jumps.
     return (
         prevProps.isFocused === nextProps.isFocused &&
         prevProps.line.id === nextProps.line.id &&
         prevProps.line.type === nextProps.line.type &&
-        (nextProps.isFocused || prevProps.line.text === nextProps.line.text)
+        prevProps.line.text === nextProps.line.text
     );
 });
 
@@ -114,6 +127,7 @@ export default function ScriptEditor({ scriptContent, setScriptContent, onActive
   const [estimatedMinutes, setEstimatedMinutes] = useState(0);
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, lineId: string } | null>(null);
 
   useEffect(() => {
     const parsedLines = scriptContent.split('\n').map((text, index) => ({
@@ -153,7 +167,7 @@ export default function ScriptEditor({ scriptContent, setScriptContent, onActive
     setLines(prevLines => {
       const newLines = [...prevLines];
       const index = newLines.findIndex(line => line.id === id);
-      if (index !== -1) {
+      if (index !== -1 && newLines[index].text !== text) {
         newLines[index] = { ...newLines[index], text };
       }
       return newLines;
@@ -163,10 +177,20 @@ export default function ScriptEditor({ scriptContent, setScriptContent, onActive
   const handleTypeChange = (id: string, type: ScriptElement) => {
     setLines(prevLines => prevLines.map(line => {
       if (line.id === id) {
-        return { ...line, type };
+        let newText = line.text;
+        // Add parenthesis for parenthetical
+        if (type === 'parenthetical' && !/^\(.*\)$/.test(newText)) {
+          newText = `(${newText})`;
+        } else if (line.type === 'parenthetical' && type !== 'parenthetical' && /^\(.*\)$/.test(newText)) {
+          // Remove parenthesis when changing from parenthetical
+          newText = newText.substring(1, newText.length - 1);
+        }
+        return { ...line, type, text: newText };
       }
       return line;
     }));
+    setActiveLineId(id);
+    setContextMenu(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, id: string) => {
@@ -237,6 +261,16 @@ export default function ScriptEditor({ scriptContent, setScriptContent, onActive
     }
   };
   
+  const handleContextMenu = (e: React.MouseEvent<HTMLDivElement>, lineId: string) => {
+    e.preventDefault();
+    setActiveLineId(lineId);
+    setContextMenu({ x: e.clientX, y: e.clientY, lineId });
+  }
+
+  const formatElementName = (name: string) => {
+    return name.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
+
   return (
     <Card className="h-full flex flex-col shadow-lg">
       <CardHeader>
@@ -247,7 +281,36 @@ export default function ScriptEditor({ scriptContent, setScriptContent, onActive
           </CardTitle>
         </div>
       </CardHeader>
-      <CardContent ref={editorRef} className="flex-1 flex relative">
+      <CardContent 
+        ref={editorRef} 
+        className="flex-1 flex relative"
+        onContextMenu={(e) => e.preventDefault()} // Prevent native context menu on the whole area
+        onClick={() => setContextMenu(null)}
+      >
+        <DropdownMenu open={!!contextMenu} onOpenChange={() => setContextMenu(null)}>
+            <DropdownMenuTrigger asChild>
+                <div 
+                    style={{ 
+                        position: 'absolute', 
+                        left: contextMenu ? contextMenu.x : 0, 
+                        top: contextMenu ? contextMenu.y : 0,
+                        width: 1,
+                        height: 1,
+                    }}
+                />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="start">
+                {SCRIPT_ELEMENTS_CYCLE.map(element => (
+                    <DropdownMenuItem 
+                        key={element} 
+                        onClick={() => contextMenu && handleTypeChange(contextMenu.lineId, element)}
+                    >
+                        {formatElementName(element)}
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
+
         <div
           className="flex-1 resize-none font-code text-base leading-relaxed bg-card flex flex-col gap-2"
           style={{ minHeight: '60vh' }}
@@ -265,6 +328,7 @@ export default function ScriptEditor({ scriptContent, setScriptContent, onActive
                     line={line}
                     onTextChange={handleTextChange}
                     onKeyDown={handleKeyDown}
+                    onContextMenu={handleContextMenu}
                     isFocused={line.id === activeLineId}
                 />
               </div>
