@@ -5,6 +5,7 @@ import {
   ChevronDown,
   Download,
   Link as LinkIcon,
+  PanelLeft,
   Share2,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -30,11 +31,11 @@ export default function AppHeader() {
         <Book className="h-6 w-6 text-muted-foreground" />
         <Input
           defaultValue="Untitled Screenplay"
-          className="text-xl font-semibold border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 font-headline"
+          className="text-lg md:text-xl font-semibold border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 font-headline"
         />
       </div>
-      <div className="ml-auto flex items-center gap-4">
-        <div className="flex -space-x-2">
+      <div className="ml-auto flex items-center gap-2 md:gap-4">
+        <div className="hidden md:flex -space-x-2">
           {userAvatars.map((avatar, index) => (
             <Avatar key={index} className="border-2 border-background">
               <AvatarImage src={avatar.imageUrl} alt={avatar.description} />
@@ -42,15 +43,15 @@ export default function AppHeader() {
             </Avatar>
           ))}
         </div>
-        <Button variant="outline">
+        <Button variant="outline" className="hidden sm:inline-flex">
           <GoogleDocIcon className="h-4 w-4 mr-2" />
           Import from Google Docs
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline">
-              <Share2 className="h-4 w-4 mr-2" />
-              Share
+              <Share2 className="h-4 w-4 md:mr-2" />
+              <span className='hidden md:inline'>Share</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -63,9 +64,9 @@ export default function AppHeader() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button>
-              <Download className="h-4 w-4 mr-2" />
-              Export
-              <ChevronDown className="h-4 w-4 ml-2" />
+              <Download className="h-4 w-4 md:mr-2" />
+              <span className='hidden md:inline'>Export</span>
+              <ChevronDown className="h-4 w-4 ml-0 md:ml-2" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

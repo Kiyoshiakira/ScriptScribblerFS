@@ -8,6 +8,7 @@ import {
   SidebarMenuItem,
   SidebarFooter,
   SidebarSeparator,
+  useSidebar
 } from '@/components/ui/sidebar';
 import {
   Film,
@@ -52,8 +53,13 @@ const Logo = () => (
 
 
 export default function AppSidebar({ activeView, setActiveView, activeScriptElement }: AppSidebarProps) {
+  const { state: sidebarState } = useSidebar();
+  
   const formatElementName = (name: string | null) => {
     if (!name) return 'N/A';
+    if (sidebarState === 'collapsed') {
+      return name.split('-').map(word => word[0].toUpperCase()).join('');
+    }
     return name.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
 
@@ -111,15 +117,15 @@ export default function AppSidebar({ activeView, setActiveView, activeScriptElem
         <div 
           className={cn(
             "p-2 space-y-2 transition-opacity duration-200", 
-            !activeScriptElement && "opacity-0",
-            "[&[data-collapsed=true]]:hidden"
+            !activeScriptElement && "opacity-0"
           )}
-          data-collapsed={!activeScriptElement}
         >
             <SidebarSeparator />
-            <div className="text-xs text-sidebar-foreground/70 px-2 font-medium">Active Element</div>
-            <div className='px-2 flex items-center gap-2'>
-              <CaseSensitive className="w-4 h-4 text-sidebar-primary" />
+            <div className="text-xs text-sidebar-foreground/70 px-2 font-medium [&[data-collapsed=true]]:text-center [&[data-collapsed=true]]:px-0" data-collapsed={sidebarState === 'collapsed'}>
+                {sidebarState === 'collapsed' ? 'El.' : 'Active Element'}
+            </div>
+            <div className='px-2 flex items-center gap-2 [&[data-collapsed=true]]:justify-center' data-collapsed={sidebarState === 'collapsed'}>
+              <CaseSensitive className="w-4 h-4 text-sidebar-primary flex-shrink-0" />
               <span className='font-semibold text-sm text-sidebar-foreground'>{formatElementName(activeScriptElement)}</span>
             </div>
         </div>
