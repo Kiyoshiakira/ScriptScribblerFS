@@ -10,7 +10,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const AiGenerateCharacterProfileInputSchema = z.object({
+const AiGenerateCharacterProfileInputSchema = z.object({
   characterDescription: z
     .string()
     .describe('A brief description or traits of the character.'),
@@ -19,7 +19,7 @@ export type AiGenerateCharacterProfileInput = z.infer<
   typeof AiGenerateCharacterProfileInputSchema
 >;
 
-export const AiGenerateCharacterProfileOutputSchema = z.object({
+const AiGenerateCharacterProfileOutputSchema = z.object({
   name: z.string().describe("The character's full name."),
   profile: z
     .string()

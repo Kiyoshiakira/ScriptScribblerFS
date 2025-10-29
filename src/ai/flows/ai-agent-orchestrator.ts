@@ -12,8 +12,18 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import {
   aiGenerateCharacterProfile,
-  AiGenerateCharacterProfileOutputSchema,
 } from './ai-generate-character-profile';
+import type { AiGenerateCharacterProfileOutput } from './ai-generate-character-profile';
+
+
+const AiGenerateCharacterProfileOutputSchema = z.object({
+  name: z.string().describe("The character's full name."),
+  profile: z
+    .string()
+    .describe(
+      'A detailed character profile that includes backstory, personality, motivations, and quirks.'
+    ),
+});
 
 const AiAgentOrchestratorInputSchema = z.object({
   request: z.string().describe("The user's natural language request."),
@@ -91,7 +101,7 @@ ${input.script}
             }),
             outputSchema: AiGenerateCharacterProfileOutputSchema,
           },
-          async input => {
+          async (input): Promise<AiGenerateCharacterProfileOutput> => {
             return await aiGenerateCharacterProfile({
               characterDescription: input.description,
             });
