@@ -3,30 +3,32 @@
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithRedirect,
+  signInWithPopup,
 } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFirebase, useFirebaseApp } from '@/firebase';
 import { Logo } from '@/components/layout/app-sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
 
 const provider = new GoogleAuthProvider();
 
 export default function LoginPage() {
   const { areServicesAvailable } = useFirebase();
   const app = useFirebaseApp();
+  const router = useRouter();
 
-  const handleSignIn = () => {
-    // This check is a safeguard, but the button's disabled state is the primary fix.
+  const handleSignIn = async () => {
     if (!areServicesAvailable) {
       console.error('Firebase services not available.');
       return;
     }
     try {
       const auth = getAuth(app);
-      // signInWithRedirect doesn't need to be awaited as it navigates the page away.
-      signInWithRedirect(auth, provider);
+      await signInWithPopup(auth, provider);
+      // On successful sign-in, redirect to the main app page.
+      router.push('/');
     } catch (error) {
       console.error('Error signing in with Google:', error);
     }
