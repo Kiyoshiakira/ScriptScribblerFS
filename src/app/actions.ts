@@ -20,7 +20,7 @@ import {
     aiGenerateCharacterProfile,
     type AiGenerateCharacterProfileInput,
 } from '@/ai/flows/ai-generate-character-profile';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { adminApp } from '@/firebase/admin';
 
 
@@ -136,7 +136,7 @@ export async function saveCharacter(
   try {
     const db = getFirestore(adminApp);
     const charactersCollectionRef = db.collection(`users/${userId}/scripts/${scriptId}/characters`);
-    const serverTimestamp = admin.firestore.FieldValue.serverTimestamp;
+    const serverTimestamp = FieldValue.serverTimestamp();
 
     if (characterData.id) {
       // Update existing character
@@ -144,7 +144,7 @@ export async function saveCharacter(
       await charDocRef.set(
         {
           ...characterData,
-          updatedAt: serverTimestamp(),
+          updatedAt: serverTimestamp,
         },
         { merge: true }
       );
@@ -153,8 +153,8 @@ export async function saveCharacter(
       // Create new character
       const newCharDocRef = await charactersCollectionRef.add({
         ...characterData,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: serverTimestamp,
+        updatedAt: serverTimestamp,
       });
       return { success: true, id: newCharDocRef.id };
     }

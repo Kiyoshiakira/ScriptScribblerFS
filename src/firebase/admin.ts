@@ -26,6 +26,6 @@ if (admin.apps.length > 0) {
   // if adminApp is not initialized. We handle this gracefully in the actions.
 }
 
-// We cannot safely export adminAuth and adminDb if adminApp might not be initialized.
-// Instead, functions that need them should get them from the initialized adminApp.
+// We cannot safely export adminApp if it might not be initialized, and because this is a 'use server' file.
+// Instead, functions that need it should import it directly from this module.
 export { adminApp };
