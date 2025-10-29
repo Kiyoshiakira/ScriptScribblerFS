@@ -54,7 +54,7 @@ function ProfileHeader({ user, profile, onEdit }: { user: any, profile: UserProf
     return (
         <div className="w-full">
             <div className="h-48 bg-muted/50 relative">
-                 <Image src={coverImage} alt="Cover" layout="fill" objectFit="cover" />
+                 <Image src={coverImage} alt="Cover" fill className="object-cover" />
             </div>
             <div className="px-4 sm:px-6 lg:px-8">
                 <div className="-mt-20 sm:-mt-24 flex items-end justify-between">
