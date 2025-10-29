@@ -110,11 +110,18 @@ export default function AiFab({ actions = ['suggestImprovements', 'deepAnalysis'
   useEffect(() => {
     let statusInterval: NodeJS.Timeout;
     if (isProofreading) {
-      let i = 0;
-      statusInterval = setInterval(() => {
-        i = (i + 1) % PROOFREAD_STATUS_MESSAGES.length;
+        let i = 0;
         setProofreadStatus(PROOFREAD_STATUS_MESSAGES[i]);
-      }, 2000);
+        statusInterval = setInterval(() => {
+            i++;
+            if (i < PROOFREAD_STATUS_MESSAGES.length -1) {
+                setProofreadStatus(PROOFREAD_STATUS_MESSAGES[i]);
+            } else {
+                clearInterval(statusInterval);
+            }
+        }, 2000);
+    } else {
+      setProofreadStatus(PROOFREAD_STATUS_MESSAGES[3]); // Finalizing
     }
     return () => clearInterval(statusInterval);
   }, [isProofreading]);
@@ -168,7 +175,6 @@ export default function AiFab({ actions = ['suggestImprovements', 'deepAnalysis'
 
   const handleGetProofread = async () => {
     setIsProofreading(true);
-    setProofreadStatus(PROOFREAD_STATUS_MESSAGES[0]);
     setProofreadSuggestions([]);
     setProofreadDialogOpen(true);
     setPopoverOpen(false);
