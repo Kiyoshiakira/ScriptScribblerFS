@@ -48,48 +48,45 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
     setIsSaving(true);
     
     try {
-        // Update Firebase Auth display name and photo
-        if (displayName !== auth.currentUser.displayName || photoURL !== auth.currentUser.photoURL) {
-            await updateProfile(auth.currentUser, {
-                displayName,
-                photoURL,
-            });
-        }
+      // Update Firebase Auth display name and photo
+      await updateProfile(auth.currentUser, {
+        displayName,
+        photoURL,
+      });
 
-        const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
-        const profileData = { 
-            bio, 
-            coverImageUrl, 
-            updatedAt: serverTimestamp() 
-        };
+      const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
+      const profileData = { 
+        displayName,
+        email: auth.currentUser.email,
+        bio, 
+        coverImageUrl, 
+        updatedAt: serverTimestamp() 
+      };
 
-        // Update custom data in Firestore (non-blocking with error handling)
-        setDoc(userDocRef, profileData, { merge: true })
-          .catch(serverError => {
-            const permissionError = new FirestorePermissionError({
-              path: userDocRef.path,
-              operation: 'update',
-              requestResourceData: profileData
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            // We don't need to throw here as the global listener will handle it.
-            // But we should show a toast to the user.
-            toast({
-              variant: "destructive",
-              title: "Update Failed",
-              description: "You may not have permission to update your profile.",
-            });
+      // Update custom data in Firestore (non-blocking with error handling)
+      setDoc(userDocRef, profileData, { merge: true })
+        .catch(serverError => {
+          const permissionError = new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'update',
+            requestResourceData: profileData
           });
-
-        toast({
-            title: "Profile Update In Progress",
-            description: "Your changes are being saved.",
+          errorEmitter.emit('permission-error', permissionError);
+          toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "You may not have permission to update your profile.",
+          });
         });
-        onOpenChange(false);
-        
-        // This is a bit of a hack, but it forces a re-render of the user object
-        // A better solution would involve a more robust state management
-        setTimeout(() => window.location.reload(), 1500);
+
+      toast({
+          title: "Profile Update In Progress",
+          description: "Your changes are being saved.",
+      });
+      onOpenChange(false);
+      
+      // A small delay and reload to ensure the UI reflects the auth changes.
+      setTimeout(() => window.location.reload(), 1500);
 
     } catch (error: any) {
         console.error("Error initiating profile update:", error);

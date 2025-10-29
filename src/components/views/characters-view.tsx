@@ -239,50 +239,32 @@ export default function CharactersView() {
       updatedAt: serverTimestamp(),
     };
   
-    try {
-      if (isNew) {
-        // Add new character
-        const docData = { ...plainCharData, createdAt: serverTimestamp() };
-        addDoc(charactersCollection, docData)
-            .catch(serverError => {
-                const permissionError = new FirestorePermissionError({
-                    path: charactersCollection.path,
-                    operation: 'create',
-                    requestResourceData: docData,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                throw permissionError;
-            });
-      } else {
-        // Update existing character
-        const charDocRef = doc(charactersCollection, charToSave.id);
-        setDoc(charDocRef, plainCharData, { merge: true })
-            .catch(serverError => {
-                 const permissionError = new FirestorePermissionError({
-                    path: charDocRef.path,
-                    operation: 'update',
-                    requestResourceData: plainCharData,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                throw permissionError;
-            });
-      }
-      
-      toast({
-        title: isNew ? 'Character Created' : 'Character Updated',
-        description: `${charToSave.name} has been saved.`,
+    if (isNew) {
+      const docData = { ...plainCharData, createdAt: serverTimestamp() };
+      addDoc(charactersCollection, docData).catch(serverError => {
+        const permissionError = new FirestorePermissionError({
+          path: charactersCollection.path,
+          operation: 'create',
+          requestResourceData: docData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
       });
-  
-    } catch (error) {
-      // This will only catch client-side errors before the Firestore call.
-      // Permission errors are now handled by the .catch() blocks.
-      console.error('Error saving character:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Save Error',
-        description: error instanceof Error ? error.message : 'An unexpected client-side error occurred.',
+    } else {
+      const charDocRef = doc(charactersCollection, charToSave.id);
+      setDoc(charDocRef, plainCharData, { merge: true }).catch(serverError => {
+        const permissionError = new FirestorePermissionError({
+          path: charDocRef.path,
+          operation: 'update',
+          requestResourceData: plainCharData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
       });
     }
+    
+    toast({
+      title: isNew ? 'Character Created' : 'Character Updated',
+      description: `${charToSave.name} has been saved.`,
+    });
   };
   
   const handleGenerateCharacter = async (description: string): Promise<Character | null> => {
