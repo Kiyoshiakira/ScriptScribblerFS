@@ -11,30 +11,21 @@ import {
   useSidebar
 } from '@/components/ui/sidebar';
 import {
-  Film,
-  Home,
-  Bot,
-  Users,
   Settings,
   BookText,
   Clapperboard,
   StickyNote,
+  Users,
   CaseSensitive,
   Library,
   Clock,
   Sparkles,
-  Check,
-  X,
 } from 'lucide-react';
 import type { View, ProofreadSuggestion } from '@/app/page';
 import type { ScriptElement } from '../script-editor';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
-import { ScrollArea } from '../ui/scroll-area';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '../ui/skeleton';
 
 interface AppSidebarProps {
@@ -43,10 +34,6 @@ interface AppSidebarProps {
   activeScriptElement: ScriptElement | null;
   wordCount: number;
   estimatedMinutes: number;
-  proofreadSuggestions: ProofreadSuggestion[];
-  setProofreadSuggestions: (suggestions: ProofreadSuggestion[]) => void;
-  isProofreading: boolean;
-  onProofreadRequest: () => void;
 }
 
 const Logo = () => (
@@ -74,30 +61,8 @@ export default function AppSidebar({
   activeScriptElement,
   wordCount,
   estimatedMinutes,
-  proofreadSuggestions,
-  setProofreadSuggestions,
-  isProofreading,
-  onProofreadRequest
 }: AppSidebarProps) {
   const { state: sidebarState } = useSidebar();
-  const [isSuggestionsDialogOpen, setIsSuggestionsDialogOpen] = useState(false);
-  const { toast } = useToast();
-
-  const applySuggestion = (suggestion: ProofreadSuggestion) => {
-    // This function can't directly edit the script anymore.
-    // It could emit an event that the parent component listens to.
-    // For now, we'll just remove it from the list.
-    toast({
-        title: 'Suggestion Copied',
-        description: 'The suggested text has been copied to your clipboard.',
-    });
-    navigator.clipboard.writeText(suggestion.correctedText);
-    setProofreadSuggestions(proofreadSuggestions.filter(s => s !== suggestion));
-  };
-
-  const dismissSuggestion = (suggestion: ProofreadSuggestion) => {
-    setProofreadSuggestions(proofreadSuggestions.filter(s => s !== suggestion));
-  };
   
   const formatElementName = (name: string | null) => {
     if (!name) return 'N/A';
@@ -131,26 +96,6 @@ export default function AppSidebar({
               <span className='font-semibold text-sm text-sidebar-foreground'>{formatElementName(activeScriptElement)}</span>
             </div>
         </div>
-         <div className="px-2" data-collapsed={sidebarState === 'collapsed'}>
-            <Button 
-                variant="outline"
-                size="sm" 
-                className='w-full bg-sidebar-accent'
-                onClick={() => {
-                  onProofreadRequest();
-                  setIsSuggestionsDialogOpen(true);
-                }}
-                disabled={isProofreading}
-            >
-                <Bot className="w-4 h-4 mr-2" />
-                <span className={cn(sidebarState === 'collapsed' && 'hidden')}>Proofread</span>
-                {isProofreading ? (
-                  <Skeleton className='w-4 h-4 rounded-full ml-2' />
-                ) : (
-                  proofreadSuggestions.length > 0 && <Badge variant="default" className={cn("ml-2", sidebarState === 'collapsed' && 'hidden')}>{proofreadSuggestions.length}</Badge>
-                )}
-            </Button>
-         </div>
     </div>
   );
 
@@ -228,55 +173,6 @@ export default function AppSidebar({
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
-     <Dialog open={isSuggestionsDialogOpen} onOpenChange={setIsSuggestionsDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="font-headline flex items-center gap-2"><Sparkles className='w-5 h-5 text-primary' /> AI Proofreader Suggestions</DialogTitle>
-            <DialogDescription>
-              Review the suggestions below. You can apply or dismiss each correction.
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="max-h-[60vh] -mx-6 px-6">
-            {isProofreading && proofreadSuggestions.length === 0 ? (
-                <div className="space-y-4 py-4">
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-24 w-full" />
-                </div>
-            ) : (
-            <div className="space-y-4 py-4">
-              {proofreadSuggestions.map((suggestion, index) => (
-                <Card key={index} className="overflow-hidden">
-                  <CardHeader className="bg-muted/50 p-4">
-                    <CardTitle className="text-sm font-semibold">{suggestion.explanation}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 text-sm">
-                    <p className="text-red-500 line-through mb-2">"{suggestion.originalText}"</p>
-                    <p className="text-green-600">"{suggestion.correctedText}"</p>
-                  </CardContent>
-                  <CardFooter className="bg-muted/50 p-2 flex justify-end gap-2">
-                    <Button size="sm" variant="outline" onClick={() => dismissSuggestion(suggestion)}>
-                      <X className="w-4 h-4 mr-2" />
-                      Dismiss
-                    </Button>
-                    <Button size="sm" onClick={() => applySuggestion(suggestion)}>
-                      <Check className="w-4 h-4 mr-2" />
-                      Apply
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-              {!isProofreading && proofreadSuggestions.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                    <Check className="w-12 h-12 mx-auto" />
-                    <h3 className="mt-4 text-lg font-medium">No errors found!</h3>
-                    <p>The proofreader didn't find any suggestions.</p>
-                </div>
-              )}
-            </div>
-            )}
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

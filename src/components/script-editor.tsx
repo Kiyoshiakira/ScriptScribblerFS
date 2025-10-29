@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Film, ExternalLink } from 'lucide-react';
+import { Film, ExternalLink, SearchCheck, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useScript } from '@/context/script-context';
-import { getAiProofreadSuggestions } from '@/app/actions';
 import { Skeleton } from './ui/skeleton';
+import { Button } from './ui/button';
+import { useToast } from '@/hooks/use-toast';
 import type { ProofreadSuggestion } from '@/app/page';
 
 export type ScriptElement = 'scene-heading' | 'action' | 'character' | 'parenthetical' | 'dialogue' | 'transition';
@@ -32,9 +33,6 @@ interface ScriptEditorProps {
   isStandalone: boolean;
   setWordCount: (count: number) => void;
   setEstimatedMinutes: (minutes: number) => void;
-  setSuggestions: (suggestions: ProofreadSuggestion[]) => void;
-  setIsProofreading: (loading: boolean) => void;
-  proofreadTrigger: number;
 }
 
 interface ScriptLineComponentProps {
@@ -141,39 +139,12 @@ export default function ScriptEditor({
   isStandalone = false,
   setWordCount,
   setEstimatedMinutes,
-  setSuggestions,
-  setIsProofreading,
-  proofreadTrigger
  }: ScriptEditorProps) {
   const { lines, setLines, isScriptLoading } = useScript();
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
   const editorRef = React.useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, lineId: string } | null>(null);
-
-  const scriptContentForDebounce = useMemo(() => lines.map(l => l.text).join('\n'), [lines]);
-  const debouncedScriptContent = useDebounce(scriptContentForDebounce, 2000);
-
-  const runProofread = useCallback(async () => {
-    if (!debouncedScriptContent) return;
-    setIsProofreading(true);
-    const result = await getAiProofreadSuggestions({ script: debouncedScriptContent });
-    setIsProofreading(false);
-
-    if (result.error) {
-        setSuggestions([]);
-    } else if (result.data) {
-        setSuggestions(result.data.suggestions);
-    }
-  }, [debouncedScriptContent, setSuggestions, setIsProofreading]);
-
-  useEffect(() => {
-    if (proofreadTrigger > 0 && !isStandalone) {
-      runProofread();
-    }
-  // We only want to run this when the trigger is incremented
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [proofreadTrigger, isStandalone]);
-
+  const { toast } = useToast();
 
   useEffect(() => {
     if (lines.length > 0 && !activeLineId) {

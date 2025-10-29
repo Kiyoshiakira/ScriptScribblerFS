@@ -27,9 +27,6 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
   // State lifted from ScriptEditor
   const [wordCount, setWordCount] = React.useState(0);
   const [estimatedMinutes, setEstimatedMinutes] = React.useState(0);
-  const [suggestions, setSuggestions] = React.useState<ProofreadSuggestion[]>([]);
-  const [isProofreading, setIsProofreading] = React.useState(false);
-  const [proofreadTrigger, setProofreadTrigger] = React.useState(0);
 
 
   const renderView = () => {
@@ -39,9 +36,6 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
             onActiveLineTypeChange={setActiveScriptElement}
             setWordCount={setWordCount}
             setEstimatedMinutes={setEstimatedMinutes}
-            setSuggestions={setSuggestions}
-            setIsProofreading={setIsProofreading}
-            proofreadTrigger={proofreadTrigger}
             isStandalone={false}
          />;
       case 'scenes':
@@ -57,16 +51,9 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
             onActiveLineTypeChange={setActiveScriptElement}
             setWordCount={setWordCount}
             setEstimatedMinutes={setEstimatedMinutes}
-            setSuggestions={setSuggestions}
-            setIsProofreading={setIsProofreading}
-            proofreadTrigger={proofreadTrigger}
             isStandalone={false}
         />;
     }
-  };
-
-  const handleProofread = () => {
-    setProofreadTrigger(count => count + 1);
   };
 
   return (
@@ -78,10 +65,6 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
           activeScriptElement={view === 'editor' ? activeScriptElement : null}
           wordCount={wordCount}
           estimatedMinutes={estimatedMinutes}
-          proofreadSuggestions={suggestions}
-          setProofreadSuggestions={setSuggestions}
-          isProofreading={isProofreading}
-          onProofreadRequest={handleProofread}
         />
         <div className="flex flex-1 flex-col overflow-hidden">
           <AppHeader setView={setView} />

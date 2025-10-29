@@ -9,6 +9,9 @@ import {
   Loader2,
   Bot,
   Users,
+  SearchCheck,
+  Check,
+  X,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
@@ -21,10 +24,12 @@ import {
 } from './ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ScriptContext } from '@/context/script-context';
-import { getAiSuggestions, getAiDeepAnalysis } from '@/app/actions';
+import { getAiSuggestions, getAiDeepAnalysis, getAiProofreadSuggestions } from '@/app/actions';
 import type { AiDeepAnalysisOutput } from '@/ai/flows/ai-deep-analysis';
+import type { ProofreadSuggestion } from '@/app/page';
 import AiAssistant from './ai-assistant';
 import { Skeleton } from './ui/skeleton';
 
@@ -60,15 +65,18 @@ export default function AiFab() {
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [suggestionsDialogOpen, setSuggestionsDialogOpen] = useState(false);
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
+  const [proofreadDialogOpen, setProofreadDialogOpen] = useState(false);
 
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
-  
+  const [isProofreading, setIsProofreading] = useState(false);
+
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [analysis, setAnalysis] = useState<AiDeepAnalysisOutput | null>(null);
+  const [proofreadSuggestions, setProofreadSuggestions] = useState<ProofreadSuggestion[]>([]);
 
   const { toast } = useToast();
-  const { lines } = useContext(ScriptContext);
+  const { lines, setLines: setScriptLines } = useContext(ScriptContext);
   const scriptContent = lines.map(l => l.text).join('\n');
 
   const handleGetSuggestions = async () => {
@@ -111,10 +119,40 @@ export default function AiFab() {
     }
   };
 
+  const handleGetProofread = async () => {
+    setIsProofreading(true);
+    setProofreadSuggestions([]);
+    setProofreadDialogOpen(true);
+    setPopoverOpen(false);
+    const result = await getAiProofreadSuggestions({ script: scriptContent });
+    setIsProofreading(false);
+
+    if (result.error) {
+        toast({ variant: 'destructive', title: 'Error', description: result.error });
+        setProofreadDialogOpen(false);
+    } else if (result.data) {
+        setProofreadSuggestions(result.data.suggestions);
+    }
+  }
+
   const handleOpenChat = () => {
     setChatDialogOpen(true);
     setPopoverOpen(false);
   };
+  
+  const applySuggestion = (suggestion: ProofreadSuggestion) => {
+    toast({
+        title: 'Suggestion Copied',
+        description: 'The suggested text has been copied to your clipboard.',
+    });
+    navigator.clipboard.writeText(suggestion.correctedText);
+    setProofreadSuggestions(proofreadSuggestions.filter(s => s !== suggestion));
+  };
+
+  const dismissSuggestion = (suggestion: ProofreadSuggestion) => {
+    setProofreadSuggestions(proofreadSuggestions.filter(s => s !== suggestion));
+  };
+
 
   return (
     <>
@@ -154,6 +192,19 @@ export default function AiFab() {
                 <Wand2 className="mr-2 h-4 w-4" />
               )}
               <span>Deep Analysis</span>
+            </Button>
+             <Button
+              variant="ghost"
+              className="justify-start"
+              onClick={handleGetProofread}
+              disabled={isProofreading}
+            >
+              {isProofreading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <SearchCheck className="mr-2 h-4 w-4" />
+              )}
+              <span>Proofread Script</span>
             </Button>
             <Button
               variant="ghost"
@@ -243,6 +294,57 @@ export default function AiFab() {
                     </Accordion>
                 )}
             </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Proofread Dialog */}
+      <Dialog open={proofreadDialogOpen} onOpenChange={setProofreadDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-headline flex items-center gap-2"><Sparkles className='w-5 h-5 text-primary' /> AI Proofreader Suggestions</DialogTitle>
+            <DialogDescription>
+              Review the suggestions below. You can apply or dismiss each correction.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] -mx-6 px-6">
+            {isProofreading && proofreadSuggestions.length === 0 ? (
+                <div className="space-y-4 py-4">
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                </div>
+            ) : (
+            <div className="space-y-4 py-4">
+              {proofreadSuggestions.map((suggestion, index) => (
+                <Card key={index} className="overflow-hidden">
+                  <CardHeader className="bg-muted/50 p-4">
+                    <CardTitle className="text-sm font-semibold">{suggestion.explanation}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 text-sm">
+                    <p className="text-red-500 line-through mb-2">"{suggestion.originalText}"</p>
+                    <p className="text-green-600">"{suggestion.correctedText}"</p>
+                  </CardContent>
+                  <CardFooter className="bg-muted/50 p-2 flex justify-end gap-2">
+                    <Button size="sm" variant="outline" onClick={() => dismissSuggestion(suggestion)}>
+                      <X className="w-4 h-4 mr-2" />
+                      Dismiss
+                    </Button>
+                    <Button size="sm" onClick={() => applySuggestion(suggestion)}>
+                      <Check className="w-4 h-4 mr-2" />
+                      Apply
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+              {!isProofreading && proofreadSuggestions.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                    <Check className="w-12 h-12 mx-auto" />
+                    <h3 className="mt-4 text-lg font-medium">No errors found!</h3>
+                    <p>The proofreader didn't find any suggestions.</p>
+                </div>
+              )}
+            </div>
+            )}
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
