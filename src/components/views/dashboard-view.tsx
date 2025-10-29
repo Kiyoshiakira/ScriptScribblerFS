@@ -3,7 +3,7 @@
 import { useScript } from "@/context/script-context";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useCurrentScript } from "@/context/current-script-context";
-import { collection } from "firebase/firestore";
+import { collection, query, orderBy } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 import { Button } from "../ui/button";
@@ -16,6 +16,7 @@ import type { Note } from "./notes-view";
 import type { Scene } from "./scenes-view";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
+import AppHeader from "../layout/app-header";
 
 interface DashboardViewProps {
     setView: (view: View) => void;
@@ -55,7 +56,7 @@ export default function DashboardView({ setView }: DashboardViewProps) {
     const { data: notes, isLoading: areNotesLoading } = useCollection<Note>(notesCollection);
 
     const scenesCollection = useMemoFirebase(
-        () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'scenes') : null),
+        () => (user && firestore && currentScriptId ? query(collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'scenes'), orderBy('sceneNumber')) : null),
         [firestore, user, currentScriptId]
     );
     const { data: scenes, isLoading: areScenesLoading } = useCollection<Scene>(scenesCollection);

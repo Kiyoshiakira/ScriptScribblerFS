@@ -4,6 +4,7 @@ import {
   Book,
   ChevronDown,
   Download,
+  FileJson,
   Link as LinkIcon,
   LogOut,
   Share2,
@@ -31,17 +32,23 @@ import { useScript } from '@/context/script-context';
 import { useToast } from '@/hooks/use-toast';
 import { useRef } from 'react';
 import { parseScriteFile } from '@/lib/scrite-parser';
-import { collection, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, writeBatch, doc, serverTimestamp, getDocs } from 'firebase/firestore';
 import type { View } from '@/app/page';
 import Link from 'next/link';
 import { SettingsDialog } from '../settings-dialog';
+import JSZip from 'jszip';
+import type { Character } from '../views/characters-view';
+import type { Scene } from '../views/scenes-view';
+import type { Note } from '../views/notes-view';
 
 interface AppHeaderProps {
   setView: (view: View) => void;
+  characters?: Character[] | null;
+  scenes?: Scene[] | null;
+  notes?: Note[] | null;
 }
 
-
-export default function AppHeader({ setView }: AppHeaderProps) {
+export default function AppHeader({ setView, characters, scenes, notes }: AppHeaderProps) {
   const auth = useAuth();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -167,6 +174,59 @@ export default function AppHeader({ setView }: AppHeaderProps) {
   const triggerFileSelect = () => {
     fileInputRef.current?.click();
   };
+  
+    const handleExport = async () => {
+    if (!script) {
+      toast({ variant: 'destructive', title: 'Export Failed', description: 'No active script to export.' });
+      return;
+    }
+
+    const zip = new JSZip();
+
+    // 1. Meta file
+    const meta = {
+      exportedAt: new Date().toISOString(),
+      appVersion: '1.0.0', // This could be dynamic in a real app
+      scriptTitle: script.title,
+    };
+    zip.file('meta.json', JSON.stringify(meta, null, 2));
+
+    // 2. Project file
+    const projectData = {
+      title: script.title,
+      logline: script.logline || '',
+      content: script.content,
+    };
+    zip.file('project.json', JSON.stringify(projectData, null, 2));
+
+    // 3. Sub-collections
+    if (characters) {
+      zip.file('characters.json', JSON.stringify(characters, null, 2));
+    }
+    if (scenes) {
+      zip.file('scenes.json', JSON.stringify(scenes, null, 2));
+    }
+    if (notes) {
+      zip.file('notes.json', JSON.stringify(notes, null, 2));
+    }
+
+    try {
+      const content = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `${script.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.scribbler`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+
+      toast({ title: 'Export Successful', description: 'Your project has been downloaded.' });
+    } catch (error) {
+      console.error("Error generating zip file:", error);
+      toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not generate the project file.' });
+    }
+  };
+
 
   const UserMenu = () => {
     if (!user) {
@@ -274,6 +334,11 @@ export default function AppHeader({ setView }: AppHeaderProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+             <DropdownMenuItem onClick={handleExport}>
+                <FileJson className="h-4 w-4 mr-2" />
+                Export as .scribbler
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem>
                 <GoogleDocIcon className="h-4 w-4 mr-2" />
                 Export to Google Docs
