@@ -89,16 +89,14 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
 
   
   useEffect(() => {
+    // This effect's job is to sync the firestoreScript data to our local state.
+    // It is the single source of truth from the database.
     if (firestoreScript) {
         setLocalScript(firestoreScript);
-        const currentContentFromLines = lines.map(line => line.text).join('\n');
-        if (firestoreScript.content && firestoreScript.content !== currentContentFromLines) { 
-            const parsed = parseContentToLines(firestoreScript.content);
-            setLocalLines(parsed);
-        } else if (lines.length === 0 && firestoreScript.content) {
-             const parsed = parseContentToLines(firestoreScript.content);
-            setLocalLines(parsed);
-        }
+        // Always re-parse the content from Firestore when the document changes.
+        // This ensures that on script switch or import, we get the new content.
+        const parsed = parseContentToLines(firestoreScript.content || '');
+        setLocalLines(parsed);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firestoreScript]);
@@ -115,13 +113,16 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
 
 
   useEffect(() => {
-    if (debouncedLines.length > 0) {
-      const newContent = debouncedLines.map(line => line.text.replace(/<br>/g, '')).join('\n');
-      if (firestoreScript && newContent !== firestoreScript.content) {
-        updateFirestore('content', newContent);
-      }
+    // This effect's job is to save the user's edits back to Firestore.
+    // It only runs when the user-edited `debouncedLines` change.
+    const newContent = debouncedLines.map(line => line.text.replace(/<br>/g, '')).join('\n');
+    
+    // Only update if there are lines to save and the content is different
+    // from what we know is in the database.
+    if (debouncedLines.length > 0 && localScript && newContent !== localScript.content) {
+      updateFirestore('content', newContent);
     }
-  }, [debouncedLines, firestoreScript, updateFirestore]);
+  }, [debouncedLines, localScript, updateFirestore]);
 
   const setLines = useCallback((linesOrContent: ScriptLine[] | string | ((prev: ScriptLine[]) => ScriptLine[])) => {
     if (typeof linesOrContent === 'string') {
