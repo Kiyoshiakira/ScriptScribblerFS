@@ -1,3 +1,4 @@
+
 import JSZip from 'jszip';
 import type { ScriptLine, ScriptElement } from '@/components/script-editor';
 
@@ -87,7 +88,7 @@ export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScri
   scenesFromStructure.forEach((sceneContainer: any) => {
     if (sceneContainer.scene) {
       sceneCounter++;
-      let sceneTextContent = '';
+      const sceneParts: string[] = [];
       const sceneElements = getAsArray(sceneContainer.scene.elements);
       const heading = sceneContainer.scene.heading;
       let sceneSetting = 'Untitled Scene';
@@ -97,7 +98,7 @@ export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScri
         sceneSetting = `${heading.locationType || 'INT.'} ${heading.location} - ${heading.moment}`;
         const sceneHeadingText = sceneSetting.toUpperCase();
         scriptLines.push({ id: `line-${lineCounter++}`, type: 'scene-heading', text: sceneHeadingText });
-        sceneTextContent += sceneHeadingText + '\n\n';
+        sceneParts.push(sceneHeadingText);
       }
       
       // Add Scene Elements
@@ -111,37 +112,33 @@ export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScri
             switch(element.type) {
                 case 'Action':
                     type = 'action';
-                    sceneTextContent += text + '\n\n';
                     break;
                 case 'Character':
                     type = 'character';
                     text = text.toUpperCase();
-                    sceneTextContent += text + '\n';
                     break;
                 case 'Parenthetical':
                      type = 'parenthetical';
                      text = `(${text})`;
-                     sceneTextContent += text + '\n';
                     break;
                 case 'Dialogue':
                     type = 'dialogue';
-                    sceneTextContent += text + '\n\n';
                     break;
                 case 'Transition':
                     type = 'transition';
                     text = text.toUpperCase();
-                    sceneTextContent += text + '\n\n';
                     break;
                 default:
                     // Default to action if type is unknown
                     type = 'action';
-                    sceneTextContent += text + '\n\n';
                     break;
             }
              scriptLines.push({ id: `line-${lineCounter++}`, type, text });
+             sceneParts.push(text);
         });
       }
 
+      const sceneTextContent = sceneParts.join('\n');
       const wordCount = sceneTextContent.trim().split(/\s+/).filter(Boolean).length;
       let estimatedTime = isNaN(wordCount) || wordCount === 0 ? 0 : Math.round((wordCount / 160) * 10) / 10;
       
@@ -175,20 +172,21 @@ export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScri
 
   // 3. Parse Notes
   const notes: ParsedNote[] = [];
-  const notesList = getAsArray(jsonObj.screenplay?.notes?.['#data']);
+  const notesList = getAsArray(structure.notes);
   
   if (notesList) {
-    notesList.forEach((note: any) => {
-      if(note.type === 'TextNoteType' && note.content){
-         const content = parseQuillDelta(note.content);
-         if (content) {
-            notes.push({
-                title: note.title || 'Untitled Note',
-                content: content,
-                category: 'General', 
-            });
-         }
-      }
+    notesList.forEach((noteContainer: any) => {
+        const note = noteContainer.note;
+        if(note && note.title){
+            const content = parseQuillDelta(note.text);
+            if (content) {
+                notes.push({
+                    title: note.title,
+                    content: content,
+                    category: 'General', // Scrite doesn't have categories, so default
+                });
+            }
+        }
     });
   }
   
@@ -201,3 +199,4 @@ export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScri
     scenes,
   };
 };
+
