@@ -106,18 +106,7 @@ const proofreadScriptTool = ai.defineTool(
     }
 );
 
-
-const aiAgentOrchestratorFlow = ai.defineFlow(
-  {
-    name: 'aiAgentOrchestratorFlow',
-    inputSchema: AiAgentOrchestratorInputSchema,
-    outputSchema: AiAgentOrchestratorOutputSchema,
-  },
-  async (input) => {
-    // First, generate a response from the model.
-    const llmResponse = await ai.generate({
-      model: 'googleai/gemini-1.5-flash-latest',
-      prompt: `You are an expert AI assistant for a screenwriting application.
+const orchestratorPrompt = `You are an expert AI assistant for a screenwriting application.
 Your goal is to help the user modify their script and other project elements.
 
 Analyze the user's request and the current script content.
@@ -134,7 +123,20 @@ Analyze the user's request and the current script content.
 ---
 {{{script}}}
 ---
-`,
+`;
+
+
+const aiAgentOrchestratorFlow = ai.defineFlow(
+  {
+    name: 'aiAgentOrchestratorFlow',
+    inputSchema: AiAgentOrchestratorInputSchema,
+    outputSchema: AiAgentOrchestratorOutputSchema,
+  },
+  async (input) => {
+    // First, generate a response from the model.
+    let llmResponse = await ai.generate({
+      model: 'googleai/gemini-1.5-flash-latest',
+      prompt: orchestratorPrompt,
       input,
       tools: [generateCharacterTool, proofreadScriptTool],
       output: {
@@ -159,6 +161,7 @@ Analyze the user's request and the current script content.
 
     // Check if the model requested any tools to be called.
     if (llmResponse.toolRequests.length > 0) {
+      const toolResponses = [];
        for (const toolRequest of llmResponse.toolRequests) {
          if (toolRequest.name === 'generateCharacter') {
            const characterData = await toolRequest.run();
@@ -166,7 +169,7 @@ Analyze the user's request and the current script content.
              type: 'character',
              data: characterData,
            };
-           break;
+           toolResponses.push({tool: 'generateCharacter', result: characterData});
          }
          if (toolRequest.name === 'proofreadScript') {
            const proofreadData = await toolRequest.run();
@@ -174,9 +177,38 @@ Analyze the user's request and the current script content.
              type: 'proofread',
              data: proofreadData,
            };
-           break;
+           toolResponses.push({tool: 'proofreadScript', result: proofreadData});
          }
        }
+        
+       // If tools were called, send the results back to the model for a final response.
+       llmResponse = await ai.generate({
+          model: 'googleai/gemini-1.5-flash-latest',
+          prompt: orchestratorPrompt,
+          input,
+          tools: [generateCharacterTool, proofreadScriptTool],
+          history: [
+            ...llmResponse.history,
+            {role: 'user', content: [{toolRequest: llmResponse.toolRequests[0]}]}, // Simplified for one tool call
+            {role: 'model', content: [{toolResponse: { name: llmResponse.toolRequests[0].name, output: toolResult.data }}]},
+          ],
+          output: {
+            format: 'json',
+            schema: z.object({
+              response: z
+                .string()
+                .describe(
+                  "The AI's friendly, conversational response to the user, summarizing the results of the tool call."
+                ),
+              modifiedScript: z
+                .string()
+                .optional()
+                .describe(
+                  "This should be omitted when summarizing a tool call."
+                ),
+            }),
+          },
+       });
     }
     
     const output = llmResponse.output;
