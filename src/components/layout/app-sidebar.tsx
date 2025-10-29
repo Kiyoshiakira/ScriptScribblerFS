@@ -8,7 +8,8 @@ import {
   SidebarMenuItem,
   SidebarFooter,
   SidebarSeparator,
-  useSidebar
+  useSidebar,
+  SidebarContent
 } from '@/components/ui/sidebar';
 import {
   Settings,
@@ -19,7 +20,6 @@ import {
   CaseSensitive,
   Library,
   Clock,
-  Sparkles,
   Pencil,
 } from 'lucide-react';
 import type { View } from '@/app/page';
@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { useScript } from '@/context/script-context';
 import { Skeleton } from '../ui/skeleton';
 import { LoglineDialog } from '../logline-dialog';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface AppSidebarProps {
   activeView: View;
@@ -65,7 +66,7 @@ export default function AppSidebar({
   estimatedMinutes,
 }: AppSidebarProps) {
   const { state: sidebarState } = useSidebar();
-  const { script, setScriptLogline, isScriptLoading } = useScript();
+  const { script, isScriptLoading } = useScript();
   const [loglineDialogOpen, setLoglineDialogOpen] = useState(false);
   
   const formatElementName = (name: string | null) => {
@@ -104,15 +105,17 @@ export default function AppSidebar({
          <div className="text-xs text-sidebar-foreground/70 px-2 font-medium [&[data-collapsed=true]]:text-center [&[data-collapsed=true]]:px-0" data-collapsed={sidebarState === 'collapsed'}>
             {sidebarState === 'collapsed' ? 'Log' : 'Logline'}
         </div>
-        <div className='px-2 text-sm text-sidebar-foreground/90'>
-             {isScriptLoading ? (
-                <Skeleton className="h-10 w-full" />
-             ) : (
-                <p className={cn("text-xs leading-normal", !script?.logline && "italic text-sidebar-foreground/50")}>
-                    {script?.logline || 'No logline yet. Generate one with AI!'}
-                </p>
-             )}
-        </div>
+         <ScrollArea className="h-24 px-2">
+            <div className='text-sm text-sidebar-foreground/90'>
+                {isScriptLoading ? (
+                    <Skeleton className="h-10 w-full" />
+                ) : (
+                    <p className={cn("text-xs leading-normal", !script?.logline && "italic text-sidebar-foreground/50")}>
+                        {script?.logline || 'No logline yet. Generate one with AI!'}
+                    </p>
+                )}
+            </div>
+        </ScrollArea>
         <div className='px-2'>
             <Button size='sm' variant='outline' className='w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-primary/20' onClick={() => setLoglineDialogOpen(true)}>
                 <Pencil className='w-3 h-3 mr-2'/>
@@ -131,61 +134,64 @@ export default function AppSidebar({
             <h1 className="text-xl font-bold font-headline">ScriptScribbler</h1>
         </div>
       </SidebarHeader>
-      <SidebarMenu className="flex-1 overflow-y-auto p-2">
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            onClick={() => setActiveView('my-scripts')}
-            isActive={activeView === 'my-scripts'}
-            tooltip="My Scripts"
-          >
-            <Library />
-            <span>My Scripts</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarSeparator />
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            onClick={() => setActiveView('editor')}
-            isActive={activeView === 'editor'}
-            tooltip="Editor"
-          >
-            <BookText />
-            <span>Editor</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            onClick={() => setActiveView('scenes')}
-            isActive={activeView === 'scenes'}
-            tooltip="Scenes"
-          >
-            <Clapperboard />
-            <span>Scenes</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            onClick={() => setActiveView('characters')}
-            isActive={activeView === 'characters'}
-            tooltip="Characters"
-          >
-            <Users />
-            <span>Characters</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            onClick={() => setActiveView('notes')}
-            isActive={activeView === 'notes'}
-            tooltip="Notes"
-          >
-            <StickyNote />
-            <span>Notes</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
-      <SidebarFooter>
+      <SidebarContent>
+        <SidebarMenu className="flex-1 overflow-y-auto p-2">
+            <SidebarMenuItem>
+            <SidebarMenuButton
+                onClick={() => setActiveView('my-scripts')}
+                isActive={activeView === 'my-scripts'}
+                tooltip="My Scripts"
+            >
+                <Library />
+                <span>My Scripts</span>
+            </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarSeparator />
+            <SidebarMenuItem>
+            <SidebarMenuButton
+                onClick={() => setActiveView('editor')}
+                isActive={activeView === 'editor'}
+                tooltip="Editor"
+            >
+                <BookText />
+                <span>Editor</span>
+            </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+            <SidebarMenuButton
+                onClick={() => setActiveView('scenes')}
+                isActive={activeView === 'scenes'}
+                tooltip="Scenes"
+            >
+                <Clapperboard />
+                <span>Scenes</span>
+            </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+            <SidebarMenuButton
+                onClick={() => setActiveView('characters')}
+                isActive={activeView === 'characters'}
+                tooltip="Characters"
+            >
+                <Users />
+                <span>Characters</span>
+            </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+            <SidebarMenuButton
+                onClick={() => setActiveView('notes')}
+                isActive={activeView === 'notes'}
+                tooltip="Notes"
+            >
+                <StickyNote />
+                <span>Notes</span>
+            </SidebarMenuButton>
+            </SidebarMenuItem>
+        </SidebarMenu>
         <ScriptInfo />
+      </SidebarContent>
+
+      <SidebarFooter>
         <SidebarMenu className="p-2">
           <SidebarMenuItem>
             <SidebarMenuButton tooltip="Settings">
