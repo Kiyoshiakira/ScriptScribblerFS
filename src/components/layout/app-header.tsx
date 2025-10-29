@@ -130,8 +130,7 @@ export default function AppHeader({ activeView, setView }: { activeView: View, s
           title: 'Import Successful',
           description: `"${projectData.title}" has been added to your scripts.`,
         });
-        setCurrentScriptId(newScriptRef.id);
-        setView('dashboard');
+        setView('profile');
 
     } catch (error) {
         console.error('Scribbler import failed:', error);
@@ -204,8 +203,7 @@ export default function AppHeader({ activeView, setView }: { activeView: View, s
           title: 'Import Successful',
           description: `"${scriptTitle}" has been added to your scripts.`,
         });
-        setCurrentScriptId(newScriptRef.id);
-        setView('dashboard');
+        setView('profile');
 
       } catch (error) {
          console.error('--- DEBUG: Import Parsing Failed ---', error);
