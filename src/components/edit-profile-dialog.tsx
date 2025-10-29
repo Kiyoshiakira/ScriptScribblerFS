@@ -65,15 +65,15 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
     setIsSaving(true);
     
     try {
-      // Update core Firebase Auth profile with things that have limits (like displayName)
-      // We only update if it has changed to avoid unnecessary API calls.
+      // Update core Firebase Auth profile only if displayName has changed.
+      // This avoids saving large data URIs to the auth profile.
       if (auth.currentUser.displayName !== displayName) {
          await updateProfile(auth.currentUser, {
           displayName,
         });
       }
      
-      // Save large data (like data-uri images) and other metadata to Firestore
+      // Save large data (like data-uri images) and other metadata to Firestore.
       const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
       const profileData = { 
         displayName,
@@ -84,6 +84,7 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
         updatedAt: serverTimestamp() 
       };
 
+      // Use setDoc with merge to create or update the user's profile document.
       await setDoc(userDocRef, profileData, { merge: true });
 
       toast({
