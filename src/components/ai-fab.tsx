@@ -30,6 +30,7 @@ import AiAssistant from './ai-assistant';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
+import CollabAssistant from './collab-assistant';
 
 
 interface AnalysisItem {
@@ -44,7 +45,7 @@ export type AiFabAction =
   | 'openChat'
   | 'custom';
 
-type AiPopoverView = 'menu' | 'chat' | 'suggestions' | 'analysis' | 'proofread';
+type AiPopoverView = 'menu' | 'chat' | 'suggestions' | 'analysis' | 'proofread' | 'collab';
 type BubbleMode = 'ai' | 'collab';
 
 
@@ -114,6 +115,8 @@ export default function AiFab({
   const [suggestionsDialogOpen, setSuggestionsDialogOpen] = useState(false);
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
   const [proofreadDialogOpen, setProofreadDialogOpen] = useState(false);
+  const [collabDialogOpen, setCollabDialogOpen] = useState(false);
+
 
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
@@ -262,7 +265,7 @@ export default function AiFab({
     setProofreadSuggestions(proofreadSuggestions.filter(s => s !== suggestion));
   };
 
-  // --- New Handlers for Mode Switching ---
+  // --- Handlers for Mode Switching ---
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     setShowSwitchConfirm(true);
@@ -281,10 +284,24 @@ export default function AiFab({
   };
   
   const handleSwitchMode = () => {
-    setBubbleMode(prev => prev === 'ai' ? 'collab' : 'ai');
+    setBubbleMode(prev => {
+        const newMode = prev === 'ai' ? 'collab' : 'ai';
+        if (newMode === 'collab') {
+            if (isMobile) {
+                setCollabDialogOpen(true);
+                setPopoverOpen(false);
+            } else {
+                setActiveView('collab');
+                setPopoverOpen(true);
+            }
+        } else {
+            setActiveView('menu');
+        }
+        return newMode;
+    });
     setShowSwitchConfirm(false);
-    setPopoverOpen(false); // Close any open popover on switch
-  }
+  };
+  
 
   const actionComponents = {
     suggestImprovements: (
@@ -355,25 +372,6 @@ export default function AiFab({
   const renderContent = () => {
     switch(activeView) {
         case 'menu':
-             if (bubbleMode === 'collab') {
-                return (
-                    <div className="grid gap-2 p-2">
-                        <Button
-                            key="switch-back"
-                            variant="ghost"
-                            className="justify-start"
-                            onClick={handleSwitchMode}
-                        >
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            <span>Switch to AI Bubble</span>
-                        </Button>
-                        <Button key="collab-settings" variant="ghost" className="justify-start">
-                            <Settings className="mr-2 h-4 w-4" />
-                            <span>Collab Settings</span>
-                        </Button>
-                    </div>
-                )
-             }
             return (
                 <div className="grid gap-2 p-2">
                     {actions.map(action => actionComponents[action as keyof typeof actionComponents])}
@@ -507,6 +505,15 @@ export default function AiFab({
                     </ScrollArea>
                 </div>
             );
+        case 'collab':
+             return (
+                <div className='flex flex-col h-full'>
+                    {renderHeader('Collaboration Hub', <Users className="w-4 h-4 text-primary" />)}
+                    <div className='p-4 flex-1 min-h-0'>
+                        <CollabAssistant />
+                    </div>
+                </div>
+            );
         default:
             return null;
     }
@@ -520,6 +527,19 @@ export default function AiFab({
           <Button
             size="icon"
             className="rounded-full w-14 h-14 shadow-lg fixed bottom-8 right-8 z-50"
+            onClick={() => {
+                if (bubbleMode === 'collab') {
+                    if (isMobile) {
+                        setCollabDialogOpen(true);
+                    } else {
+                        setActiveView('collab');
+                        setPopoverOpen(true);
+                    }
+                } else {
+                    setActiveView('menu');
+                    setPopoverOpen(true);
+                }
+            }}
             onContextMenu={handleContextMenu}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
@@ -530,7 +550,7 @@ export default function AiFab({
         <PopoverContent 
             className={cn(
                 "mb-2 p-0",
-                activeView === 'menu' && "w-64",
+                activeView === 'menu' && bubbleMode === 'ai' && "w-64",
                 activeView !== 'menu' && "w-[28rem] h-[32rem] flex flex-col"
             )} 
             side="top" 
@@ -714,6 +734,24 @@ export default function AiFab({
           </DialogHeader>
           <div className="flex-1 min-h-0">
             <AiAssistant openProofreadDialog={openProofreadDialogWithSuggestions} />
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+       {/* Collab Dialog */}
+      <Dialog open={collabDialogOpen} onOpenChange={setCollabDialogOpen}>
+        <DialogContent className="sm:max-w-2xl h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="font-headline flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Collaboration Hub
+            </DialogTitle>
+            <DialogDescription>
+              Chat with collaborators, see recent changes, and manage your team.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0">
+            <CollabAssistant />
           </div>
         </DialogContent>
       </Dialog>

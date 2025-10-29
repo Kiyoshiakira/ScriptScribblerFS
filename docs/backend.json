@@ -28,11 +28,16 @@
           "description": "A short bio about the user."
         },
         "friends": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            },
-            "description": "A list of user IDs that are friends with this user."
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of user IDs that are friends with this user."
+        },
+        "coverImageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for the user's profile cover image."
         }
       },
       "required": [
@@ -57,8 +62,8 @@
           "description": "Title of the script."
         },
         "logline": {
-            "type": "string",
-            "description": "A one-sentence summary of the script."
+          "type": "string",
+          "description": "A one-sentence summary of the script."
         },
         "content": {
           "type": "string",
@@ -94,13 +99,29 @@
       "type": "object",
       "description": "Represents a note associated with a script.",
       "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
-        "content": { "type": "string" },
-        "category": { "type": "string" },
-        "imageUrl": { "type": "string", "format": "uri" }
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri"
+        }
       },
-      "required": ["id", "title", "content", "category"]
+      "required": [
+        "id",
+        "title",
+        "content",
+        "category"
+      ]
     },
     "Character": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -121,24 +142,24 @@
           "description": "A short, one-line description of the character."
         },
         "profile": {
-            "type": "string",
-            "description": "A detailed profile of the character, including backstory, personality, motivations, etc."
+          "type": "string",
+          "description": "A detailed profile of the character, including backstory, personality, motivations, etc."
         },
         "imageUrl": {
-            "type": "string",
-            "description": "URL for the character's portrait image."
+          "type": "string",
+          "description": "URL for the character's portrait image."
         },
         "scenes": {
-            "type": "number",
-            "description": "The number of scenes the character appears in."
+          "type": "number",
+          "description": "The number of scenes the character appears in."
         },
         "createdAt": {
-            "type": "string",
-            "format": "date-time"
+          "type": "string",
+          "format": "date-time"
         },
         "updatedAt": {
-            "type": "string",
-            "format": "date-time"
+          "type": "string",
+          "format": "date-time"
         }
       },
       "required": [
@@ -154,13 +175,59 @@
       "type": "object",
       "description": "Represents a single scene in a screenplay.",
       "properties": {
-        "id": { "type": "string" },
-        "sceneNumber": { "type": "number" },
-        "setting": { "type": "string" },
-        "description": { "type": "string" },
-        "time": { "type": "number", "description": "Estimated time in minutes." }
+        "id": {
+          "type": "string"
+        },
+        "sceneNumber": {
+          "type": "number"
+        },
+        "setting": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "time": {
+          "type": "number",
+          "description": "Estimated time in minutes."
+        }
       },
-      "required": ["id", "sceneNumber", "setting", "description", "time"]
+      "required": [
+        "id",
+        "sceneNumber",
+        "setting",
+        "description",
+        "time"
+      ]
+    },
+    "Comment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Comment",
+      "type": "object",
+      "description": "Represents a chat message within a script.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "displayName", "text", "timestamp"]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a notification of a collaborator's action.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "action", "timestamp"]
     }
   },
   "auth": {
@@ -185,9 +252,11 @@
       {
         "path": "/users/{userId}/scripts/{scriptId}",
         "definition": {
-            "entityName": "Script",
-            "schema": { "$ref": "#/entities/Script" },
-            "description": "Stores screenplay documents owned by a user."
+          "entityName": "Script",
+          "schema": {
+            "$ref": "#/entities/Script"
+          },
+          "description": "Stores screenplay documents owned by a user."
         }
       },
       {
@@ -210,7 +279,7 @@
           "description": "Stores notes for a specific script."
         }
       },
-       {
+      {
         "path": "/users/{userId}/scripts/{scriptId}/scenes/{sceneId}",
         "definition": {
           "entityName": "Scene",
@@ -219,8 +288,24 @@
           },
           "description": "Stores scenes for a specific script."
         }
+      },
+      {
+        "path": "/users/{userId}/scripts/{scriptId}/comments/{commentId}",
+        "definition": {
+          "entityName": "Comment",
+          "schema": { "$ref": "#/entities/Comment" },
+          "description": "Stores chat comments for a specific script."
+        }
+      },
+       {
+        "path": "/users/{userId}/scripts/{scriptId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": { "$ref": "#/entities/Notification" },
+          "description": "Stores activity notifications for a specific script."
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to be script-centric. Each user has a collection of scripts. All related data, such as characters, notes, and scenes are stored in subcollections under a specific script document. This ensures data is well-organized and allows for clear, path-based security rules where a user can only access their own scripts and the data within them."
+    "reasoning": "The Firestore structure is designed to be script-centric. Each user has a collection of scripts. All related data, such as characters, notes, scenes, comments, and notifications are stored in subcollections under a specific script document. This ensures data is well-organized and allows for clear, path-based security rules where a user can only access their own scripts and the data within them."
   }
 }
