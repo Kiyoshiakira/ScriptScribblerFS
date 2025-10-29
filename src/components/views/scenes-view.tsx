@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clapperboard, Clock, GripVertical, Plus, MoreHorizontal } from 'lucide-react';
+import { Clapperboard, Clock, GripVertical, Plus, MoreHorizontal, Lightbulb, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,12 @@ import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebas
 import { useCurrentScript } from '@/context/current-script-context';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
+import AiFab from '../ai-fab';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
+import { ScrollArea } from '../ui/scroll-area';
+import { useScript } from '@/context/script-context';
+import { getAiSuggestions } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
 
 interface Scene {
   id: string;
@@ -27,6 +33,12 @@ export default function ScenesView() {
   const { user } = useUser();
   const firestore = useFirestore();
   const { currentScriptId } = useCurrentScript();
+  const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestionsDialogOpen, setSuggestionsDialogOpen] = useState(false);
+  const { lines } = useScript();
+  const { toast } = useToast();
+  const scriptContent = lines.map(l => l.text).join('\n');
 
   const scenesCollection = useMemoFirebase(
     () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'scenes') : null),
@@ -39,6 +51,26 @@ export default function ScenesView() {
   );
 
   const { data: scenes, isLoading: areScenesLoading } = useCollection<Scene>(scenesQuery);
+
+  const handleGetSuggestions = async () => {
+    setIsSuggestionsLoading(true);
+    setSuggestions([]);
+    setSuggestionsDialogOpen(true);
+    const result = await getAiSuggestions({ screenplay: scriptContent });
+    setIsSuggestionsLoading(false);
+
+    if (result.error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: result.error,
+      });
+      setSuggestionsDialogOpen(false);
+    } else if (result.data) {
+      setSuggestions(result.data.suggestions);
+    }
+  };
+
 
   if (areScenesLoading) {
     return (
@@ -123,6 +155,54 @@ export default function ScenesView() {
          </div>
       )}
       </div>
+
+       <AiFab
+        actions={[]}
+        customActions={[{
+            label: 'Suggest Scene Improvements',
+            icon: <Lightbulb className="mr-2 h-4 w-4" />,
+            onClick: handleGetSuggestions,
+            isLoading: isSuggestionsLoading,
+        }]}
+       />
+
+        {/* Suggestions Dialog */}
+      <Dialog open={suggestionsDialogOpen} onOpenChange={setSuggestionsDialogOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="font-headline flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-primary" /> AI Suggestions
+            </DialogTitle>
+            <DialogDescription>
+              Here are some quick suggestions to improve your scenes.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] -mx-6 px-6">
+             <div className="space-y-4 py-4">
+                {isSuggestionsLoading ? (
+                <div className="space-y-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-4/5" />
+                </div>
+                ) : suggestions.length > 0 ? (
+                <ul className="space-y-3">
+                {suggestions.map((suggestion, index) => (
+                    <li key={index} className="text-sm flex gap-3 p-3 bg-muted/50 rounded-md">
+                    <Lightbulb className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                    <span>{suggestion}</span>
+                    </li>
+                ))}
+                </ul>
+                ) : (
+                <div className="text-center text-sm text-muted-foreground py-8">
+                    No suggestions available at the moment.
+                </div>
+                )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Upload, Image as ImageIcon, Loader2, StickyNote } from 'lucide-react';
+import { Plus, Upload, Image as ImageIcon, Loader2, StickyNote, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -31,6 +31,8 @@ import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { useCurrentScript } from '@/context/current-script-context';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
+import AiFab from '../ai-fab';
+import { aiGenerateNote } from '@/app/actions';
 
 
 const NOTE_CATEGORIES = {
@@ -53,7 +55,7 @@ export interface Note {
   imageUrl?: string;
 }
 
-function NoteDialog({ note, onSave, trigger }: { note?: Note | null, onSave: (note: Note) => void, trigger: React.ReactNode }) {
+function NoteDialog({ note, onSave, trigger, isGenerating, generatedNote }: { note?: Note | null, onSave: (note: Note) => void, trigger: React.ReactNode, isGenerating?: boolean, generatedNote?: Note | null }) {
     const [open, setOpen] = useState(false);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -72,6 +74,25 @@ function NoteDialog({ note, onSave, trigger }: { note?: Note | null, onSave: (no
             setImageUrl(note?.imageUrl || '');
         }
     }, [open, note]);
+
+     React.useEffect(() => {
+        if (isGenerating) {
+            setOpen(true);
+            setTitle('');
+            setContent('');
+            setCategory('General');
+            setImageUrl('');
+        }
+    }, [isGenerating]);
+    
+    React.useEffect(() => {
+        if(generatedNote) {
+            setTitle(generatedNote.title);
+            setContent(generatedNote.content);
+            setCategory(generatedNote.category);
+        }
+    }, [generatedNote]);
+
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -114,7 +135,7 @@ function NoteDialog({ note, onSave, trigger }: { note?: Note | null, onSave: (no
                 <div className="grid gap-4 py-4">
                     <div className="space-y-2">
                         <Label htmlFor="title">Title</Label>
-                        <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Note Title" />
+                        {isGenerating ? <Skeleton className='h-10 w-full' /> : <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Note Title" />}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="category">Category</Label>
@@ -131,7 +152,7 @@ function NoteDialog({ note, onSave, trigger }: { note?: Note | null, onSave: (no
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="content">Content</Label>
-                        <Textarea id="content" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Jot down your thoughts..." />
+                        {isGenerating ? <Skeleton className='h-24 w-full' /> : <Textarea id="content" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Jot down your thoughts..." />}
                     </div>
                     <div className="space-y-2">
                         <Label>Image</Label>
@@ -166,6 +187,8 @@ export default function NotesView() {
   const firestore = useFirestore();
   const { currentScriptId } = useCurrentScript();
   const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedNote, setGeneratedNote] = useState<Note | null>(null);
 
   const notesCollection = useMemoFirebase(
     () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'notes') : null),
@@ -198,6 +221,18 @@ export default function NotesView() {
             title: 'Save Error',
             description: error.message || 'Could not save the note.',
         });
+    }
+  };
+
+  const handleGenerateNote = async () => {
+    setIsGenerating(true);
+    setGeneratedNote(null);
+    const result = await aiGenerateNote({ prompt: 'A surprising plot twist idea.' });
+    setIsGenerating(false);
+    if(result.error || !result.data) {
+        toast({ variant: 'destructive', title: 'Error', description: result.error || 'Could not generate a note.' });
+    } else {
+        setGeneratedNote(result.data);
     }
   };
   
@@ -257,6 +292,22 @@ export default function NotesView() {
             <p className="mt-1 text-sm">Create your first note to start organizing your ideas.</p>
          </div>
       )}
+      <AiFab
+        actions={[]}
+        customActions={[{
+            label: 'Generate Note Idea',
+            icon: <Sparkles className="mr-2 h-4 w-4" />,
+            onClick: handleGenerateNote,
+            isLoading: isGenerating,
+        }]}
+       />
+        <NoteDialog
+            onSave={handleSaveNote}
+            note={null}
+            isGenerating={isGenerating}
+            generatedNote={generatedNote}
+            trigger={<></>}
+        />
     </div>
   );
 }

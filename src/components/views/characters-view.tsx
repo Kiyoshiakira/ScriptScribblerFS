@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Sparkles, User, FileText, Upload, Loader2 } from 'lucide-react';
+import { Plus, Sparkles, User, FileText, Upload, Loader2, Users } from 'lucide-react';
 import Image from 'next/image';
 import {
   Dialog,
@@ -23,6 +23,7 @@ import React from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { useCurrentScript } from '@/context/current-script-context';
+import AiFab from '../ai-fab';
 
 interface Character {
   id?: string;
@@ -35,16 +36,15 @@ interface Character {
   updatedAt?: any;
 }
 
-function CharacterDialog({ character, onSave, trigger }: { character?: Character | null, onSave: (char: Character, isNew: boolean) => void, trigger: React.ReactNode }) {
+function CharacterDialog({ character, onSave, onGenerate, trigger, isGenerating }: { character?: Character | null, onSave: (char: Character, isNew: boolean) => void, onGenerate: (desc: string) => Promise<Character | null>, trigger: React.ReactNode, isGenerating?: boolean }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [profile, setProfile] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = React.useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -54,42 +54,29 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
       setImageUrl(character?.imageUrl || '');
     }
   }, [open, character]);
+  
+  useEffect(() => {
+      if (isGenerating !== undefined) {
+          setOpen(isGenerating);
+      }
+  }, [isGenerating]);
 
   const handleGenerate = async () => {
     if (!description) {
-      toast({
-        variant: 'destructive',
-        title: 'Description needed',
-        description: 'Please enter a brief character description to generate a profile.',
-      });
-      return;
+        // toast is handled by parent
+        onGenerate('');
+        return;
     }
-    setIsGenerating(true);
+    setIsAiGenerating(true);
     setProfile('');
     setName('');
+    const profileData = await onGenerate(description);
+    setIsAiGenerating(false);
 
-    const result = await getAiCharacterProfile({ characterDescription: description });
-
-    setIsGenerating(false);
-
-    if (result.error || !result.data) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: result.error || 'Could not generate a structured character profile.',
-      });
-    } else {
-      const profileData = result.data;
-      if (profileData.name && profileData.profile) {
+    if (profileData) {
         setName(profileData.name);
-        setProfile(profileData.profile);
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'AI Response Error',
-          description: 'The AI did not return a valid name and profile. Please try again.',
-        });
-      }
+        setProfile(profileData.profile || '');
+        setDescription(profileData.description || '');
     }
   };
 
@@ -172,9 +159,9 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
               />
             </div>
             <div className='flex justify-end items-center'>
-              <Button size="sm" variant="outline" onClick={handleGenerate} disabled={isGenerating}>
+              <Button size="sm" variant="outline" onClick={handleGenerate} disabled={isAiGenerating || isGenerating}>
                 <Sparkles className="mr-2 h-4 w-4" />
-                {isGenerating ? 'Generating...' : 'Generate with AI'}
+                {isAiGenerating || isGenerating ? 'Generating...' : 'Generate with AI'}
               </Button>
             </div>
           </div>
@@ -182,7 +169,7 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
             <div className='flex justify-between items-center'>
               <Label htmlFor="name">Character Name</Label>
             </div>
-            {isGenerating ? (
+            {isAiGenerating || isGenerating ? (
               <Skeleton className="h-10 w-2/3" />
             ) : (
               <Input id="name" placeholder="Character's Name" value={name} onChange={e => setName(e.target.value)} />
@@ -190,7 +177,7 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
           </div>
           <div className="col-span-4 space-y-2">
             <Label htmlFor="profile">Character Profile</Label>
-            {isGenerating ? (
+            {isAiGenerating || isGenerating ? (
               <div className='space-y-2 pt-2'>
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-full" />
@@ -225,6 +212,8 @@ export default function CharactersView() {
   const firestore = useFirestore();
   const { currentScriptId } = useCurrentScript();
   const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+
 
   const charactersCollection = useMemoFirebase(
     () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'characters') : null),
@@ -254,6 +243,49 @@ export default function CharactersView() {
       });
     }
   };
+  
+    const handleGenerateCharacter = async (description: string): Promise<Character | null> => {
+        if (!description) {
+            toast({
+                variant: 'destructive',
+                title: 'Description needed',
+                description: 'Please enter a brief character description to generate a profile.',
+            });
+            return null;
+        }
+        setIsGenerating(true);
+        
+        const result = await getAiCharacterProfile({ characterDescription: description });
+        
+        setIsGenerating(false);
+
+        if (result.error || !result.data) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: result.error || 'Could not generate a structured character profile.',
+            });
+            return null;
+        } else {
+            const profileData = result.data;
+            if (profileData.name && profileData.profile) {
+                return {
+                    name: profileData.name,
+                    profile: profileData.profile,
+                    description: profileData.profile.split('\n')[0],
+                    scenes: 0
+                }
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'AI Response Error',
+                    description: 'The AI did not return a valid name and profile. Please try again.',
+                });
+                return null;
+            }
+        }
+    };
+
 
   if (areCharactersLoading) {
     return (
@@ -288,6 +320,7 @@ export default function CharactersView() {
         <h1 className="text-3xl font-bold font-headline">Characters</h1>
         <CharacterDialog
           onSave={handleSaveCharacter}
+          onGenerate={handleGenerateCharacter}
           character={null}
           trigger={
             <Button>
@@ -305,6 +338,7 @@ export default function CharactersView() {
               key={character.id}
               character={character}
               onSave={handleSaveCharacter}
+              onGenerate={handleGenerateCharacter}
               trigger={
                 <Card className="overflow-hidden shadow-sm hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader className="p-0">
@@ -345,11 +379,27 @@ export default function CharactersView() {
       </div>
       {!areCharactersLoading && characters && characters.length === 0 && (
          <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
-            <User className="mx-auto h-12 w-12" />
+            <Users className="mx-auto h-12 w-12" />
             <h3 className="mt-4 text-lg font-medium">No Characters Yet</h3>
             <p className="mt-1 text-sm">Add a character to get started, or import a script.</p>
          </div>
       )}
+       <AiFab
+        actions={[]}
+        customActions={[{
+            label: 'Generate New Character',
+            icon: <Sparkles className="mr-2 h-4 w-4" />,
+            onClick: () => handleGenerateCharacter('A surprising and complex character'),
+            isLoading: isGenerating,
+        }]}
+       />
+        <CharacterDialog
+          onSave={handleSaveCharacter}
+          onGenerate={handleGenerateCharacter}
+          character={null}
+          isGenerating={isGenerating}
+          trigger={<></>}
+        />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useContext } from 'react';
+import { useState, useContext, ReactNode } from 'react';
 import {
   Sparkles,
   Lightbulb,
@@ -26,7 +26,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ScriptContext } from '@/context/script-context';
+import { ScriptContext, useScript } from '@/context/script-context';
 import { getAiSuggestions, getAiDeepAnalysis, getAiProofreadSuggestions } from '@/app/actions';
 import type { AiDeepAnalysisOutput } from '@/ai/flows/ai-deep-analysis';
 import type { ProofreadSuggestion } from '@/app/page';
@@ -37,6 +37,26 @@ interface AnalysisItem {
     point: string;
     suggestion: string;
 }
+
+export type AiFabAction = 
+    | 'suggestImprovements'
+    | 'deepAnalysis'
+    | 'proofread'
+    | 'openChat'
+    | 'custom';
+
+interface AiFabProps {
+    actions?: AiFabAction[];
+    customActions?: CustomAction[];
+}
+
+interface CustomAction {
+    label: string;
+    icon: ReactNode;
+    onClick: () => void;
+    isLoading?: boolean;
+}
+
 
 const AnalysisSection = ({ title, items, icon }: { title: string, items: AnalysisItem[], icon: React.ReactNode }) => (
     <AccordionItem value={title}>
@@ -60,7 +80,7 @@ const AnalysisSection = ({ title, items, icon }: { title: string, items: Analysi
 );
 
 
-export default function AiFab() {
+export default function AiFab({ actions = ['suggestImprovements', 'deepAnalysis', 'proofread', 'openChat'], customActions = [] }: AiFabProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [suggestionsDialogOpen, setSuggestionsDialogOpen] = useState(false);
@@ -76,7 +96,7 @@ export default function AiFab() {
   const [proofreadSuggestions, setProofreadSuggestions] = useState<ProofreadSuggestion[]>([]);
 
   const { toast } = useToast();
-  const { lines, setLines: setScriptLines } = useContext(ScriptContext);
+  const { lines, setLines: setScriptLines } = useScript();
   const scriptContent = lines.map(l => l.text).join('\n');
 
   const handleGetSuggestions = async () => {
@@ -138,6 +158,9 @@ export default function AiFab() {
         setProofreadDialogOpen(false);
     } else if (result.data) {
         setProofreadSuggestions(result.data.suggestions);
+         if (result.data.suggestions.length === 0) {
+            toast({ title: 'Proofreader', description: 'No suggestions found. Looks good!' });
+        }
     }
   }
 
@@ -147,17 +170,80 @@ export default function AiFab() {
   };
   
   const applySuggestion = (suggestion: ProofreadSuggestion) => {
+    const newContent = scriptContent.replace(suggestion.originalText, suggestion.correctedText);
+    setScriptLines(newContent);
     toast({
-        title: 'Suggestion Copied',
-        description: 'The suggested text has been copied to your clipboard.',
+        title: 'Suggestion Applied',
+        description: 'The script has been updated with the correction.',
     });
-    navigator.clipboard.writeText(suggestion.correctedText);
-    setProofreadSuggestions(proofreadSuggestions.filter(s => s !== suggestion));
+    setProofreadSuggestions(prev => prev.filter(s => s !== suggestion));
   };
 
   const dismissSuggestion = (suggestion: ProofreadSuggestion) => {
     setProofreadSuggestions(proofreadSuggestions.filter(s => s !== suggestion));
   };
+
+  const actionComponents = {
+    suggestImprovements: (
+        <Button
+            key="suggest"
+            variant="ghost"
+            className="justify-start"
+            onClick={handleGetSuggestions}
+            disabled={isSuggestionsLoading}
+        >
+            {isSuggestionsLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+            <Lightbulb className="mr-2 h-4 w-4" />
+            )}
+            <span>Suggest Improvements</span>
+        </Button>
+    ),
+    deepAnalysis: (
+         <Button
+            key="analyze"
+            variant="ghost"
+            className="justify-start"
+            onClick={handleGetAnalysis}
+            disabled={isAnalysisLoading}
+        >
+            {isAnalysisLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+            <Wand2 className="mr-2 h-4 w-4" />
+            )}
+            <span>Deep Analysis</span>
+        </Button>
+    ),
+    proofread: (
+        <Button
+            key="proofread"
+            variant="ghost"
+            className="justify-start"
+            onClick={handleGetProofread}
+            disabled={isProofreading}
+        >
+            {isProofreading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+            <SearchCheck className="mr-2 h-4 w-4" />
+            )}
+            <span>Proofread Script</span>
+        </Button>
+    ),
+    openChat: (
+        <Button
+            key="chat"
+            variant="ghost"
+            className="justify-start"
+            onClick={handleOpenChat}
+            >
+            <MessageSquare className="mr-2 h-4 w-4" />
+            <span>Open AI Chat</span>
+        </Button>
+    )
+  }
 
 
   return (
@@ -173,53 +259,22 @@ export default function AiFab() {
         </PopoverTrigger>
         <PopoverContent className="w-64 p-2 mb-2" side="top" align="end">
           <div className="grid gap-2">
-            <Button
-              variant="ghost"
-              className="justify-start"
-              onClick={handleGetSuggestions}
-              disabled={isSuggestionsLoading}
-            >
-              {isSuggestionsLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Lightbulb className="mr-2 h-4 w-4" />
-              )}
-              <span>Suggest Improvements</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className="justify-start"
-              onClick={handleGetAnalysis}
-              disabled={isAnalysisLoading}
-            >
-              {isAnalysisLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Wand2 className="mr-2 h-4 w-4" />
-              )}
-              <span>Deep Analysis</span>
-            </Button>
-             <Button
-              variant="ghost"
-              className="justify-start"
-              onClick={handleGetProofread}
-              disabled={isProofreading}
-            >
-              {isProofreading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <SearchCheck className="mr-2 h-4 w-4" />
-              )}
-              <span>Proofread Script</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className="justify-start"
-              onClick={handleOpenChat}
-            >
-              <MessageSquare className="mr-2 h-4 w-4" />
-              <span>Open AI Chat</span>
-            </Button>
+            {actions.map(action => actionComponents[action as keyof typeof actionComponents])}
+            {customActions.map((action, index) => (
+                 <Button
+                    key={`custom-${index}`}
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={() => {
+                        action.onClick();
+                        setPopoverOpen(false);
+                    }}
+                    disabled={action.isLoading}
+                >
+                    {action.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : action.icon}
+                    <span>{action.label}</span>
+                </Button>
+            ))}
           </div>
         </PopoverContent>
       </Popover>

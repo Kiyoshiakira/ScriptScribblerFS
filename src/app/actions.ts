@@ -20,6 +20,10 @@ import {
     aiGenerateCharacterProfile,
     type AiGenerateCharacterProfileInput,
 } from '@/ai/flows/ai-generate-character-profile';
+import {
+    aiGenerateNote as aiGenerateNoteFlow,
+    type AiGenerateNoteInput,
+} from '@/ai/flows/ai-generate-note';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { adminApp } from '@/firebase/admin';
 
@@ -56,6 +60,23 @@ export async function getAiCharacterProfile(input: AiGenerateCharacterProfileInp
         return {
         data: null,
         error: `An error occurred while generating the character profile: ${errorMessage}`,
+        };
+    }
+}
+
+export async function aiGenerateNote(input: AiGenerateNoteInput) {
+    if (!process.env.GEMINI_API_KEY) {
+        return { data: null, error: 'GEMINI_API_KEY is not set. Please create a .env.local file and add your key.' };
+    }
+    try {
+        const result = await aiGenerateNoteFlow(input);
+        return { data: result, error: null };
+    } catch (error) {
+        console.error(error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return {
+        data: null,
+        error: `An error occurred while generating the note: ${errorMessage}`,
         };
     }
 }
