@@ -43,7 +43,7 @@ interface Script {
     title: string;
     lastModified: {
         toDate: () => Date;
-    };
+    } | null;
 }
 
 interface MyScriptsViewProps {
@@ -120,7 +120,11 @@ export default function MyScriptsView({ isInitialState = false }: MyScriptsViewP
         )
     }
 
-    const sortedScripts = scripts ? [...scripts].sort((a, b) => b.lastModified.toDate().getTime() - a.lastModified.toDate().getTime()) : [];
+    const sortedScripts = scripts ? [...scripts].sort((a, b) => {
+        const timeA = a.lastModified ? a.lastModified.toDate().getTime() : 0;
+        const timeB = b.lastModified ? b.lastModified.toDate().getTime() : 0;
+        return timeB - timeA;
+    }) : [];
 
     return (
         <div className="space-y-6">
@@ -141,7 +145,7 @@ export default function MyScriptsView({ isInitialState = false }: MyScriptsViewP
                                     <span className="truncate pr-4">{script.title}</span>
                                 </CardTitle>
                                 <CardDescription>
-                                    Last modified: {new Date(script.lastModified.toDate()).toLocaleDateString()}
+                                    Last modified: {script.lastModified ? new Date(script.lastModified.toDate()).toLocaleDateString() : 'Just now'}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="flex-grow" />
