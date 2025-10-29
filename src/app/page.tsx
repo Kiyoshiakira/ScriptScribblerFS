@@ -59,18 +59,9 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
     const { data: scenes } = useCollection<Scene>(scenesCollection);
 
   const renderView = () => {
-    // The profile view is now part of the main app layout
-    if (view === 'profile') {
-      return <MyScriptsView setView={setView} />;
-    }
-
     // These views require a script context
-    if (!currentScriptId) {
-      return <MyScriptsView setView={setView} />;
-    }
-
     return (
-       <ScriptProvider scriptId={currentScriptId}>
+       <ScriptProvider scriptId={currentScriptId!}>
           {
             {
               'dashboard': <DashboardView setView={setView} />,
@@ -84,6 +75,7 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
               'characters': <CharactersView />,
               'notes': <NotesView />,
               'logline': <LoglineView />,
+              'profile': <MyScriptsView setView={setView} />,
             }[view]
           }
        </ScriptProvider>
@@ -116,9 +108,31 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
     </SidebarProvider>
   );
 
-  // If the view is profile, it has its own header/layout needs
-  if (view === 'profile') {
+   return <MainContent />;
+}
+
+function MainApp() {
+  const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
+  const [view, setView] = React.useState<View>('dashboard');
+
+  // While waiting for user/script context, show a full-page loader.
+  if (isCurrentScriptLoading) {
     return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Skeleton className="h-16 w-16 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[250px]" />
+            <Skeleton className="h-4 w-[200px]" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If loading is complete but there is no script ID, show the MyScriptsView
+  if (!currentScriptId) {
+     return (
         <SidebarProvider>
           <div className="flex h-screen bg-background">
               <AppSidebar
@@ -140,37 +154,8 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
         </SidebarProvider>
     );
   }
-
-  // For all other views, render the main layout which may or may not have a script
-   return <MainContent />;
-}
-
-function MainApp() {
-  const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
-  const [view, setView] = React.useState<View>('dashboard');
   
-  React.useEffect(() => {
-    // If loading is done and there's no script, show the profile view to select one.
-    if (!isCurrentScriptLoading && !currentScriptId) {
-      setView('profile');
-    }
-  }, [isCurrentScriptLoading, currentScriptId]);
-
-  // While waiting for user/script context, show a full-page loader.
-  if (isCurrentScriptLoading) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Skeleton className="h-16 w-16 rounded-full" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-[250px]" />
-            <Skeleton className="h-4 w-[200px]" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
+  // If there is a script, render the full app layout
   return <AppLayout view={view} setView={setView} />;
 }
 
@@ -180,14 +165,11 @@ export default function Home() {
   const router = useRouter();
 
   React.useEffect(() => {
-    // This effect now only handles the case where there is no authenticated user.
     if (!isUserLoading && !user) {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
 
-  // If we're still checking for a user, or if there's no user, show a loading screen.
-  // The redirection will happen in the effect above.
   if (isUserLoading || !user) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
@@ -202,6 +184,5 @@ export default function Home() {
     );
   }
 
-  // If a user is present, render the MainApp component which handles script loading and redirection.
   return <MainApp />;
 }
