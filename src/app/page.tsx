@@ -37,7 +37,6 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
   // State lifted from ScriptEditor
   const [wordCount, setWordCount] = React.useState(0);
   const [estimatedMinutes, setEstimatedMinutes] = React.useState(0);
-  const router = useRouter();
   
   // Data fetching for export
     const charactersCollection = useMemoFirebase(
@@ -57,14 +56,6 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
         [firestore, user, currentScriptId]
     );
     const { data: scenes } = useCollection<Scene>(scenesCollection);
-
-  // If there's no active script, redirect to the profile page to select one.
-  React.useEffect(() => {
-    if (!currentScriptId) {
-      router.push('/profile');
-    }
-  }, [currentScriptId, router]);
-
 
   const renderView = () => {
     switch (view) {
@@ -90,21 +81,6 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
     }
   };
   
-  if (!currentScriptId) {
-    // While redirecting, show a loader or nothing
-    return (
-       <div className="flex h-screen w-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Skeleton className="h-16 w-16 rounded-full" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-[250px]" />
-            <p className="text-sm text-muted-foreground">Redirecting to your profile...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <ScriptProvider scriptId={currentScriptId!}>
       <SidebarProvider>
@@ -138,7 +114,15 @@ function MainApp() {
   const [view, setView] = React.useState<View>('dashboard');
   const router = useRouter();
 
-  if (isCurrentScriptLoading) {
+  React.useEffect(() => {
+    // This effect now reliably redirects if the script ID is missing after loading.
+    if (!isCurrentScriptLoading && !currentScriptId) {
+      router.push('/profile');
+    }
+  }, [isCurrentScriptLoading, currentScriptId, router]);
+
+  // While waiting for script context, show a full-page loader.
+  if (isCurrentScriptLoading || !currentScriptId) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -152,22 +136,7 @@ function MainApp() {
     );
   }
 
-  if (!currentScriptId) {
-     // The AppLayout component will handle the redirection.
-     // Show a loader while it does its work.
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Skeleton className="h-16 w-16 rounded-full" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-[250px]" />
-            <p className="text-sm text-muted-foreground">Redirecting to your profile...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Once the script is confirmed, render the main app layout.
   return <AppLayout view={view} setView={setView} />;
 }
 
@@ -177,11 +146,14 @@ export default function Home() {
   const router = useRouter();
 
   React.useEffect(() => {
+    // This effect now only handles the case where there is no authenticated user.
     if (!isUserLoading && !user) {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
 
+  // If we're still checking for a user, or if there's no user, show a loading screen.
+  // The redirection will happen in the effect above.
   if (isUserLoading || !user) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
@@ -196,5 +168,6 @@ export default function Home() {
     );
   }
 
+  // If a user is present, render the MainApp component which handles script loading and redirection.
   return <MainApp />;
 }
