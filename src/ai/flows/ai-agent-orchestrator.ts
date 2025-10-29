@@ -10,6 +10,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { aiProofreadScript, AiProofreadScriptOutputSchema } from './ai-proofread-script';
+import { aiGenerateCharacterProfile, AiGenerateCharacterProfileOutputSchema } from './ai-generate-character-profile';
 
 
 const AiAgentOrchestratorInputSchema = z.object({
@@ -21,6 +23,7 @@ export type AiAgentOrchestratorInput = z.infer<typeof AiAgentOrchestratorInputSc
 const AiAgentOrchestratorOutputSchema = z.object({
   response: z.string().describe('The AI\'s response to the user\'s request, which may include the results of tool calls.'),
   toolResult: z.any().optional().describe('The direct result from any tool that was called.'),
+  modifiedScript: z.string().optional().describe('The full, rewritten script content if the user requested a change.'),
 });
 export type AiAgentOrchestratorOutput = z.infer<typeof AiAgentOrchestratorOutputSchema>;
 
@@ -44,7 +47,9 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
 Your goal is to help the user modify their script and other project elements.
 
 Analyze the user's request and the current script content.
-Decide whether to use one of the available tools or to respond directly with text.
+If the user is asking for a change to the script, rewrite the script content and provide a response explaining what you did.
+If the user is asking a question or for analysis, respond directly with text.
+Decide whether to use one of the available tools or to respond directly.
 
 **User Request:**
 ${input.request}
@@ -56,35 +61,22 @@ ${input.script}
 `,
       tools: [], // Tools are deprecated in favor of specific flows
       model: 'googleai/gemini-2.5-flash-preview',
+      output: {
+        schema: z.object({
+          response: z.string().describe("The AI's friendly, conversational response to the user."),
+          modifiedScript: z.string().optional().describe("If the user's request required changing the script, this is the FULL, new script content. Otherwise, this is omitted.")
+        })
+      }
     });
 
-    const toolRequest = llmResponse.toolRequest;
-
-    if (toolRequest) {
-      // If the LLM wants to use a tool, we need to call it and return the result.
-      const toolResponse = await toolRequest.run();
-      
-      // Now, we need to send the tool's response back to the LLM to get a final, user-friendly summary.
-      const finalResponse = await ai.generate({
-          prompt: `You have just used a tool to fulfill the user's request.
-          The user's original request was: "${input.request}"
-          The result from the tool is here:
-          ---
-          ${JSON.stringify(toolResponse)}
-          ---
-          
-          Summarize this result in a friendly, conversational way.
-          `,
-          model: 'googleai/gemini-2.5-flash-preview',
-      });
-      
-      return { 
-        response: finalResponse.text,
-        toolResult: toolResponse, // Pass the raw tool result back
-      };
+    const output = llmResponse.output();
+    if (!output) {
+      return { response: "I'm sorry, I wasn't able to process that request." };
     }
 
-    // If no tool was used, just return the direct text response.
-    return { response: llmResponse.text };
+    return { 
+      response: output.response,
+      modifiedScript: output.modifiedScript,
+    };
   }
 );

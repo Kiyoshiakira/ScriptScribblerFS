@@ -1,6 +1,6 @@
 'use client';
 import 'regenerator-runtime/runtime'; // Direct import to fix speech recognition error
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { getAiSuggestions, getAiDeepAnalysis, runAiAgent } from '@/app/actions';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { Input } from './ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { cn } from '@/lib/utils';
+import { ScriptContext } from '@/context/script-context';
 
 
 interface AiAssistantProps {
@@ -63,6 +64,7 @@ export default function AiAssistant({ scriptContent }: AiAssistantProps) {
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { setLines } = useContext(ScriptContext);
 
   const {
     transcript,
@@ -139,6 +141,15 @@ export default function AiAssistant({ scriptContent }: AiAssistantProps) {
     } else if (result.data) {
         const aiMessage: ChatMessage = { sender: 'ai', text: result.data.response };
         setChatHistory(prev => [...prev, aiMessage]);
+        
+        // Check if the AI returned a modified script
+        if (result.data.modifiedScript) {
+            setLines(result.data.modifiedScript);
+            toast({
+                title: 'Script Updated',
+                description: 'The AI has updated the script content.',
+            })
+        }
     }
   };
   

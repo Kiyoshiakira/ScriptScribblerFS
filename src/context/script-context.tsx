@@ -22,7 +22,7 @@ export interface ScriptLine {
 interface ScriptContextType {
   script: Script | null;
   lines: ScriptLine[];
-  setLines: (lines: ScriptLine[] | ((prev: ScriptLine[]) => ScriptLine[])) => void;
+  setLines: (linesOrContent: ScriptLine[] | string | ((prev: ScriptLine[]) => ScriptLine[])) => void;
   setScriptTitle: (title: string) => void;
   isScriptLoading: boolean;
 }
@@ -35,11 +35,45 @@ export const ScriptContext = createContext<ScriptContextType>({
   isScriptLoading: true,
 });
 
+// Function to parse the raw script content into lines
+const parseContentToLines = (content: string): ScriptLine[] => {
+    if (typeof content !== 'string') return [];
+    const lineTexts = content.split('\n');
+    
+    return lineTexts.map((text, index) => {
+        let type: ScriptElement = 'action';
+        const trimmedText = text.trim();
+
+        if (trimmedText.startsWith('INT.') || trimmedText.startsWith('EXT.')) {
+        type = 'scene-heading';
+        } else if (trimmedText.startsWith('(') && trimmedText.endsWith(')')) {
+        type = 'parenthetical';
+        } else if (trimmedText.endsWith('TO:')) {
+        type = 'transition';
+        } else if (/^[A-Z\s]+$/.test(trimmedText) && trimmedText.length > 0 && trimmedText.length < 35 && !trimmedText.includes('(')) {
+            // Heuristic for character: ALL CAPS, short, and not a transition.
+            // Look at previous line to be more certain.
+            const prevLine = lineTexts[index - 1]?.trim() ?? '';
+            if (prevLine === '' || prevLine.endsWith('TO:')) { // Previous line was empty or a transition
+                type = 'character';
+            }
+        } else if (index > 0) {
+            const prevLine = lineTexts[index - 1]?.trim() ?? '';
+            const prevLineIsCharacter = /^[A-Z\s]+$/.test(prevLine) && prevLine.length < 35 && !prevLine.includes('(');
+            if(prevLineIsCharacter) {
+                type = 'dialogue';
+            }
+        }
+
+        return { id: `line-${index}-${Date.now()}`, type, text };
+    });
+};
+
 export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, scriptId: string }) => {
   const { user } = useUser();
   const firestore = useFirestore();
   const [localScript, setLocalScript] = useState<Script | null>(null);
-  const [lines, setLines] = useState<ScriptLine[]>([]);
+  const [lines, setLocalLines] = useState<ScriptLine[]>([]);
 
   const scriptDocRef = useMemoFirebase(
     () => (user && firestore && scriptId ? doc(firestore, 'users', user.uid, 'scripts', scriptId) : null),
@@ -50,52 +84,17 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
 
   const [debouncedLines] = useDebounce(lines, 1000);
 
-  // Function to parse the raw script content into lines
-  const parseContentToLines = useCallback((content: string): ScriptLine[] => {
-      if (typeof content !== 'string') return [];
-      const lineTexts = content.split('\n');
-      
-      return lineTexts.map((text, index) => {
-          let type: ScriptElement = 'action';
-          const trimmedText = text.trim();
-
-          if (trimmedText.startsWith('INT.') || trimmedText.startsWith('EXT.')) {
-            type = 'scene-heading';
-          } else if (trimmedText.startsWith('(') && trimmedText.endsWith(')')) {
-            type = 'parenthetical';
-          } else if (trimmedText.endsWith('TO:')) {
-            type = 'transition';
-          } else if (/^[A-Z\s]+$/.test(trimmedText) && trimmedText.length > 0 && trimmedText.length < 35 && !trimmedText.includes('(')) {
-              // Heuristic for character: ALL CAPS, short, and not a transition.
-              // Look at previous line to be more certain.
-              const prevLine = lineTexts[index - 1]?.trim() ?? '';
-              if (prevLine === '' || prevLine.endsWith('TO:')) { // Previous line was empty or a transition
-                  type = 'character';
-              }
-          } else if (index > 0) {
-              const prevLine = lineTexts[index - 1]?.trim() ?? '';
-              const prevLineIsCharacter = /^[A-Z\s]+$/.test(prevLine) && prevLine.length < 35 && !prevLine.includes('(');
-              if(prevLineIsCharacter) {
-                  type = 'dialogue';
-              }
-          }
-
-          return { id: `line-${index}-${Date.now()}`, type, text };
-      });
-  }, []);
   
   useEffect(() => {
     if (firestoreScript) {
         setLocalScript(firestoreScript);
-        // Only parse content to lines if lines are not already set,
-        // or if the firestore content has updated and is different from current lines.
         const currentContentFromLines = lines.map(line => line.text).join('\n');
         if (firestoreScript.content && firestoreScript.content !== currentContentFromLines) { 
             const parsed = parseContentToLines(firestoreScript.content);
-            setLines(parsed);
+            setLocalLines(parsed);
         } else if (lines.length === 0 && firestoreScript.content) {
              const parsed = parseContentToLines(firestoreScript.content);
-            setLines(parsed);
+            setLocalLines(parsed);
         }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -121,6 +120,14 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     }
   }, [debouncedLines, firestoreScript, updateFirestore]);
 
+  const setLines = useCallback((linesOrContent: ScriptLine[] | string | ((prev: ScriptLine[]) => ScriptLine[])) => {
+    if (typeof linesOrContent === 'string') {
+        const newLines = parseContentToLines(linesOrContent);
+        setLocalLines(newLines);
+    } else {
+        setLocalLines(linesOrContent);
+    }
+  }, []);
 
   const setScriptTitle = (title: string) => {
     setLocalScript(prev => prev ? { ...prev, title } : null);
