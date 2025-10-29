@@ -68,19 +68,19 @@ function AppLayoutContent() {
 
 
   React.useEffect(() => {
-    // This effect now correctly handles the initial view state without overriding user actions.
-    if (!isCurrentScriptLoading) {
-      if (!currentScriptId) {
-        // If there's no script, the only valid view is the profile.
-        setView('profile');
-      } else if (view === 'profile' && currentScriptId) {
-        // This case handles when a new script is created FROM the profile page.
-        // It correctly switches to the dashboard for that new script.
-        setView('dashboard');
-      }
+    if (isCurrentScriptLoading) {
+      return; // Do nothing while the script ID is being determined
     }
-    // This effect should only run when the loading state or script ID changes, not when the view changes.
-  }, [isCurrentScriptLoading, currentScriptId]);
+
+    if (!currentScriptId) {
+      // If there's no script after loading, always show the profile view.
+      setView('profile');
+    } else if (view === 'profile' && currentScriptId) {
+      // This handles the specific case where a new script is created from the profile page.
+      // It correctly switches to the dashboard for that new script.
+      setView('dashboard');
+    }
+  }, [isCurrentScriptLoading, currentScriptId, view]);
 
 
   const handleSetView = (newView: View | 'settings' | 'profile-edit') => {

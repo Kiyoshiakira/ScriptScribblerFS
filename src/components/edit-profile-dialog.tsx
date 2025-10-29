@@ -19,7 +19,7 @@ interface EditProfileDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User;
-  profile: { bio?: string, coverImageUrl?: string } | null;
+  profile: { bio?: string, coverImageUrl?: string, photoURL?: string } | null;
 }
 
 export function EditProfileDialog({ open, onOpenChange, user, profile }: EditProfileDialogProps) {
@@ -38,7 +38,7 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || '');
-      setPhotoURL(user.photoURL || '');
+      setPhotoURL(profile?.photoURL || user.photoURL || '');
     }
     if (profile) {
       setBio(profile.bio || '');
@@ -65,50 +65,60 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
     setIsSaving(true);
     
     try {
-      await updateProfile(auth.currentUser, {
-        displayName,
-        photoURL,
-      });
-
+      // Update core Firebase Auth profile with things that have limits (like displayName)
+      // We only update if it has changed to avoid unnecessary API calls.
+      if (auth.currentUser.displayName !== displayName) {
+         await updateProfile(auth.currentUser, {
+          displayName,
+        });
+      }
+     
+      // Save large data (like data-uri images) and other metadata to Firestore
       const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
       const profileData = { 
         displayName,
         email: auth.currentUser.email,
+        photoURL,
         bio, 
         coverImageUrl, 
         updatedAt: serverTimestamp() 
       };
 
-      setDoc(userDocRef, profileData, { merge: true })
-        .catch(serverError => {
-          const permissionError = new FirestorePermissionError({
-            path: userDocRef.path,
-            operation: 'update',
-            requestResourceData: profileData
-          });
-          errorEmitter.emit('permission-error', permissionError);
-          toast({
-            variant: "destructive",
-            title: "Update Failed",
-            description: "You may not have permission to update your profile.",
-          });
-        });
+      await setDoc(userDocRef, profileData, { merge: true });
 
       toast({
-          title: "Profile Update In Progress",
-          description: "Your changes are being saved.",
+          title: "Profile Updated",
+          description: "Your changes have been saved.",
       });
       onOpenChange(false);
       
+      // Give a moment for data to propagate before a potential reload
       setTimeout(() => window.location.reload(), 1500);
 
     } catch (error: any) {
-        console.error("Error initiating profile update:", error);
-        toast({
-            variant: "destructive",
-            title: "Update Failed",
-            description: error.message || "An unknown client-side error occurred.",
-        });
+        // This will now catch errors from either updateProfile or setDoc.
+        // It's more likely to be a permission error from Firestore now.
+        const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
+        if (error.code?.startsWith('auth/')) {
+             toast({
+                variant: "destructive",
+                title: "Update Failed",
+                description: error.message,
+            });
+        } else {
+             const permissionError = new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'update',
+                requestResourceData: { displayName, bio, photoURL, coverImageUrl },
+             });
+             errorEmitter.emit('permission-error', permissionError);
+             toast({
+                variant: "destructive",
+                title: "Update Failed",
+                description: "You may not have permission to update your profile.",
+            });
+        }
+        console.error("Error saving profile:", error);
     } finally {
         setIsSaving(false);
     }

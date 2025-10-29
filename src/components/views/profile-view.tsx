@@ -53,7 +53,7 @@ interface Script {
 }
 
 interface ProfileViewProps {
-  setView: (view: View) => void;
+  setView: (view: View | 'profile-edit') => void;
 }
 
 
@@ -85,7 +85,7 @@ export default function ProfileView({ setView }: ProfileViewProps) {
       () => (user && firestore ? doc(firestore, 'users', user.uid) : null),
       [firestore, user]
     );
-    const { data: userProfile, isLoading: isProfileLoading } = useDoc(userDocRef);
+    const { data: userProfile, isLoading: isProfileLoading } = useDoc<{ photoURL?: string, coverImageUrl?: string, bio?: string }>(userDocRef);
 
 
     const handleCreateNewScript = async () => {
@@ -293,7 +293,7 @@ export default function ProfileView({ setView }: ProfileViewProps) {
                         <Avatar className='w-32 h-32 border-4 border-background'>
                             {isLoading ? <Skeleton className='h-full w-full rounded-full' /> : (
                                 <>
-                                    <AvatarImage src={user?.photoURL || undefined} />
+                                    <AvatarImage src={userProfile?.photoURL || user?.photoURL || undefined} />
                                     <AvatarFallback className='text-4xl'>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                                 </>
                             )}
@@ -311,7 +311,7 @@ export default function ProfileView({ setView }: ProfileViewProps) {
                                 </>
                              )}
                         </div>
-                        <Button variant="outline" onClick={() => setView('profile-edit' as any)}><Edit className='mr-2 h-4 w-4' /> Edit Profile</Button>
+                        <Button variant="outline" onClick={() => setView('profile-edit')}><Edit className='mr-2 h-4 w-4' /> Edit Profile</Button>
                     </div>
                 </div>
             </Card>
