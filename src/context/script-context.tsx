@@ -96,6 +96,14 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
 
   const [debouncedLines] = useDebounce(lines, 1000);
 
+  const updateFirestore = useCallback((field: 'content' | 'title' | 'logline', value: string) => {
+    if (scriptDocRef) {
+        setDoc(scriptDocRef, { 
+            [field]: value,
+            lastModified: serverTimestamp()
+        }, { merge: true });
+    }
+  }, [scriptDocRef]);
   
   useEffect(() => {
     // This effect's job is to sync the firestoreScript data to our local state.
@@ -122,15 +130,6 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
       updateFirestore('content', newContent);
     }
   }, [debouncedLines, localScript, updateFirestore]);
-
-  const updateFirestore = useCallback((field: 'content' | 'title' | 'logline', value: string) => {
-    if (scriptDocRef) {
-        setDoc(scriptDocRef, { 
-            [field]: value,
-            lastModified: serverTimestamp()
-        }, { merge: true });
-    }
-  }, [scriptDocRef]);
 
   const setLines = useCallback((linesOrContent: ScriptLine[] | string | ((prev: ScriptLine[]) => ScriptLine[])) => {
     if (typeof linesOrContent === 'string') {
