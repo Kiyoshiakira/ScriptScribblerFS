@@ -318,71 +318,73 @@ export default function ScriptEditor({
   }
 
   const editorContent = (
-    <>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-4">
-          <CardTitle className="font-headline flex items-center gap-2 text-lg">
-            <Film className="w-5 h-5 text-primary" />
-            <span className="truncate">SCENE 1: INT. COFFEE SHOP - DAY</span>
-          </CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent 
+    <div 
         ref={editorRef} 
-        className="flex-1 flex relative"
+        className="flex-1 flex flex-col relative bg-card text-card-foreground shadow-lg rounded-lg h-full"
         onContextMenu={(e) => e.preventDefault()}
         onClick={() => setContextMenu(null)}
       >
-        <DropdownMenu open={!!contextMenu} onOpenChange={() => setContextMenu(null)}>
-            <DropdownMenuTrigger asChild>
-                <div 
-                    style={{ 
-                        position: 'fixed',
-                        left: contextMenu ? contextMenu.x : 0, 
-                        top: contextMenu ? contextMenu.y : 0,
-                    }}
-                />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="start">
-                {SCRIPT_ELEMENTS_CYCLE.map(element => (
-                    <DropdownMenuItem 
-                        key={element} 
-                        onClick={() => contextMenu && handleTypeChange(contextMenu.lineId, element)}
-                    >
-                        {formatElementName(element)}
-                    </DropdownMenuItem>
-                ))}
-                {!isStandalone && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handlePopOut}>
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        <span>Pop-out Editor</span>
-                    </DropdownMenuItem>
-                  </>
-                )}
-            </DropdownMenuContent>
-        </DropdownMenu>
-
-        <div
-          className="flex-1 resize-none font-code text-base bg-card flex flex-col px-12"
-          style={{ minHeight: '60vh' }}
+        <CardHeader>
+            <div className="flex items-center justify-between gap-4">
+            <CardTitle className="font-headline flex items-center gap-2 text-lg">
+                <Film className="w-5 h-5 text-primary" />
+                <span className="truncate">SCENE 1: INT. COFFEE SHOP - DAY</span>
+            </CardTitle>
+            </div>
+        </CardHeader>
+        <CardContent 
+            className="flex-1 flex relative"
         >
-          {lines.map(line => (
-              <div key={line.id} data-line-id={line.id} onClick={() => setActiveLineId(line.id)} className="py-1">
-                <ScriptLineComponent
-                    line={line}
-                    onTextChange={handleTextChange}
-                    onKeyDown={handleKeyDown}
-                    onContextMenu={handleContextMenu}
-                    isFocused={line.id === activeLineId}
-                />
-              </div>
-          ))}
-        </div>
-      </CardContent>
-      <CardFooter />
-    </>
+            <DropdownMenu open={!!contextMenu} onOpenChange={() => setContextMenu(null)}>
+                <DropdownMenuTrigger asChild>
+                    <div 
+                        style={{ 
+                            position: 'fixed',
+                            left: contextMenu ? contextMenu.x : 0, 
+                            top: contextMenu ? contextMenu.y : 0,
+                        }}
+                    />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="start">
+                    {SCRIPT_ELEMENTS_CYCLE.map(element => (
+                        <DropdownMenuItem 
+                            key={element} 
+                            onClick={() => contextMenu && handleTypeChange(contextMenu.lineId, element)}
+                        >
+                            {formatElementName(element)}
+                        </DropdownMenuItem>
+                    ))}
+                    {!isStandalone && (
+                    <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handlePopOut}>
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            <span>Pop-out Editor</span>
+                        </DropdownMenuItem>
+                    </>
+                    )}
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div
+            className="flex-1 resize-none font-code text-base bg-card flex flex-col px-12"
+            style={{ minHeight: '60vh' }}
+            >
+            {lines.map(line => (
+                <div key={line.id} data-line-id={line.id} onClick={() => setActiveLineId(line.id)} className="py-1">
+                    <ScriptLineComponent
+                        line={line}
+                        onTextChange={handleTextChange}
+                        onKeyDown={handleKeyDown}
+                        onContextMenu={handleContextMenu}
+                        isFocused={line.id === activeLineId}
+                    />
+                </div>
+            ))}
+            </div>
+        </CardContent>
+        <CardFooter />
+    </div>
   );
 
   if (isStandalone) {
@@ -393,9 +395,5 @@ export default function ScriptEditor({
     );
   }
 
-  return (
-    <Card className="h-full flex flex-col shadow-lg">
-      {editorContent}
-    </Card>
-  );
+  return editorContent;
 }
