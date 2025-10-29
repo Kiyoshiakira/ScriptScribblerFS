@@ -5,6 +5,8 @@ import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
 } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,12 +24,16 @@ import { useFirebaseApp } from '@/firebase';
 import { Logo } from '@/components/layout/app-sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
+import { Chrome } from 'lucide-react'; // Using Chrome icon for Google as a generic browser icon
 
 function LoginCard() {
   const app = useFirebaseApp();
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
 
@@ -48,9 +54,7 @@ function LoginCard() {
           description: "Welcome back! Redirecting...",
         });
       }
-      // On successful sign-in or sign-up, Firebase's onAuthStateChanged listener
-      // in the main layout will handle the redirect.
-       router.push('/');
+      router.push('/');
     } catch (error: any) {
       console.error(`Error during ${action}:`, error);
       toast({
@@ -62,6 +66,30 @@ function LoginCard() {
       setIsLoading(false);
     }
   };
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const auth = getAuth(app);
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      toast({
+          title: 'Signed In with Google',
+          description: "Welcome! Redirecting...",
+      });
+      router.push('/');
+    } catch (error: any) {
+      console.error('Error signing in with Google:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Google Sign-In Error',
+        description: error.message || 'An unexpected error occurred.',
+      });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
 
   return (
     <Card className="w-full max-w-md shadow-lg">
@@ -91,7 +119,7 @@ function LoginCard() {
                   placeholder="m@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isLoading || isGoogleLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -101,18 +129,18 @@ function LoginCard() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isLoading || isGoogleLoading}
                 />
               </div>
             </div>
             <CardFooter className="px-0 pt-6">
-                <Button onClick={() => handleAuthAction('signIn')} className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Signing In...' : 'Sign In'}
-                </Button>
+              <Button onClick={() => handleAuthAction('signIn')} className="w-full" disabled={isLoading || isGoogleLoading}>
+                {isLoading ? 'Signing In...' : 'Sign In'}
+              </Button>
             </CardFooter>
           </TabsContent>
           <TabsContent value="signup">
-             <div className="space-y-4 pt-4">
+            <div className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="email-signup">Email</Label>
                 <Input
@@ -121,7 +149,7 @@ function LoginCard() {
                   placeholder="m@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isLoading || isGoogleLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -131,17 +159,39 @@ function LoginCard() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isLoading || isGoogleLoading}
                 />
               </div>
             </div>
             <CardFooter className="px-0 pt-6">
-                <Button onClick={() => handleAuthAction('signUp')} className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Creating Account...' : 'Create Account'}
-                </Button>
+              <Button onClick={() => handleAuthAction('signUp')} className="w-full" disabled={isLoading || isGoogleLoading}>
+                {isLoading ? 'Creating Account...' : 'Create Account'}
+              </Button>
             </CardFooter>
           </TabsContent>
         </Tabs>
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">
+              Or continue with
+            </span>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-2">
+          <Button variant="outline" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+            {isGoogleLoading ? (
+              'Signing in...'
+            ) : (
+              <>
+                <Chrome className="mr-2 h-4 w-4" />
+                Google
+              </>
+            )}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
