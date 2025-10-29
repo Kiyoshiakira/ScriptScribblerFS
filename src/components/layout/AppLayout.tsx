@@ -15,12 +15,12 @@ import LoglineView from '../views/logline-view';
 import ScenesView from '../views/scenes-view';
 import CharactersView from '../views/characters-view';
 import NotesView from '../views/notes-view';
-import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import type { Character } from '../views/characters-view';
 import { EditProfileDialog } from '../edit-profile-dialog';
 
-export type View = 'dashboard' | 'editor' | 'scenes' | 'characters' | 'notes' | 'logline' | 'my-scripts' | 'settings' | 'profile';
+export type View = 'dashboard' | 'editor' | 'scenes' | 'characters' | 'notes' | 'logline' | 'my-scripts';
 
 function AppLayoutContent() {
   const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
@@ -71,27 +71,18 @@ function AppLayoutContent() {
     if (!isCurrentScriptLoading && !currentScriptId) {
       setView('my-scripts');
     } else if (!isCurrentScriptLoading && currentScriptId) {
-        // If a script becomes active, move away from my-scripts view
         if(view === 'my-scripts') {
             setView('dashboard');
         }
     }
   }, [isCurrentScriptLoading, currentScriptId, view]);
 
-  const handleSetView = (newView: View) => {
+  const handleSetView = (newView: View | 'settings' | 'profile') => {
     if (newView === 'settings') {
       setSettingsOpen(true);
     } else if (newView === 'profile') {
-      // The "Profile" view from the user menu now shows the My Scripts page.
-      // If we are already on my-scripts, and they click the avatar to edit profile,
-      // it should open the dialog.
-      if (view === 'my-scripts') {
-        setProfileOpen(true);
-      } else {
-         setView('my-scripts');
-      }
-    }
-    else {
+      setProfileOpen(true);
+    } else {
       setView(newView);
     }
   };
@@ -151,8 +142,6 @@ export default function AppLayout() {
       );
   }
   
-  // If there's no script, MyScriptsView will be rendered which doesn't need the provider.
-  // If there IS a script, we wrap with the provider.
   if (currentScriptId) {
      return (
        <ScriptProvider scriptId={currentScriptId}>

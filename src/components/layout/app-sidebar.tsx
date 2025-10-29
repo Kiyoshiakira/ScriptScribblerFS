@@ -16,7 +16,8 @@ import {
   NotebookPen,
   LayoutDashboard,
   FileText,
-  Clock
+  Clock,
+  Library,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useScript } from '@/context/script-context';
@@ -84,7 +85,6 @@ export default function AppSidebar({
   const { isScriptLoading } = useScript();
   const { currentScriptId } = useCurrentScript();
   
-  const isMyScriptsView = activeView === 'my-scripts';
   const noScriptLoaded = !currentScriptId;
 
   const scriptMenuItems = [
@@ -106,7 +106,21 @@ export default function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu className="flex-1 overflow-y-auto p-2">
+            <SidebarMenuItem>
+                 <SidebarMenuButton
+                    onClick={() => setView('my-scripts')}
+                    isActive={activeView === 'my-scripts'}
+                    tooltip="My Scripts"
+                >
+                    <Library />
+                    <span>My Scripts</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
             
+            <div className="px-2">
+                <hr className="my-2 border-sidebar-border" />
+            </div>
+
             {scriptMenuItems.map(item => (
                 <SidebarMenuItem key={item.view}>
                     <SidebarMenuButton
