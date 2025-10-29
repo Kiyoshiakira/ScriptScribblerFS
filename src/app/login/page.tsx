@@ -3,7 +3,7 @@
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
 } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,21 +16,26 @@ import {
 import { useFirebaseApp } from '@/firebase';
 import { Logo } from '@/components/layout/app-sidebar';
 import { useRouter } from 'next/navigation';
+import * as React from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const provider = new GoogleAuthProvider();
 
 function LoginCard() {
-  const app = useFirebaseApp();
+  const app = useFirebaseApp(); // This is now safe to call inside this client component
   const router = useRouter();
+  const [isLoading, setIsLoading] = React.useState(false);
 
-  const handleSignIn = async () => {
+  const handleSignIn = () => {
+    setIsLoading(true);
     try {
       const auth = getAuth(app);
-      await signInWithPopup(auth, provider);
-      // On successful sign-in, redirect to the main app page.
-      router.push('/');
+      // Using signInWithRedirect for a more robust authentication flow in this environment
+      signInWithRedirect(auth, provider);
+      // No need to await or handle router push here, Firebase handles the redirect flow.
     } catch (error) {
-      console.error('Error signing in with Google:', error);
+      console.error('Error initiating sign in with Google:', error);
+      setIsLoading(false);
     }
   };
 
@@ -48,20 +53,26 @@ function LoginCard() {
       </CardHeader>
       <CardContent>
         <div className="flex flex-col space-y-4">
+          {isLoading ? (
+            <Button disabled className="w-full">
+              Redirecting to Google...
+            </Button>
+          ) : (
             <Button onClick={handleSignIn} className="w-full">
               Sign in with Google
             </Button>
+          )}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-
 export default function LoginPage() {
+  // This parent component now contains no Firebase logic and is safe for server rendering.
   return (
     <main className="flex h-screen w-screen items-center justify-center bg-background p-4">
-        <LoginCard />
+      <LoginCard />
     </main>
   );
 }
