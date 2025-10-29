@@ -29,7 +29,7 @@ import { useScript } from '@/context/script-context';
 import { useToast } from '@/hooks/use-toast';
 import { useRef } from 'react';
 import { parseScriteFile } from '@/lib/scrite-parser';
-import { collection, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, writeBatch, getDocs, doc } from 'firebase/firestore';
 import type { Note } from '../views/notes-view';
 
 interface AppHeaderProps {
@@ -46,7 +46,9 @@ export default function AppHeader({ setNotes }: AppHeaderProps) {
 
 
   const handleSignOut = async () => {
-    await signOut(auth);
+    if (auth) {
+        await signOut(auth);
+    }
   };
 
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,9 +57,15 @@ export default function AppHeader({ setNotes }: AppHeaderProps) {
 
     const reader = new FileReader();
     reader.onload = async (e) => {
+      const text = e.target?.result as string;
+      console.log('--- DEBUG: Raw Scrite File Content ---');
+      console.log(text);
+
       try {
-        const text = e.target?.result as string;
         const parsedData = parseScriteFile(text);
+        console.log('--- DEBUG: Parsed Scrite JSON ---');
+        console.log(parsedData);
+
 
         // 1. Update script content
         setScriptContent(parsedData.script);
@@ -76,7 +84,7 @@ export default function AppHeader({ setNotes }: AppHeaderProps) {
           
           // Add new characters
           parsedData.characters.forEach(char => {
-             const newCharRef = collection(firestore, 'users', user.uid, 'characters').doc();
+             const newCharRef = doc(collection(firestore, 'users', user.uid, 'characters'));
              batch.set(newCharRef, char);
           });
           
@@ -88,7 +96,7 @@ export default function AppHeader({ setNotes }: AppHeaderProps) {
           description: `Successfully imported from ${file.name}.`,
         });
       } catch (error) {
-         console.error('Import failed:', error);
+         console.error('--- DEBUG: Import Parsing Failed ---', error);
          toast({
             variant: 'destructive',
             title: 'Import Failed',
