@@ -16,11 +16,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { getAiCharacterProfile, saveCharacter } from '@/app/actions';
+import { getAiCharacterProfile } from '@/app/actions';
 import { Skeleton } from '../ui/skeleton';
 import React from 'react';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { collection, doc, addDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useCurrentScript } from '@/context/current-script-context';
 import AiFab from '../ai-fab';
 
@@ -224,11 +224,11 @@ export default function CharactersView() {
   };
 
   const handleSaveCharacter = async (charToSave: Character) => {
-    if (!user || !currentScriptId) {
+    if (!firestore || !charactersCollection) {
       toast({ variant: 'destructive', title: 'Error', description: 'Cannot save character: no active script.' });
       return;
     }
-
+  
     const isNew = !charToSave.id;
     const plainCharData = {
       name: charToSave.name,
@@ -236,20 +236,51 @@ export default function CharactersView() {
       profile: charToSave.profile,
       imageUrl: charToSave.imageUrl,
       scenes: charToSave.scenes,
+      updatedAt: serverTimestamp(),
     };
-    
-    const result = await saveCharacter(user.uid, currentScriptId, charToSave.id, plainCharData);
-
-    if (result.success) {
+  
+    try {
+      if (isNew) {
+        // Add new character
+        const docData = { ...plainCharData, createdAt: serverTimestamp() };
+        addDoc(charactersCollection, docData)
+            .catch(serverError => {
+                const permissionError = new FirestorePermissionError({
+                    path: charactersCollection.path,
+                    operation: 'create',
+                    requestResourceData: docData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                throw permissionError;
+            });
+      } else {
+        // Update existing character
+        const charDocRef = doc(charactersCollection, charToSave.id);
+        setDoc(charDocRef, plainCharData, { merge: true })
+            .catch(serverError => {
+                 const permissionError = new FirestorePermissionError({
+                    path: charDocRef.path,
+                    operation: 'update',
+                    requestResourceData: plainCharData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                throw permissionError;
+            });
+      }
+      
       toast({
         title: isNew ? 'Character Created' : 'Character Updated',
         description: `${charToSave.name} has been saved.`,
       });
-    } else {
+  
+    } catch (error) {
+      // This will only catch client-side errors before the Firestore call.
+      // Permission errors are now handled by the .catch() blocks.
+      console.error('Error saving character:', error);
       toast({
         variant: 'destructive',
         title: 'Save Error',
-        description: result.error || 'Could not save the character.',
+        description: error instanceof Error ? error.message : 'An unexpected client-side error occurred.',
       });
     }
   };

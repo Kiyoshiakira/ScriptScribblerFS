@@ -28,8 +28,6 @@ import {
     aiGenerateLogline as aiGenerateLoglineFlow,
     type AiGenerateLoglineInput,
 } from '@/ai/flows/ai-generate-logline';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { adminApp } from '@/firebase/admin';
 
 
 export async function getAiSuggestions(
@@ -152,81 +150,4 @@ export async function getAiProofreadSuggestions(input: AiProofreadScriptInput) {
         error: `An error occurred while proofreading: ${errorMessage}`,
         };
     }
-}
-
-export async function saveCharacter(
-  userId: string,
-  scriptId: string,
-  characterId: string | undefined,
-  characterData: {
-    name: string;
-    description: string;
-    profile?: string;
-    imageUrl?: string;
-    scenes: number;
-  }
-) {
-  if (!adminApp) {
-    const errorMessage = 'Firebase Admin SDK is not initialized. Character cannot be saved.';
-    console.error(errorMessage);
-    return { success: false, error: errorMessage };
-  }
-
-  try {
-    const db = getFirestore(adminApp);
-    const charactersCollectionRef = db.collection(`users/${userId}/scripts/${scriptId}/characters`);
-    const serverTimestamp = FieldValue.serverTimestamp();
-
-    if (characterId) {
-      const charDocRef = charactersCollectionRef.doc(characterId);
-      await charDocRef.set(
-        {
-          ...characterData,
-          updatedAt: serverTimestamp,
-        },
-        { merge: true }
-      );
-      return { success: true, id: characterId };
-    } else {
-      const newCharDocRef = await charactersCollectionRef.add({
-        ...characterData,
-        createdAt: serverTimestamp,
-        updatedAt: serverTimestamp,
-      });
-      return { success: true, id: newCharDocRef.id };
-    }
-  } catch (error) {
-    console.error('Error saving character:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-    return { success: false, error: errorMessage };
-  }
-}
-
-export async function updateUserProfile(
-  userId: string,
-  data: { bio: string, coverImageUrl: string }
-) {
-  if (!adminApp) {
-    const errorMessage = 'Firebase Admin SDK is not initialized. Profile cannot be updated.';
-    console.error(errorMessage);
-    return { success: false, error: errorMessage };
-  }
-
-  try {
-    const db = getFirestore(adminApp);
-    const userDocRef = db.collection('users').doc(userId);
-    
-    await userDocRef.set(
-      {
-        ...data,
-        updatedAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
-    return { success: true };
-  } catch (error) {
-    console.error('Error updating user profile:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-    return { success: false, error: errorMessage };
-  }
 }

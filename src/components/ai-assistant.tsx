@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useContext } from 'react';
 import SpeechRecognition, {
   useSpeechRecognition,
 } from 'react-speech-recognition';
-import { runAiAgent, saveCharacter } from '@/app/actions';
+import { runAiAgent } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,8 +14,10 @@ import { Input } from './ui/input';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { cn } from '@/lib/utils';
 import { ScriptContext } from '@/context/script-context';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useCurrentScript } from '@/context/current-script-context';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+
 
 interface ChatMessage {
   sender: 'user' | 'ai';
@@ -46,6 +48,7 @@ export default function AiAssistant({ openProofreadDialog }: AiAssistantProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const { user } = useUser();
+  const firestore = useFirestore();
   const { currentScriptId } = useCurrentScript();
 
   const {
@@ -102,33 +105,39 @@ export default function AiAssistant({ openProofreadDialog }: AiAssistantProps) {
         });
       }
 
-      if (result.data.toolResult?.type === 'character' && user && currentScriptId) {
+      if (result.data.toolResult?.type === 'character' && user && currentScriptId && firestore) {
         const charData = result.data.toolResult.data;
         const characterToSave = {
           name: charData.name,
           profile: charData.profile,
           description: charData.profile.split('\n')[0],
           scenes: 0,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         };
 
-        const saveResult = await saveCharacter(
-          user.uid,
-          currentScriptId,
-          characterToSave
-        );
-
-        if (saveResult.success) {
-          toast({
-            title: 'Character Created',
-            description: `${charData.name} has been added to your characters list.`,
+        const charactersCollectionRef = collection(firestore, `users/${user.uid}/scripts/${currentScriptId}/characters`);
+        
+        addDoc(charactersCollectionRef, characterToSave)
+          .then(() => {
+             toast({
+              title: 'Character Created',
+              description: `${charData.name} has been added to your characters list.`,
+            });
+          })
+          .catch(serverError => {
+            const permissionError = new FirestorePermissionError({
+              path: charactersCollectionRef.path,
+              operation: 'create',
+              requestResourceData: characterToSave,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+              variant: 'destructive',
+              title: 'Failed to Save Character',
+              description: 'You may not have permission to create characters.',
+            });
           });
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Failed to Save Character',
-            description: saveResult.error,
-          });
-        }
       }
       
       if (result.data.toolResult?.type === 'proofread') {

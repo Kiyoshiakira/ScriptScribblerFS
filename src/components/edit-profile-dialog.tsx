@@ -8,9 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { updateProfile } from 'firebase/auth';
-import { updateUserProfile } from '@/app/actions';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from 'firebase/auth';
 
@@ -23,6 +23,7 @@ interface EditProfileDialogProps {
 
 export function EditProfileDialog({ open, onOpenChange, user, profile }: EditProfileDialogProps) {
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [displayName, setDisplayName] = useState('');
   const [photoURL, setPhotoURL] = useState('');
@@ -43,7 +44,7 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
 
   
   const handleSave = async () => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !firestore) return;
     setIsSaving(true);
     
     try {
@@ -55,25 +56,47 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
             });
         }
 
-        // Update custom data in Firestore
-        await updateUserProfile(auth.currentUser.uid, { bio, coverImageUrl });
+        const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
+        const profileData = { 
+            bio, 
+            coverImageUrl, 
+            updatedAt: serverTimestamp() 
+        };
+
+        // Update custom data in Firestore (non-blocking with error handling)
+        setDoc(userDocRef, profileData, { merge: true })
+          .catch(serverError => {
+            const permissionError = new FirestorePermissionError({
+              path: userDocRef.path,
+              operation: 'update',
+              requestResourceData: profileData
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            // We don't need to throw here as the global listener will handle it.
+            // But we should show a toast to the user.
+            toast({
+              variant: "destructive",
+              title: "Update Failed",
+              description: "You may not have permission to update your profile.",
+            });
+          });
 
         toast({
-            title: "Profile Updated",
-            description: "Your changes have been saved successfully.",
+            title: "Profile Update In Progress",
+            description: "Your changes are being saved.",
         });
         onOpenChange(false);
         
         // This is a bit of a hack, but it forces a re-render of the user object
         // A better solution would involve a more robust state management
-        window.location.reload();
+        setTimeout(() => window.location.reload(), 1500);
 
     } catch (error: any) {
-        console.error("Error updating profile:", error);
+        console.error("Error initiating profile update:", error);
         toast({
             variant: "destructive",
             title: "Update Failed",
-            description: error.message || "An unknown error occurred.",
+            description: error.message || "An unknown client-side error occurred.",
         });
     } finally {
         setIsSaving(false);
