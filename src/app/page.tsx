@@ -13,19 +13,37 @@ import MyScriptsView from '@/components/views/my-scripts-view';
 import type { ScriptElement } from '@/components/script-editor';
 import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScriptProvider } from '@/context/script-context';
 import { useCurrentScript } from '@/context/current-script-context';
+import type { AiProofreadScriptOutput } from '@/ai/flows/ai-proofread-script';
 
 export type View = 'editor' | 'scenes' | 'characters' | 'notes' | 'my-scripts';
+
+export type ProofreadSuggestion = AiProofreadScriptOutput['suggestions'][0];
 
 function AppLayout({ setView, view }: { setView: (view: View) => void, view: View}) {
   const [activeScriptElement, setActiveScriptElement] =
     React.useState<ScriptElement | null>(null);
 
+  // State lifted from ScriptEditor
+  const [wordCount, setWordCount] = React.useState(0);
+  const [estimatedMinutes, setEstimatedMinutes] = React.useState(0);
+  const [suggestions, setSuggestions] = React.useState<ProofreadSuggestion[]>([]);
+  const [isProofreading, setIsProofreading] = React.useState(false);
+  const [proofreadTrigger, setProofreadTrigger] = React.useState(0);
+
+
   const renderView = () => {
     switch (view) {
       case 'editor':
-        return <EditorView onActiveLineTypeChange={setActiveScriptElement} />;
+        return <EditorView 
+            onActiveLineTypeChange={setActiveScriptElement}
+            setWordCount={setWordCount}
+            setEstimatedMinutes={setEstimatedMinutes}
+            setSuggestions={setSuggestions}
+            setIsProofreading={setIsProofreading}
+            proofreadTrigger={proofreadTrigger}
+            isStandalone={false}
+         />;
       case 'scenes':
         return <ScenesView />;
       case 'characters':
@@ -35,8 +53,20 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
       case 'my-scripts':
         return <MyScriptsView setView={setView} />;
       default:
-        return <EditorView onActiveLineTypeChange={setActiveScriptElement} />;
+        return <EditorView 
+            onActiveLineTypeChange={setActiveScriptElement}
+            setWordCount={setWordCount}
+            setEstimatedMinutes={setEstimatedMinutes}
+            setSuggestions={setSuggestions}
+            setIsProofreading={setIsProofreading}
+            proofreadTrigger={proofreadTrigger}
+            isStandalone={false}
+        />;
     }
+  };
+
+  const handleProofread = () => {
+    setProofreadTrigger(count => count + 1);
   };
 
   return (
@@ -46,6 +76,12 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
           activeView={view}
           setActiveView={setView}
           activeScriptElement={view === 'editor' ? activeScriptElement : null}
+          wordCount={wordCount}
+          estimatedMinutes={estimatedMinutes}
+          proofreadSuggestions={suggestions}
+          setProofreadSuggestions={setSuggestions}
+          isProofreading={isProofreading}
+          onProofreadRequest={handleProofread}
         />
         <div className="flex flex-1 flex-col overflow-hidden">
           <AppHeader setView={setView} />

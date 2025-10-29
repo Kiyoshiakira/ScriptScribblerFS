@@ -2,19 +2,13 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Film, ExternalLink, Bot, Check, X, Sparkles } from 'lucide-react';
+import { Film, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useScript } from '@/context/script-context';
 import { getAiProofreadSuggestions } from '@/app/actions';
-import type { AiProofreadScriptOutput } from '@/ai/flows/ai-proofread-script';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
-import { ScrollArea } from './ui/scroll-area';
-import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
-
+import type { ProofreadSuggestion } from '@/app/page';
 
 export type ScriptElement = 'scene-heading' | 'action' | 'character' | 'parenthetical' | 'dialogue' | 'transition';
 
@@ -23,8 +17,6 @@ export interface ScriptLine {
   type: ScriptElement;
   text: string;
 }
-
-type CorrectionSuggestion = AiProofreadScriptOutput['suggestions'][0];
 
 const SCRIPT_ELEMENTS_CYCLE: ScriptElement[] = [
   'scene-heading',
@@ -36,8 +28,13 @@ const SCRIPT_ELEMENTS_CYCLE: ScriptElement[] = [
 ];
 
 interface ScriptEditorProps {
-  onActiveLineTypeChange?: (type: ScriptElement | null) => void;
-  isStandalone?: boolean;
+  onActiveLineTypeChange: (type: ScriptElement | null) => void;
+  isStandalone: boolean;
+  setWordCount: (count: number) => void;
+  setEstimatedMinutes: (minutes: number) => void;
+  setSuggestions: (suggestions: ProofreadSuggestion[]) => void;
+  setIsProofreading: (loading: boolean) => void;
+  proofreadTrigger: number;
 }
 
 interface ScriptLineComponentProps {
@@ -139,18 +136,19 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = false }: ScriptEditorProps) {
-  const { script, lines, setLines, isScriptLoading } = useScript();
-  const [wordCount, setWordCount] = useState(0);
-  const [estimatedMinutes, setEstimatedMinutes] = useState(0);
+export default function ScriptEditor({ 
+  onActiveLineTypeChange, 
+  isStandalone = false,
+  setWordCount,
+  setEstimatedMinutes,
+  setSuggestions,
+  setIsProofreading,
+  proofreadTrigger
+ }: ScriptEditorProps) {
+  const { lines, setLines, isScriptLoading } = useScript();
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
   const editorRef = React.useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, lineId: string } | null>(null);
-
-  const [suggestions, setSuggestions] = useState<CorrectionSuggestion[]>([]);
-  const [isProofreading, setIsProofreading] = useState(false);
-  const [isSuggestionsDialogOpen, setIsSuggestionsDialogOpen] = useState(false);
-  const { toast } = useToast();
 
   const scriptContentForDebounce = useMemo(() => lines.map(l => l.text).join('\n'), [lines]);
   const debouncedScriptContent = useDebounce(scriptContentForDebounce, 2000);
@@ -162,22 +160,19 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
     setIsProofreading(false);
 
     if (result.error) {
-        toast({
-            variant: 'destructive',
-            title: 'Proofreading Error',
-            description: result.error,
-        });
         setSuggestions([]);
     } else if (result.data) {
         setSuggestions(result.data.suggestions);
     }
-  }, [debouncedScriptContent, toast]);
+  }, [debouncedScriptContent, setSuggestions, setIsProofreading]);
 
   useEffect(() => {
-    if (debouncedScriptContent && !isStandalone) {
+    if (proofreadTrigger > 0 && !isStandalone) {
       runProofread();
     }
-  }, [debouncedScriptContent, isStandalone, runProofread]);
+  // We only want to run this when the trigger is incremented
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proofreadTrigger, isStandalone]);
 
 
   useEffect(() => {
@@ -199,7 +194,7 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
     
     const minutes = Math.round((count / 160) * 10) / 10;
     setEstimatedMinutes(minutes);
-  }, [lines]);
+  }, [lines, setWordCount, setEstimatedMinutes]);
 
   useEffect(() => {
     if (onActiveLineTypeChange && activeLineId) {
@@ -329,29 +324,6 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
     setContextMenu(null);
   };
 
-  const applySuggestion = (suggestion: CorrectionSuggestion) => {
-    const { originalText, correctedText } = suggestion;
-    const currentContent = lines.map(l => l.text).join('\n');
-    const newContent = currentContent.replace(originalText, correctedText);
-
-    const newParsedLines = newContent.split('\n').map((text, index) => {
-       const oldLine = lines[index] || { type: 'action' };
-       return { ...oldLine, id: `line-${index}-${Date.now()}`, text };
-    });
-    setLines(newParsedLines);
-    
-    setSuggestions(prev => prev.filter(s => s !== suggestion));
-    toast({
-        title: 'Suggestion Applied',
-        description: 'The correction has been made in the script.',
-    });
-  };
-
-  const dismissSuggestion = (suggestion: CorrectionSuggestion) => {
-    setSuggestions(prev => prev.filter(s => s !== suggestion));
-  };
-
-
   const formatElementName = (name: string) => {
     return name.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
@@ -390,29 +362,6 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
             <Film className="w-5 h-5 text-primary" />
             <span className="truncate">SCENE 1: INT. COFFEE SHOP - DAY</span>
           </CardTitle>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground ml-auto">
-            <span>{wordCount} words</span>
-            <div className="flex items-center gap-2">
-                <Clock className='w-4 h-4' />
-                <span>Approx. {estimatedMinutes} min</span>
-            </div>
-          </div>
-          {!isStandalone && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setIsSuggestionsDialogOpen(true)}
-                disabled={isProofreading || suggestions.length === 0}
-              >
-                  <Bot className="w-4 h-4 mr-2" />
-                  Proofreader
-                  {isProofreading ? (
-                    <Skeleton className='w-4 h-4 rounded-full ml-2' />
-                  ) : (
-                    suggestions.length > 0 && <Badge variant="default" className="ml-2">{suggestions.length}</Badge>
-                  )}
-              </Button>
-            )}
         </div>
       </CardHeader>
       <CardContent 
@@ -470,42 +419,6 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
         </div>
       </CardContent>
       <CardFooter />
-
-      <Dialog open={isSuggestionsDialogOpen} onOpenChange={setIsSuggestionsDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="font-headline flex items-center gap-2"><Sparkles className='w-5 h-5 text-primary' /> AI Proofreader Suggestions</DialogTitle>
-            <DialogDescription>
-              Review the suggestions below. You can apply or dismiss each correction.
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="max-h-[60vh] -mx-6 px-6">
-            <div className="space-y-4 py-4">
-              {suggestions.map((suggestion, index) => (
-                <Card key={index} className="overflow-hidden">
-                  <CardHeader className="bg-muted/50 p-4">
-                    <CardTitle className="text-sm font-semibold">{suggestion.explanation}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 text-sm">
-                    <p className="text-red-500 line-through mb-2">"{suggestion.originalText}"</p>
-                    <p className="text-green-600">"{suggestion.correctedText}"</p>
-                  </CardContent>
-                  <CardFooter className="bg-muted/50 p-2 flex justify-end gap-2">
-                    <Button size="sm" variant="outline" onClick={() => dismissSuggestion(suggestion)}>
-                      <X className="w-4 h-4 mr-2" />
-                      Dismiss
-                    </Button>
-                    <Button size="sm" onClick={() => applySuggestion(suggestion)}>
-                      <Check className="w-4 h-4 mr-2" />
-                      Apply
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
     </>
   );
 
@@ -523,7 +436,3 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
     </Card>
   );
 }
-
-    
-
-    
