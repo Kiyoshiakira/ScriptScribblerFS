@@ -1,0 +1,178 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the ScriptSync application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The user's username."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "profilePictureUrl": {
+          "type": "string",
+          "description": "URL of the user's profile picture.",
+          "format": "uri"
+        },
+        "isOnline": {
+          "type": "boolean",
+          "description": "Indicates if the user is currently online."
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email"
+      ]
+    },
+    "Script": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Script",
+      "type": "object",
+      "description": "Represents a screenplay.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the script entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the screenplay."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Reference to the User who created the script. (Relationship: User 1:N Script)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the script was created.",
+          "format": "date-time"
+        },
+        "lastModified": {
+          "type": "string",
+          "description": "Timestamp indicating when the script was last modified.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "authorId",
+        "createdAt",
+        "lastModified"
+      ]
+    },
+    "Collaboration": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Collaboration",
+      "type": "object",
+      "description": "Represents a collaboration session on a script.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the collaboration entity."
+        },
+        "scriptId": {
+          "type": "string",
+          "description": "Reference to the Script being collaborated on. (Relationship: Script 1:N Collaboration)"
+        },
+        "userIds": {
+          "type": "array",
+          "description": "References to the Users participating in the collaboration. (Relationship: User N:N Collaboration)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Timestamp indicating when the collaboration session started.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "Timestamp indicating when the collaboration session ended.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "scriptId",
+        "userIds",
+        "startTime"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Path-based ownership for private data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/scripts/{scriptId}",
+        "definition": {
+          "entityName": "Script",
+          "schema": {
+            "$ref": "#/backend/entities/Script"
+          },
+          "description": "Stores scripts owned by a specific user. Utilizes path-based ownership for enhanced security and simplified rules. The `authorId` field within the script is redundant and serves as denormalized data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user (script author)."
+            },
+            {
+              "name": "scriptId",
+              "description": "The unique identifier for the script."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/collaborations/{collaborationId}",
+        "definition": {
+          "entityName": "Collaboration",
+          "schema": {
+            "$ref": "#/backend/entities/Collaboration"
+          },
+          "description": "Stores collaboration sessions. Includes denormalized `userIds` array for authorization independence.",
+          "params": [
+            {
+              "name": "collaborationId",
+              "description": "The unique identifier for the collaboration session."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support a collaborative screenwriting application, ScriptSync, focusing on security, scalability, and debuggability, especially regarding authorization. It adheres to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Queries are not Filters).\n\n**Authorization Independence:** Authorization data is denormalized to avoid `get()` calls in security rules. For instance, the `scripts` collection stores the `authorId` within each script document. For collaboration, we leverage a membership map within the `collaborations` documents. This allows us to determine access rights based on the data present within the document being accessed, without needing to query parent or related documents.\n\n**Clarity of Intent:** The structure is explicit, using named collections (e.g., `users`, `scripts`, `collaborations`) and fields (`authorId`, `userIds`). This makes the intent of each collection and document clear, improving debuggability.\n\n**DBAC:** Roles are managed directly in the database. Currently, there are no explicit global roles defined, but the structure can easily accommodate them if needed (e.g., a `/roles_admin/{uid}` collection).\n\n**QAPs:** The structure supports secure list operations. The separation of user-owned scripts (`/users/{userId}/scripts/{scriptId}`) and collaborations allows for targeted queries with simple security rules. Rules can easily enforce that only the script owner can list their own scripts, or that only members of a collaboration can access the collaboration document.\n\nThe User entity includes an `isOnline` field, enabling the display of online status. Since Firestore is not suitable for real-time presence, consider using Firebase Realtime Database or Cloud Functions triggered by Firestore writes for a more robust solution.\n\nPath-based ownership `/users/{userId}/scripts/{scriptId}` is used to define the `User 1:N Script` relationship. This approach provides superior security and avoids the need for complex queries to determine ownership."
+  }
+}

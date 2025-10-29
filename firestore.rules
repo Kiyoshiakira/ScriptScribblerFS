@@ -1,0 +1,97 @@
+/**
+ * @file Firebase Security Rules for ScriptSync
+ *
+ * @core_philosophy This ruleset enforces a strict user-ownership model for user profiles and scripts,
+ * with shared access for collaborations. It prioritizes secure data access and prevents unauthorized
+ * modifications. The rules are designed to be clear, maintainable, and performant.
+ *
+ * @data_structure
+ * - /users/{userId}: Stores user profiles. Only the user themselves can read or write their profile data.
+ * - /users/{userId}/scripts/{scriptId}: Stores scripts owned by a specific user. Only the owner can create, read, update, or delete their own scripts.
+ * - /collaborations/{collaborationId}: Stores collaboration sessions. Only users who are members of the collaboration can access the document.
+ *
+ * @key_security_decisions
+ * - User listing is disabled.
+ * - Collaboration access is managed by a denormalized 'userIds' array on the collaboration document.
+ * - Ownership is enforced through path-based matching and data validation.
+ * - The `isOnline` field is secured to prevent unauthorized status updates.
+ *
+ * @denormalization_for_authorization
+ * - Collaboration documents store an array of `userIds` to avoid needing to query a separate collection to determine membership.
+ * - Scripts are stored as subcollections of users to easily enforce ownership without needing to read the script document.
+ *
+ * @structural_segregation There is no explicit segregation of public vs. private data in this model.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description: Manages access to user profile data. Only the authenticated user can read or write their own profile.
+     * @path: /users/{userId}
+     * @allow: (get, update, delete) User A is signed in as User A, and tries to read, update, or delete /users/UserA.
+     * @allow: (create) User A is signed in as User A, and tries to create /users/UserA.
+     * @deny: (get, update, delete) User A is signed in as User A, and tries to read, update, or delete /users/UserB.
+     * @principle: Enforces document ownership for writes and restricts access to a user's own data.
+     */
+    match /users/{userId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && (request.resource.data.id == resource.data.id);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+    /**
+     * @description: Manages access to scripts owned by a specific user. Only the owner can create, read, update, or delete their own scripts.
+     * @path: /users/{userId}/scripts/{scriptId}
+     * @allow: (get, update, delete) User A is signed in as User A, and tries to read, update, or delete /users/UserA/scripts/script1.
+     * @allow: (create) User A is signed in as User A, and tries to create /users/UserA/scripts/script1.
+     * @deny: (get, update, delete) User A is signed in as User A, and tries to read, update, or delete /users/UserB/scripts/script1.
+     * @principle: Enforces document ownership for writes and restricts access to a user's own data tree.  Validates relational integrity between documents.
+     */
+    match /users/{userId}/scripts/{scriptId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.authorId == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && (request.resource.data.authorId == resource.data.authorId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+    /**
+     * @description: Manages access to collaboration sessions. Only users who are members of the collaboration can access the document.
+     * @path: /collaborations/{collaborationId}
+     * @allow: (get, update, delete) User A is signed in and is a member of the collaboration, and tries to read, update, or delete /collaborations/collab1.
+     * @allow: (create) User A is signed in and is a member of the collaboration, and tries to create /collaborations/collab1.
+     * @deny: User A is signed in but is not a member of the collaboration, and tries to read, update, or delete /collaborations/collab1.
+     * @principle: Enforces shared access control, requiring the user to be listed in the collaboration's `userIds` array.
+     */
+    match /collaborations/{collaborationId} {
+      allow get: if isSignedIn() && isCollaborator(resource.data.userIds);
+      allow list: if false;
+      allow create: if isSignedIn() && isCollaborator(request.resource.data.userIds);
+      allow update: if isSignedIn() && isExistingCollaborator(resource.data.userIds);
+      allow delete: if isSignedIn() && isExistingCollaborator(resource.data.userIds);
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+        return isSignedIn() && isOwner(userId) && resource != null;
+    }
+
+    function isCollaborator(userIds) {
+      return userIds.hasAny([request.auth.uid]);
+    }
+
+    function isExistingCollaborator(userIds) {
+        return isSignedIn() && isCollaborator(userIds) && resource != null;
+    }
+  }
+}
