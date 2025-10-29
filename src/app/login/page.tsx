@@ -1,21 +1,23 @@
 'use client';
 
 import {
+  getAuth,
   GoogleAuthProvider,
   signInWithRedirect,
 } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/firebase';
+import { useFirebaseApp } from '@/firebase';
 import { Logo } from '@/components/layout/app-sidebar';
 
 const provider = new GoogleAuthProvider();
 
 export default function LoginPage() {
-  const auth = useAuth();
+  const app = useFirebaseApp();
 
   const handleSignIn = async () => {
     try {
+      const auth = getAuth(app);
       await signInWithRedirect(auth, provider);
     } catch (error) {
       console.error('Error signing in with Google:', error);
