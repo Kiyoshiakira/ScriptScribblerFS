@@ -40,9 +40,11 @@ import JSZip from 'jszip';
 import type { Character } from '../views/characters-view';
 import type { Scene } from '../views/scenes-view';
 import type { Note } from '../views/notes-view';
+import { useRouter } from 'next/navigation';
+
 
 interface AppHeaderProps {
-  setView: (view: View) => void;
+  setView: (view: any) => void;
   characters?: Character[] | null;
   scenes?: Scene[] | null;
   notes?: Note[] | null;
@@ -52,6 +54,7 @@ export default function AppHeader({ setView, characters, scenes, notes }: AppHea
   const auth = useAuth();
   const { user } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
   const { script, setScriptTitle, isScriptLoading } = useScript();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +64,7 @@ export default function AppHeader({ setView, characters, scenes, notes }: AppHea
   const handleSignOut = async () => {
     if (auth) {
         await signOut(auth);
+        router.push('/login');
     }
   };
 
@@ -312,9 +316,11 @@ export default function AppHeader({ setView, characters, scenes, notes }: AppHea
             <p className="text-xs text-muted-foreground font-normal truncate">{user.email}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-           <DropdownMenuItem onClick={() => setView('profile')}>
-                <UserIcon className="mr-2 h-4 w-4" />
-                <span>My Scripts</span>
+           <DropdownMenuItem asChild>
+                <Link href="/profile">
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    <span>My Scripts</span>
+                </Link>
             </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setSettingsDialogOpen(true)}>
             <Settings className="mr-2 h-4 w-4" />

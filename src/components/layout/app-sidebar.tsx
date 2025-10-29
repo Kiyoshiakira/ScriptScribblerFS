@@ -29,10 +29,12 @@ import { cn } from '@/lib/utils';
 import { useScript } from '@/context/script-context';
 import { Skeleton } from '../ui/skeleton';
 import { SettingsDialog } from '../settings-dialog';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 interface AppSidebarProps {
-  activeView: View;
-  setActiveView: (view: View) => void;
+  activeView: View | 'profile';
+  setActiveView: (view: any) => void;
   activeScriptElement: ScriptElement | null;
   wordCount: number;
   estimatedMinutes: number;
@@ -66,6 +68,8 @@ export default function AppSidebar({
 }: AppSidebarProps) {
   const { state: sidebarState } = useSidebar();
   const { isScriptLoading } = useScript();
+  const pathname = usePathname();
+  const isProfilePage = pathname === '/profile';
   
   const formatElementName = (name: string | null) => {
     if (!name) return 'N/A';
@@ -76,8 +80,7 @@ export default function AppSidebar({
   }
 
   const ScriptInfo = () => {
-    // Hide this entire section if the view is not 'editor' to prevent flashing
-    if (activeView !== 'editor') {
+    if (isProfilePage || activeView !== 'editor') {
       return null;
     }
      return (
@@ -112,10 +115,10 @@ export default function AppSidebar({
     <>
     <Sidebar variant="sidebar" collapsible="icon" side="left">
       <SidebarHeader>
-        <div className="flex items-center gap-2 p-2">
+        <Link href="/" className="flex items-center gap-2 p-2">
             <Logo />
             <h1 className="text-xl font-bold font-headline">ScriptScribbler</h1>
-        </div>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu className="flex-1 overflow-y-auto p-2">
@@ -124,6 +127,7 @@ export default function AppSidebar({
                 onClick={() => setActiveView('dashboard')}
                 isActive={activeView === 'dashboard'}
                 tooltip="Dashboard"
+                disabled={isProfilePage}
             >
                 <LayoutDashboard />
                 <span>Dashboard</span>
@@ -134,6 +138,7 @@ export default function AppSidebar({
                 onClick={() => setActiveView('editor')}
                 isActive={activeView === 'editor'}
                 tooltip="Editor"
+                disabled={isProfilePage}
             >
                 <BookText />
                 <span>Editor</span>
@@ -144,6 +149,7 @@ export default function AppSidebar({
                 onClick={() => setActiveView('logline')}
                 isActive={activeView === 'logline'}
                 tooltip="Logline"
+                disabled={isProfilePage}
             >
                 <NotebookPen />
                 <span>Logline</span>
@@ -154,6 +160,7 @@ export default function AppSidebar({
                 onClick={() => setActiveView('scenes')}
                 isActive={activeView === 'scenes'}
                 tooltip="Scenes"
+                disabled={isProfilePage}
             >
                 <Clapperboard />
                 <span>Scenes</span>
@@ -164,6 +171,7 @@ export default function AppSidebar({
                 onClick={() => setActiveView('characters')}
                 isActive={activeView === 'characters'}
                 tooltip="Characters"
+                disabled={isProfilePage}
             >
                 <Users />
                 <span>Characters</span>
@@ -174,21 +182,11 @@ export default function AppSidebar({
                 onClick={() => setActiveView('notes')}
                 isActive={activeView === 'notes'}
                 tooltip="Notes"
+                disabled={isProfilePage}
             >
                 <StickyNote />
                 <span>Notes</span>
             </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarSeparator />
-             <SidebarMenuItem>
-                <SidebarMenuButton
-                    onClick={() => setActiveView('profile')}
-                    isActive={activeView === 'profile'}
-                    tooltip="My Scripts"
-                >
-                    <User />
-                    <span>My Scripts</span>
-                </SidebarMenuButton>
             </SidebarMenuItem>
         </SidebarMenu>
         {isScriptLoading && activeView === 'editor' ? (

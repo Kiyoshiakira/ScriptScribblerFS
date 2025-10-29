@@ -23,6 +23,8 @@ import {
 import { type View } from '@/app/page';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
+import { useRouter } from 'next/navigation';
+
 
 const initialScriptContent = `FADE IN:
 
@@ -50,7 +52,7 @@ interface Script {
 }
 
 interface MyScriptsViewProps {
-    setView: (view: View) => void;
+    setView: (view: any) => void;
 }
 
 export default function MyScriptsView({ setView }: MyScriptsViewProps) {
@@ -59,8 +61,8 @@ export default function MyScriptsView({ setView }: MyScriptsViewProps) {
     const { toast } = useToast();
     const { setCurrentScriptId } = useCurrentScript();
     const [isDeleting, setIsDeleting] = useState(false);
+    const router = useRouter();
     
-    // State for selective delete
     const [deleteScriptDoc, setDeleteScriptDoc] = useState(true);
     const [deleteCharacters, setDeleteCharacters] = useState(true);
     const [deleteScenes, setDeleteScenes] = useState(true);
@@ -89,7 +91,7 @@ export default function MyScriptsView({ setView }: MyScriptsViewProps) {
                 description: 'A new untitled script has been added to your collection.',
             });
             setCurrentScriptId(newScriptRef.id);
-            setView('dashboard');
+            router.push('/');
         } catch (error: any) {
             console.error("Error creating script: ", error);
             toast({
@@ -102,7 +104,7 @@ export default function MyScriptsView({ setView }: MyScriptsViewProps) {
 
     const handleOpenScript = (scriptId: string) => {
         setCurrentScriptId(scriptId);
-        setView('dashboard');
+        router.push('/');
     };
     
     const handleSelectiveDelete = async (scriptId: string) => {
