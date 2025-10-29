@@ -86,11 +86,11 @@ const ScriptLineComponent = ({
       case 'action':
         return '';
       case 'character':
-        return 'uppercase text-center';
+        return 'uppercase text-center max-w-sm mx-auto';
       case 'parenthetical':
-        return 'text-center text-muted-foreground';
+        return 'text-center max-w-xs mx-auto text-muted-foreground';
       case 'dialogue':
-        return 'px-20';
+        return 'max-w-md mx-auto';
       case 'transition':
         return 'uppercase text-right';
       default:
@@ -202,7 +202,7 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
   }, [scriptContent]);
 
   useEffect(() => {
-    if (lines.length === 0) return;
+    if (lines.length === 0 || scriptContent === undefined) return;
     const newScriptContent = lines.map(line => line.text.replace(/<br>/g, '')).join('\n');
     setScriptContent(newScriptContent);
 
@@ -215,7 +215,7 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
     
     const minutes = Math.round((count / 160) * 10) / 10;
     setEstimatedMinutes(minutes);
-  }, [lines, setScriptContent]);
+  }, [lines, setScriptContent, scriptContent]);
 
   useEffect(() => {
     if (onActiveLineTypeChange && activeLineId) {
@@ -345,7 +345,7 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
 
   const applySuggestion = (suggestion: CorrectionSuggestion) => {
     const { originalText, correctedText } = suggestion;
-    if (!scriptContent) return;
+    if (scriptContent === undefined) return;
     // This is a simple implementation. A more robust solution would use a diffing library.
     const newScriptContent = scriptContent.replace(originalText, correctedText);
     setScriptContent(newScriptContent);
