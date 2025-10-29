@@ -79,17 +79,17 @@ const ScriptLineComponent = ({
     }
     switch (type) {
         case 'scene-heading':
-            return 'uppercase font-bold pl-[9rem]';
+            return 'uppercase font-bold';
         case 'action':
-            return 'pl-[9rem]';
+            return ''; // Action should be left-aligned
         case 'character':
-            return 'uppercase pl-[22rem]';
+            return 'uppercase pl-[18rem]';
         case 'parenthetical':
-            return 'pl-[18rem] text-muted-foreground';
+            return 'pl-[14rem] text-muted-foreground';
         case 'dialogue':
-            return 'pl-[14rem] pr-[14rem]';
+            return 'pl-[10rem] pr-[10rem]';
         case 'transition':
-            return 'uppercase text-right pr-12';
+            return 'uppercase text-right';
         default:
             return '';
     }
@@ -102,7 +102,7 @@ const ScriptLineComponent = ({
   const handleBlur = (e: React.FormEvent<HTMLDivElement>) => {
     let newText = e.currentTarget.innerHTML;
     // Sanitize the text by removing trailing <br> and replacing &nbsp;
-    newText = newText.replace(/<br\s*\/?>$/i, '').replace(/&nbsp;/g, ' ').trim();
+    newText = newText.replace(/<br\s*\/?>$/i, '').replace(/&nbsp;/g, ' ');
     if (line.text !== newText) {
       onTextChange(line.id, newText);
     }
@@ -380,11 +380,11 @@ export default function ScriptEditor({
         </DropdownMenu>
 
         <div
-          className="flex-1 resize-none font-code text-base bg-card flex flex-col"
+          className="flex-1 resize-none font-code text-base bg-card flex flex-col px-12"
           style={{ minHeight: '60vh' }}
         >
           {lines.map(line => (
-              <div key={line.id} data-line-id={line.id} onClick={() => setActiveLineId(line.id)} className="mb-2">
+              <div key={line.id} data-line-id={line.id} onClick={() => setActiveLineId(line.id)} className="py-1">
                 <ScriptLineComponent
                     line={line}
                     onTextChange={handleTextChange}
