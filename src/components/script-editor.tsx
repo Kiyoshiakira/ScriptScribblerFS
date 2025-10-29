@@ -90,7 +90,7 @@ const ScriptLineComponent = ({
       case 'parenthetical':
         return 'text-center text-muted-foreground';
       case 'dialogue':
-        return 'px-12';
+        return 'px-20';
       case 'transition':
         return 'uppercase text-right';
       default:
