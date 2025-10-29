@@ -49,7 +49,6 @@ Your goal is to help the user modify their script and other project elements.
 Analyze the user's request and the current script content.
 If the user is asking for a change to the script, rewrite the script content and provide a response explaining what you did.
 If the user is asking a question or for analysis, respond directly with text.
-Decide whether to use one of the available tools or to respond directly.
 
 **User Request:**
 ${input.request}
@@ -59,7 +58,6 @@ ${input.request}
 ${input.script}
 ---
 `,
-      tools: [], // Tools are deprecated in favor of specific flows
       model: 'googleai/gemini-2.5-flash-preview',
       output: {
         schema: z.object({
@@ -69,7 +67,7 @@ ${input.script}
       }
     });
 
-    const output = llmResponse.output();
+    const output = llmResponse.output;
     if (!output) {
       return { response: "I'm sorry, I wasn't able to process that request." };
     }

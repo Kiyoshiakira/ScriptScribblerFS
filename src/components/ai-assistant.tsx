@@ -142,7 +142,6 @@ export default function AiAssistant({ scriptContent }: AiAssistantProps) {
         const aiMessage: ChatMessage = { sender: 'ai', text: result.data.response };
         setChatHistory(prev => [...prev, aiMessage]);
         
-        // Check if the AI returned a modified script
         if (result.data.modifiedScript) {
             setLines(result.data.modifiedScript);
             toast({
@@ -311,5 +310,3 @@ export default function AiAssistant({ scriptContent }: AiAssistantProps) {
     </Card>
   );
 }
-
-    
