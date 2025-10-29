@@ -5,17 +5,25 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import AppSidebar, { Logo } from '@/components/layout/app-sidebar';
 import AppHeader from '@/components/layout/app-header';
 import MyScriptsView from '@/components/views/my-scripts-view';
-import { useUser } from '@/firebase';
+import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { View } from '@/app/page';
-import { useCurrentScript, CurrentScriptContext } from '@/context/current-script-context';
+import { useCurrentScript } from '@/context/current-script-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Camera, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { EditProfileDialog } from '@/components/edit-profile-dialog';
+
+interface UserProfile {
+    bio?: string;
+    displayName?: string;
+    email?: string;
+}
 
 function FriendsList() {
   const friends = PlaceHolderImages.filter(img => img.id.startsWith('user')).slice(0, 4);
@@ -40,7 +48,7 @@ function FriendsList() {
   )
 }
 
-function ProfileHeader({ user }: { user: any }) {
+function ProfileHeader({ user, profile, onEdit }: { user: any, profile: UserProfile | null, onEdit: () => void }) {
     return (
         <div className="w-full">
             <div className="h-48 bg-muted/50 relative">
@@ -54,9 +62,6 @@ function ProfileHeader({ user }: { user: any }) {
                                 <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
                                 <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
                             </Avatar>
-                            <div className='absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer'>
-                                <Camera className='w-8 h-8 text-white' />
-                            </div>
                         </div>
                         <div className="py-4">
                             <h1 className="text-2xl sm:text-3xl font-bold font-headline truncate">{user.displayName}</h1>
@@ -64,12 +69,12 @@ function ProfileHeader({ user }: { user: any }) {
                         </div>
                     </div>
                     <div className="flex items-center gap-2 mb-4">
-                        <Button variant="outline">Edit Profile</Button>
+                        <Button variant="outline" onClick={onEdit}>Edit Profile</Button>
                          <Button><UserPlus className="mr-2" /> Add Friend</Button>
                     </div>
                 </div>
                  <p className="mt-4 max-w-2xl text-muted-foreground">
-                    Fledgling screenwriter and director with a passion for sci-fi comedies and character-driven stories. Turning coffee into scripts since 2021.
+                    {profile?.bio || "Fledgling screenwriter and director with a passion for sci-fi comedies and character-driven stories. Turning coffee into scripts since 2021."}
                 </p>
             </div>
         </div>
@@ -79,7 +84,9 @@ function ProfileHeader({ user }: { user: any }) {
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const firestore = useFirestore();
   const { setCurrentScriptId } = useCurrentScript();
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
@@ -92,6 +99,14 @@ export default function ProfilePage() {
     setCurrentScriptId(null);
   }, [setCurrentScriptId]);
 
+  const userDocRef = useMemoFirebase(
+    () => (user && firestore ? doc(firestore, 'users', user.uid) : null),
+    [user, firestore]
+  );
+  
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
+
+
   const handleSetView = (newView: View) => {
     if (newView !== 'profile') {
         // The `useCurrentScript` context will have been updated by MyScriptsView,
@@ -100,7 +115,7 @@ export default function ProfilePage() {
     }
   }
 
-  if (isUserLoading || !user) {
+  if (isUserLoading || !user || isProfileLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -113,6 +128,7 @@ export default function ProfilePage() {
   }
 
   return (
+    <>
     <SidebarProvider>
       <div className="flex h-screen bg-background">
         <AppSidebar
@@ -125,7 +141,7 @@ export default function ProfilePage() {
         <div className="flex flex-1 flex-col overflow-hidden">
           <AppHeader setView={handleSetView} />
           <main className="flex-1 overflow-y-auto">
-            <ProfileHeader user={user} />
+            <ProfileHeader user={user} profile={userProfile} onEdit={() => setIsEditDialogOpen(true)} />
             
              {/* Tabs */}
             <div className="mt-6 px-4 sm:px-6 lg:px-8">
@@ -146,5 +162,12 @@ export default function ProfilePage() {
         </div>
       </div>
     </SidebarProvider>
+    <EditProfileDialog 
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        user={user}
+        profile={userProfile}
+    />
+    </>
   );
 }

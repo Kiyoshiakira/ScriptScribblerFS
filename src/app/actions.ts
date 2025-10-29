@@ -154,8 +154,6 @@ export async function getAiProofreadSuggestions(input: AiProofreadScriptInput) {
     }
 }
 
-// This is a new server action to save characters.
-// We are using the Firebase Admin SDK here for backend operations.
 export async function saveCharacter(
   userId: string,
   scriptId: string,
@@ -168,7 +166,6 @@ export async function saveCharacter(
     scenes: number;
   }
 ) {
-  // Guard clause to prevent action if admin SDK is not initialized
   if (!adminApp) {
     const errorMessage = 'Firebase Admin SDK is not initialized. Character cannot be saved.';
     console.error(errorMessage);
@@ -181,7 +178,6 @@ export async function saveCharacter(
     const serverTimestamp = FieldValue.serverTimestamp();
 
     if (characterData.id) {
-      // Update existing character
       const charDocRef = charactersCollectionRef.doc(characterData.id);
       await charDocRef.set(
         {
@@ -192,7 +188,6 @@ export async function saveCharacter(
       );
       return { success: true, id: characterData.id };
     } else {
-      // Create new character
       const newCharDocRef = await charactersCollectionRef.add({
         ...characterData,
         createdAt: serverTimestamp,
@@ -202,6 +197,35 @@ export async function saveCharacter(
     }
   } catch (error) {
     console.error('Error saving character:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function updateUserProfile(
+  userId: string,
+  data: { bio: string }
+) {
+  if (!adminApp) {
+    const errorMessage = 'Firebase Admin SDK is not initialized. Profile cannot be updated.';
+    console.error(errorMessage);
+    return { success: false, error: errorMessage };
+  }
+
+  try {
+    const db = getFirestore(adminApp);
+    const userDocRef = db.collection('users').doc(userId);
+    
+    await userDocRef.set(
+      {
+        ...data,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating user profile:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return { success: false, error: errorMessage };
   }
