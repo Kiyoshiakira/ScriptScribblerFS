@@ -103,11 +103,11 @@ Analyze the user's request and the current script content.
 - If the user is asking a general question or for analysis, respond directly with text.
 
 **User Request:**
-${'{{{request}}}'}
+{{{request}}}
 
 **Current Screenplay:**
 ---
-${'{{{script}}}'}
+{{{script}}}
 ---
 `,
   },
