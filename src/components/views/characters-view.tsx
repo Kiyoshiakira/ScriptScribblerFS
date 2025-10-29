@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Sparkles, User, FileText, Upload } from 'lucide-react';
@@ -78,10 +78,10 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
   const [imageUrl, setImageUrl] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = React.useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setName(character?.name || '');
       setDescription(character?.description || '');
@@ -111,24 +111,23 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
     
     setIsGenerating(false);
     
-    if (result.error || !result.data) {
+    if (result.error || !result.data?.toolResult) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: result.error || 'Could not generate character profile.',
+        description: result.error || 'Could not generate a structured character profile.',
       });
     } else {
-        // The response will be a formatted string, we need to parse it.
-        const responseText = result.data.response;
-        const nameMatch = responseText.match(/\*\*Name:\*\*\s*(.*)/);
-        const profileMatch = responseText.match(/\*\*Profile:\*\*\n([\s\S]*)/);
-        
-        if (nameMatch && profileMatch) {
-            setName(nameMatch[1].trim());
-            setProfile(profileMatch[1].trim());
+        const toolResult = result.data.toolResult as { name: string; profile: string };
+        if (toolResult.name && toolResult.profile) {
+            setName(toolResult.name);
+            setProfile(toolResult.profile);
         } else {
-            // Fallback if parsing fails
-            setProfile(responseText);
+             toast({
+                variant: 'destructive',
+                title: 'AI Response Error',
+                description: 'The AI did not return a valid name and profile. Please try again.',
+            });
         }
     }
   };
@@ -328,7 +327,7 @@ export default function CharactersView() {
                             width={200}
                             height={200}
                             className="w-full h-full object-cover"
-                            data-ai-hint={image.imageHint || 'character portrait'}
+                            data-ai-hint={(image as any).imageHint || 'character portrait'}
                           />
                         )}
                         {!image && <div className="w-full h-full bg-muted flex items-center justify-center"><User className="w-1/2 h-1/2 text-muted-foreground" /></div>}
@@ -357,5 +356,3 @@ export default function CharactersView() {
     </div>
   );
 }
-
-    

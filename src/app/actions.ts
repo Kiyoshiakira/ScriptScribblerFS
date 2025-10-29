@@ -55,9 +55,10 @@ export async function runAiAgent(input: AiAgentOrchestratorInput) {
         return { data: result, error: null };
     } catch (error) {
         console.error(error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return {
         data: null,
-        error: 'An error occurred while running the AI agent.',
+        error: `An error occurred while running the AI agent: ${errorMessage}`,
         };
     }
 }

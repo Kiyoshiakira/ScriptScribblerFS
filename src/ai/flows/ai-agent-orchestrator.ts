@@ -75,6 +75,7 @@ export type AiAgentOrchestratorInput = z.infer<typeof AiAgentOrchestratorInputSc
 
 const AiAgentOrchestratorOutputSchema = z.object({
   response: z.string().describe('The AI\'s response to the user\'s request, which may include the results of tool calls.'),
+  toolResult: z.any().optional().describe('The direct result from any tool that was called.'),
 });
 export type AiAgentOrchestratorOutput = z.infer<typeof AiAgentOrchestratorOutputSchema>;
 
@@ -128,15 +129,14 @@ ${input.script}
           ---
           
           Summarize this result in a friendly, conversational way.
-          If the tool was 'generateCharacterProfile', format the response exactly like this, with no extra text before or after:
-          **Name:** [Character Name]
-          **Profile:**
-          [Character Profile]
           `,
           model: 'googleai/gemini-2.5-flash-preview',
       });
       
-      return { response: finalResponse.text };
+      return { 
+        response: finalResponse.text,
+        toolResult: toolResponse, // Pass the raw tool result back
+      };
     }
 
     // If no tool was used, just return the direct text response.
