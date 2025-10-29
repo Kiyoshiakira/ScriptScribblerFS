@@ -74,7 +74,7 @@ export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScri
 
 
   scenesFromStructure.forEach((sceneContainer: any) => {
-    if (sceneContainer.scene?.elements) {
+    if (sceneContainer.scene) {
       sceneCounter++;
       let sceneText = '';
       const sceneElements = getAsArray(sceneContainer.scene.elements);
@@ -86,31 +86,33 @@ export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScri
         sceneText += sceneSetting.toUpperCase() + '\n\n';
       }
       
-      sceneElements.forEach((element: any) => {
-        let text = element.text || '';
-        text = text.replace(/<[^>]*>?/gm, ''); // Strip any HTML tags if present
+      if (sceneElements) {
+        sceneElements.forEach((element: any) => {
+            let text = element.text || '';
+            text = text.replace(/<[^>]*>?/gm, ''); // Strip any HTML tags if present
 
-        switch(element.type) {
-            case 'Action':
-                sceneText += text + '\n\n';
-                break;
-            case 'Character':
-                sceneText += `\t${text.toUpperCase()}\n`;
-                break;
+            switch(element.type) {
+                case 'Action':
+                    sceneText += text + '\n\n';
+                    break;
+                case 'Character':
+                    sceneText += `${text.toUpperCase()}\n`;
+                    break;
+                case 'Parenthetical':
+                    sceneText += `(${text})\n`;
+                    break;
+                case 'Dialogue':
+                    sceneText += `${text}\n\n`;
+                    break;
+                case 'Transition':
+                    sceneText += `${text.toUpperCase()}\n\n`;
+                    break;
+                default:
+                    sceneText += text + '\n';
+            }
+        });
+      }
 
-            case 'Parenthetical':
-                sceneText += `\t${text}\n`;
-                break;
-            case 'Dialogue':
-                 sceneText += `\t\t${text}\n\n`;
-                break;
-             case 'Transition':
-                sceneText += `\t\t\t\t\t\t${text.toUpperCase()}\n\n`;
-                break;
-            default:
-                sceneText += text + '\n';
-        }
-      });
 
       const wordCount = sceneText.trim().split(/\s+/).filter(Boolean).length;
       let estimatedTime = Math.round((wordCount / 160) * 10) / 10; // Approx 160 words per minute

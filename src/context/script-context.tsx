@@ -4,13 +4,19 @@ import React, { createContext, useState, useEffect, ReactNode, useContext, useCa
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useDebounce } from 'use-debounce';
-import type { ScriptLine } from '@/components/script-editor';
+import type { ScriptElement } from '@/components/script-editor';
 
 interface Script {
     id: string;
     title: string;
     content: string; // The raw string content for Firestore
     [key: string]: any; 
+}
+
+export interface ScriptLine {
+  id: string;
+  type: ScriptElement;
+  text: string;
 }
 
 interface ScriptContextType {
@@ -48,11 +54,12 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   const parseContentToLines = (content: string): ScriptLine[] => {
       if (typeof content !== 'string') return [];
       return content.split('\n').map((text, index) => {
-          let type: ScriptLine['type'] = 'action';
-          if (text.startsWith('INT.') || text.startsWith('EXT.')) type = 'scene-heading';
-          else if (text.trim().startsWith('(') && text.trim().endsWith(')')) type = 'parenthetical';
-          else if (text.trim().endsWith(' TO:')) type = 'transition';
-          else if (/^[A-Z\s]+$/.test(text.trim()) && text.trim().length > 0 && text.trim().length < 35 && !text.includes('(') ) {
+          let type: ScriptElement = 'action';
+          const trimmedText = text.trim();
+          if (trimmedText.startsWith('INT.') || trimmedText.startsWith('EXT.')) type = 'scene-heading';
+          else if (trimmedText.startsWith('(') && trimmedText.endsWith(')')) type = 'parenthetical';
+          else if (trimmedText.endsWith(' TO:')) type = 'transition';
+          else if (/^[A-Z\s]+$/.test(trimmedText) && trimmedText.length > 0 && trimmedText.length < 35 && !trimmedText.includes('(') ) {
               // This is a heuristic and might misidentify action lines written in all caps.
               // A more robust solution would involve checking the previous line type.
               type = 'character';
@@ -64,8 +71,14 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   useEffect(() => {
     if (firestoreScript) {
         setLocalScript(firestoreScript);
-        if (lines.length === 0 && firestoreScript.content) { 
+        // Only parse content to lines if lines are not already set,
+        // or if the firestore content has updated and is different from current lines.
+        const currentContentFromLines = lines.map(line => line.text).join('\n');
+        if (firestoreScript.content && firestoreScript.content !== currentContentFromLines) { 
             const parsed = parseContentToLines(firestoreScript.content);
+            setLines(parsed);
+        } else if (lines.length === 0 && firestoreScript.content) {
+             const parsed = parseContentToLines(firestoreScript.content);
             setLines(parsed);
         }
     }
