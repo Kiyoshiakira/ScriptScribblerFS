@@ -2,7 +2,7 @@
 import 'regenerator-runtime/runtime'; // Direct import to fix speech recognition error
 import { useState, useEffect, useRef, useContext } from 'react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import { getAiSuggestions, getAiDeepAnalysis, runAiAgent } from '@/app/actions';
+import { getAiSuggestions, getAiDeepAnalysis, runAiAgent, saveCharacter } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -16,6 +16,8 @@ import { Input } from './ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { cn } from '@/lib/utils';
 import { ScriptContext } from '@/context/script-context';
+import { useUser } from '@/firebase';
+import { useCurrentScript } from '@/context/current-script-context';
 
 
 interface AiAssistantProps {
@@ -65,6 +67,8 @@ export default function AiAssistant({ scriptContent }: AiAssistantProps) {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { setLines } = useContext(ScriptContext);
+  const { user } = useUser();
+  const { currentScriptId } = useCurrentScript();
 
   const {
     transcript,
@@ -148,6 +152,32 @@ export default function AiAssistant({ scriptContent }: AiAssistantProps) {
                 title: 'Script Updated',
                 description: 'The AI has updated the script content.',
             })
+        }
+
+        // Check for tool results and handle them
+        if (result.data.toolResult?.type === 'character' && user && currentScriptId) {
+            const charData = result.data.toolResult.data;
+            const characterToSave = {
+                name: charData.name,
+                profile: charData.profile,
+                description: charData.profile.split('\n')[0], // Use first line of profile as description
+                scenes: 0,
+            };
+            
+            const saveResult = await saveCharacter(user.uid, currentScriptId, characterToSave);
+            
+            if (saveResult.success) {
+                toast({
+                    title: 'Character Created',
+                    description: `${charData.name} has been added to your characters list.`,
+                });
+            } else {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Failed to Save Character',
+                    description: saveResult.error,
+                });
+            }
         }
     }
   };

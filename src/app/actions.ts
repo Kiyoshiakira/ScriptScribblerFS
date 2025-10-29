@@ -20,6 +20,9 @@ import {
     aiGenerateCharacterProfile,
     type AiGenerateCharacterProfileInput,
 } from '@/ai/flows/ai-generate-character-profile';
+import { addDoc, collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
+import { adminApp } from '@/firebase/admin';
 
 
 export async function getAiSuggestions(
@@ -108,4 +111,49 @@ export async function getAiProofreadSuggestions(input: AiProofreadScriptInput) {
         error: `An error occurred while proofreading: ${errorMessage}`,
         };
     }
+}
+
+// This is a new server action to save characters.
+// We are using the Firebase Admin SDK here for backend operations.
+export async function saveCharacter(
+  userId: string,
+  scriptId: string,
+  characterData: {
+    id?: string;
+    name: string;
+    description: string;
+    profile?: string;
+    imageUrl?: string;
+    scenes: number;
+  }
+) {
+  try {
+    const db = getFirestore(adminApp);
+    const charactersCollectionRef = db.collection(`users/${userId}/scripts/${scriptId}/characters`);
+
+    if (characterData.id) {
+      // Update existing character
+      const charDocRef = charactersCollectionRef.doc(characterData.id);
+      await charDocRef.set(
+        {
+          ...characterData,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+      return { success: true, id: characterData.id };
+    } else {
+      // Create new character
+      const newCharDocRef = await charactersCollectionRef.add({
+        ...characterData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      return { success: true, id: newCharDocRef.id };
+    }
+  } catch (error) {
+    console.error('Error saving character:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return { success: false, error: errorMessage };
+  }
 }

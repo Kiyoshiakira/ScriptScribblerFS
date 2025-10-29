@@ -17,11 +17,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { getAiCharacterProfile } from '@/app/actions';
+import { getAiCharacterProfile, saveCharacter } from '@/app/actions';
 import { Skeleton } from '../ui/skeleton';
 import React from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { addDoc, collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { useCurrentScript } from '@/context/current-script-context';
 
 interface Character {
@@ -234,35 +234,23 @@ export default function CharactersView() {
   const { data: characters, isLoading: areCharactersLoading } = useCollection<Character>(charactersCollection);
 
   const handleSaveCharacter = async (charToSave: Character, isNew: boolean) => {
-    if (!firestore || !user || !currentScriptId) {
+    if (!user || !currentScriptId) {
       toast({ variant: 'destructive', title: 'Error', description: 'Cannot save character: no active script.' });
       return;
     }
-    const collectionRef = collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'characters');
 
-    try {
-      if (isNew) {
-        await addDoc(collectionRef, {
-          ...charToSave,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-        toast({ title: 'Character Created', description: `${charToSave.name} has been added.` });
-      } else {
-        if (!charToSave.id) throw new Error('Character ID is missing for update');
-        const charDocRef = doc(collectionRef, charToSave.id);
-        await setDoc(charDocRef, {
-          ...charToSave,
-          updatedAt: serverTimestamp(),
-        }, { merge: true });
-        toast({ title: 'Character Updated', description: `${charToSave.name} has been updated.` });
-      }
-    } catch (error: any) {
-      console.error("Error saving character: ", error);
+    const result = await saveCharacter(user.uid, currentScriptId, charToSave);
+
+    if (result.success) {
+      toast({
+        title: isNew ? 'Character Created' : 'Character Updated',
+        description: `${charToSave.name} has been saved.`,
+      });
+    } else {
       toast({
         variant: 'destructive',
         title: 'Save Error',
-        description: error.message || 'Could not save the character.',
+        description: result.error || 'Could not save the character.',
       });
     }
   };
