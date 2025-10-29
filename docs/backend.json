@@ -145,7 +145,7 @@
         "description": { "type": "string" },
         "time": { "type": "number", "description": "Estimated time in minutes." }
       },
-      "required": ["id", "sceneNumber", "setting", "description"]
+      "required": ["id", "sceneNumber", "setting", "description", "time"]
     }
   },
   "auth": {

@@ -113,7 +113,10 @@ export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScri
       });
 
       const wordCount = sceneText.trim().split(/\s+/).filter(Boolean).length;
-      const estimatedTime = Math.round((wordCount / 160) * 10) / 10; // Approx 160 words per minute
+      let estimatedTime = Math.round((wordCount / 160) * 10) / 10; // Approx 160 words per minute
+      if (isNaN(estimatedTime)) {
+        estimatedTime = 0;
+      }
       
       scenes.push({
         sceneNumber: sceneCounter,
