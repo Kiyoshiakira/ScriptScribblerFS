@@ -15,8 +15,8 @@ import LoglineView from '../views/logline-view';
 import ScenesView from '../views/scenes-view';
 import CharactersView from '../views/characters-view';
 import NotesView from '../views/notes-view';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 import type { Character } from '../views/characters-view';
 import { EditProfileDialog } from '../edit-profile-dialog';
 
@@ -34,11 +34,11 @@ function AppLayoutContent() {
   
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const userProfileCollection = useMemoFirebase(
-    () => (user ? collection(firestore, 'users') : null),
+  const userProfileDoc = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
     [firestore, user]
   );
-  const { data: userProfile, isLoading: isProfileLoading } = useCollection(userProfileCollection);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileDoc);
 
 
   const charactersCollection = useMemoFirebase(
@@ -122,7 +122,7 @@ function AppLayoutContent() {
             </div>
             <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
             { user && !isProfileLoading && 
-              <EditProfileDialog open={profileOpen} onOpenChange={setProfileOpen} user={user} profile={userProfile?.[0]} />
+              <EditProfileDialog open={profileOpen} onOpenChange={setProfileOpen} user={user} profile={userProfile} />
             }
         </div>
     </SidebarProvider>
