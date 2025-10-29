@@ -21,7 +21,7 @@ import { ScriptProvider } from '@/context/script-context';
 import type { Character } from '@/components/views/characters-view';
 import type { Scene } from '@/components/views/scenes-view';
 import type { Note } from '@/components/views/notes-view';
-
+import MyScriptsView from '@/components/views/my-scripts-view';
 
 export type View = 'dashboard' | 'editor' | 'scenes' | 'characters' | 'notes' | 'logline';
 
@@ -56,8 +56,12 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
         [firestore, user, currentScriptId]
     );
     const { data: scenes } = useCollection<Scene>(scenesCollection);
-
+    
   const renderView = () => {
+    if (!currentScriptId) {
+        return <MyScriptsView setView={setView} />;
+    }
+    
     return (
        <ScriptProvider scriptId={currentScriptId!}>
           {
@@ -113,6 +117,8 @@ function MainApp() {
   const router = useRouter();
 
   React.useEffect(() => {
+    // This effect runs when script context changes.
+    // If loading completes and there's no script, navigate to profile.
     if (!isCurrentScriptLoading && !currentScriptId) {
       router.push('/profile');
     }
@@ -120,7 +126,7 @@ function MainApp() {
 
 
   // While waiting for user/script context, show a full-page loader.
-  if (isCurrentScriptLoading || !currentScriptId) {
+  if (isCurrentScriptLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -129,6 +135,19 @@ function MainApp() {
             <Skeleton className="h-4 w-[250px]" />
             <Skeleton className="h-4 w-[200px]" />
           </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // If loading is done but we still have no script ID, we're about to redirect.
+  // Showing the loader prevents a flash of an invalid state.
+  if (!currentScriptId) {
+     return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Skeleton className="h-16 w-16 rounded-full" />
+          <p className="text-muted-foreground">Redirecting to your scripts...</p>
         </div>
       </div>
     );
