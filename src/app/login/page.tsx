@@ -15,10 +15,11 @@ const provider = new GoogleAuthProvider();
 export default function LoginPage() {
   const app = useFirebaseApp();
 
-  const handleSignIn = async () => {
+  const handleSignIn = () => {
     try {
       const auth = getAuth(app);
-      await signInWithRedirect(auth, provider);
+      // signInWithRedirect doesn't need to be awaited as it navigates the page away.
+      signInWithRedirect(auth, provider);
     } catch (error) {
       console.error('Error signing in with Google:', error);
     }
