@@ -13,7 +13,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,8 +54,7 @@ export interface Note {
   imageUrl?: string;
 }
 
-function NoteDialog({ note, onSave, trigger, isGenerating, generatedNote }: { note?: Note | null, onSave: (note: Note) => void, trigger: React.ReactNode, isGenerating?: boolean, generatedNote?: Note | null }) {
-    const [open, setOpen] = useState(false);
+function NoteDialog({ note, onSave, open, onOpenChange, isGenerating }: { note: Note | null, onSave: (note: Note) => void, open: boolean, onOpenChange: (open: boolean) => void, isGenerating: boolean }) {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [category, setCategory] = useState<NoteCategory>('General');
@@ -65,8 +63,7 @@ function NoteDialog({ note, onSave, trigger, isGenerating, generatedNote }: { no
     const { toast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
 
-
-    React.useEffect(() => {
+    useEffect(() => {
         if (open) {
             setTitle(note?.title || '');
             setContent(note?.content || '');
@@ -74,24 +71,6 @@ function NoteDialog({ note, onSave, trigger, isGenerating, generatedNote }: { no
             setImageUrl(note?.imageUrl || '');
         }
     }, [open, note]);
-
-     React.useEffect(() => {
-        if (isGenerating) {
-            setOpen(true);
-            setTitle('');
-            setContent('');
-            setCategory('General');
-            setImageUrl('');
-        }
-    }, [isGenerating]);
-    
-    React.useEffect(() => {
-        if(generatedNote) {
-            setTitle(generatedNote.title);
-            setContent(generatedNote.content);
-            setCategory(generatedNote.category);
-        }
-    }, [generatedNote]);
 
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,19 +91,19 @@ function NoteDialog({ note, onSave, trigger, isGenerating, generatedNote }: { no
         }
         setIsSaving(true);
         await onSave({
-            ...note,
+            ...(note || {}),
+            id: note?.id,
             title,
             content,
             category,
             imageUrl
         });
         setIsSaving(false);
-        setOpen(false);
+        onOpenChange(false);
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="font-headline">{note ? 'Edit Note' : 'Add New Note'}</DialogTitle>
@@ -139,16 +118,18 @@ function NoteDialog({ note, onSave, trigger, isGenerating, generatedNote }: { no
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="category">Category</Label>
-                        <Select value={category} onValueChange={(value) => setCategory(value as NoteCategory)}>
-                            <SelectTrigger id="category">
-                                <SelectValue placeholder="Select a category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {Object.keys(NOTE_CATEGORIES).map(cat => (
-                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                         {isGenerating ? <Skeleton className='h-10 w-full' /> : (
+                            <Select value={category} onValueChange={(value) => setCategory(value as NoteCategory)}>
+                                <SelectTrigger id="category">
+                                    <SelectValue placeholder="Select a category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Object.keys(NOTE_CATEGORIES).map(cat => (
+                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                         )}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="content">Content</Label>
@@ -188,7 +169,8 @@ export default function NotesView() {
   const { currentScriptId } = useCurrentScript();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedNote, setGeneratedNote] = useState<Note | null>(null);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const notesCollection = useMemoFirebase(
     () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'notes') : null),
@@ -196,6 +178,11 @@ export default function NotesView() {
   );
   
   const { data: notes, isLoading } = useCollection<Note>(notesCollection);
+
+  const handleOpenDialog = (note: Note | null) => {
+    setEditingNote(note);
+    setDialogOpen(true);
+  }
 
   const handleSaveNote = async (noteToSave: Note) => {
     if (!notesCollection) {
@@ -226,13 +213,17 @@ export default function NotesView() {
 
   const handleGenerateNote = async () => {
     setIsGenerating(true);
-    setGeneratedNote(null);
+    setEditingNote(null);
+    
     const result = await aiGenerateNote({ prompt: 'A surprising plot twist idea.' });
-    setIsGenerating(false);
+    
     if(result.error || !result.data) {
         toast({ variant: 'destructive', title: 'Error', description: result.error || 'Could not generate a note.' });
+        setIsGenerating(false);
     } else {
-        setGeneratedNote(result.data);
+        setEditingNote(result.data);
+        setDialogOpen(true); // Open the dialog with the generated content
+        setIsGenerating(false);
     }
   };
   
@@ -240,16 +231,10 @@ export default function NotesView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold font-headline">Notes</h1>
-        <NoteDialog
-            onSave={handleSaveNote}
-            note={null}
-            trigger={
-                <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Note
-                </Button>
-            }
-        />
+        <Button onClick={() => handleOpenDialog(null)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Note
+        </Button>
       </div>
 
       {isLoading ? (
@@ -259,12 +244,11 @@ export default function NotesView() {
       ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {notes && notes.map((note) => (
-          <NoteDialog
-            key={note.id}
-            note={note}
-            onSave={handleSaveNote}
-            trigger={
-              <Card className={cn('flex flex-col shadow-sm hover:shadow-lg transition-shadow cursor-pointer', NOTE_CATEGORIES[note.category])}>
+            <Card 
+                key={note.id} 
+                onClick={() => handleOpenDialog(note)}
+                className={cn('flex flex-col shadow-sm hover:shadow-lg transition-shadow cursor-pointer', NOTE_CATEGORIES[note.category])}
+            >
                 {note.imageUrl && (
                   <div className="aspect-video w-full overflow-hidden border-b">
                     <Image src={note.imageUrl} alt={note.title} width={300} height={169} className="object-cover w-full h-full" />
@@ -279,9 +263,7 @@ export default function NotesView() {
                 <CardContent className="flex-grow">
                   <p className="text-sm text-foreground/80 whitespace-pre-wrap line-clamp-4">{note.content}</p>
                 </CardContent>
-              </Card>
-            }
-          />
+            </Card>
         ))}
       </div>
       )}
@@ -302,11 +284,11 @@ export default function NotesView() {
         }]}
        />
         <NoteDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            note={editingNote}
             onSave={handleSaveNote}
-            note={null}
             isGenerating={isGenerating}
-            generatedNote={generatedNote}
-            trigger={<></>}
         />
     </div>
   );
