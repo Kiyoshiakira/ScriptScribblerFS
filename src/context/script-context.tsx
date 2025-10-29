@@ -4,26 +4,27 @@ import React, { createContext, useState, useEffect, ReactNode, useContext, useCa
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useDebounce } from 'use-debounce';
+import type { ScriptLine } from '@/components/script-editor';
 
 interface Script {
     id: string;
     title: string;
-    content: string;
+    content: string; // The raw string content for Firestore
     [key: string]: any; 
 }
 
 interface ScriptContextType {
   script: Script | null;
-  scriptContent: string | undefined;
-  setScriptContent: (content: string) => void;
+  lines: ScriptLine[];
+  setLines: (lines: ScriptLine[]) => void;
   setScriptTitle: (title: string) => void;
   isScriptLoading: boolean;
 }
 
 export const ScriptContext = createContext<ScriptContextType>({
   script: null,
-  scriptContent: undefined,
-  setScriptContent: () => {},
+  lines: [],
+  setLines: () => {},
   setScriptTitle: () => {},
   isScriptLoading: true,
 });
@@ -32,7 +33,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   const { user } = useUser();
   const firestore = useFirestore();
   const [localScript, setLocalScript] = useState<Script | null>(null);
-  const [localContent, setLocalContent] = useState<string | undefined>(undefined);
+  const [lines, setLines] = useState<ScriptLine[]>([]);
 
   const scriptDocRef = useMemoFirebase(
     () => (user && firestore && scriptId ? doc(firestore, 'users', user.uid, 'scripts', scriptId) : null),
@@ -41,16 +42,36 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   
   const { data: firestoreScript, isLoading: isDocLoading } = useDoc<Script>(scriptDocRef);
 
-  const [debouncedContent] = useDebounce(localContent, 1000);
+  const [debouncedLines] = useDebounce(lines, 1000);
 
+  // Function to parse the raw script content into lines
+  const parseContentToLines = (content: string): ScriptLine[] => {
+      if (typeof content !== 'string') return [];
+      return content.split('\n').map((text, index) => {
+          let type: ScriptLine['type'] = 'action';
+          if (text.startsWith('INT.') || text.startsWith('EXT.')) type = 'scene-heading';
+          else if (text.trim().startsWith('(') && text.trim().endsWith(')')) type = 'parenthetical';
+          else if (text.trim().endsWith(' TO:')) type = 'transition';
+          else if (/^[A-Z\s]+$/.test(text.trim()) && text.trim().length > 0 && text.trim().length < 35 && !text.includes('(') ) {
+              // This is a heuristic and might misidentify action lines written in all caps.
+              // A more robust solution would involve checking the previous line type.
+              type = 'character';
+          }
+          return { id: `line-${index}-${Date.now()}`, type, text };
+      });
+  };
+  
   useEffect(() => {
     if (firestoreScript) {
         setLocalScript(firestoreScript);
-        if (localContent === undefined) { // Only set initial content
-            setLocalContent(firestoreScript.content);
+        if (lines.length === 0 && firestoreScript.content) { 
+            const parsed = parseContentToLines(firestoreScript.content);
+            setLines(parsed);
         }
     }
-  }, [firestoreScript, localContent]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firestoreScript]);
+
 
   const updateFirestore = useCallback((field: 'content' | 'title', value: string) => {
     if (scriptDocRef) {
@@ -63,17 +84,14 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
 
 
   useEffect(() => {
-    // Only update firestore if the debounced content is a string (meaning it has been set)
-    // and is different from the original firestore content.
-    if (typeof debouncedContent === 'string' && firestoreScript && debouncedContent !== firestoreScript.content) {
-      updateFirestore('content', debouncedContent);
+    if (debouncedLines.length > 0) {
+      const newContent = debouncedLines.map(line => line.text.replace(/<br>/g, '')).join('\n');
+      if (firestoreScript && newContent !== firestoreScript.content) {
+        updateFirestore('content', newContent);
+      }
     }
-  }, [debouncedContent, firestoreScript, updateFirestore]);
+  }, [debouncedLines, firestoreScript, updateFirestore]);
 
-
-  const setScriptContent = (content: string) => {
-    setLocalContent(content);
-  };
 
   const setScriptTitle = (title: string) => {
     setLocalScript(prev => prev ? { ...prev, title } : null);
@@ -82,8 +100,8 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   
   const value = { 
     script: localScript,
-    scriptContent: localContent,
-    setScriptContent,
+    lines,
+    setLines,
     setScriptTitle,
     isScriptLoading: isDocLoading || !localScript
   };

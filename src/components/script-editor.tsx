@@ -18,6 +18,12 @@ import { Skeleton } from './ui/skeleton';
 
 export type ScriptElement = 'scene-heading' | 'action' | 'character' | 'parenthetical' | 'dialogue' | 'transition';
 
+export interface ScriptLine {
+  id: string;
+  type: ScriptElement;
+  text: string;
+}
+
 type CorrectionSuggestion = AiProofreadScriptOutput['suggestions'][0];
 
 const SCRIPT_ELEMENTS_CYCLE: ScriptElement[] = [
@@ -28,12 +34,6 @@ const SCRIPT_ELEMENTS_CYCLE: ScriptElement[] = [
   'parenthetical',
   'transition',
 ];
-
-interface ScriptLine {
-  id: string;
-  type: ScriptElement;
-  text: string;
-}
 
 interface ScriptEditorProps {
   onActiveLineTypeChange?: (type: ScriptElement | null) => void;
@@ -72,8 +72,6 @@ const ScriptLineComponent = ({
   }, [isFocused]);
 
   useEffect(() => {
-    // Only update the innerHTML if it's different from the line text.
-    // This is crucial to prevent re-renders while typing.
     if (ref.current && ref.current.innerHTML !== line.text) {
       ref.current.innerHTML = line.text;
     }
@@ -99,12 +97,10 @@ const ScriptLineComponent = ({
   };
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    // No need to call onTextChange here on every input, which was causing the issue.
-    // The change is saved on blur.
+    // This is handled onBlur now
   };
 
   const handleBlur = (e: React.FormEvent<HTMLDivElement>) => {
-    // Update the parent state only when the user leaves the line.
     if (line.text !== e.currentTarget.innerHTML) {
       onTextChange(line.id, e.currentTarget.innerHTML);
     }
@@ -144,8 +140,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = false }: ScriptEditorProps) {
-  const { script, scriptContent, setScriptContent, isScriptLoading } = useContext(ScriptContext);
-  const [lines, setLines] = useState<ScriptLine[]>([]);
+  const { script, lines, setLines, isScriptLoading } = useContext(ScriptContext);
   const [wordCount, setWordCount] = useState(0);
   const [estimatedMinutes, setEstimatedMinutes] = useState(0);
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
@@ -157,7 +152,8 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
   const [isSuggestionsDialogOpen, setIsSuggestionsDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const debouncedScriptContent = useDebounce(scriptContent, 2000);
+  const scriptContentForDebounce = useMemo(() => lines.map(l => l.text).join('\n'), [lines]);
+  const debouncedScriptContent = useDebounce(scriptContentForDebounce, 2000);
 
   const runProofread = useCallback(async () => {
     if (!debouncedScriptContent) return;
@@ -185,26 +181,14 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
 
 
   useEffect(() => {
-    if (typeof scriptContent !== 'string') return;
-    const parsedLines = scriptContent.split('\n').map((text, index) => {
-      // Basic logic to infer type from text, can be improved.
-      if (text.startsWith('INT.') || text.startsWith('EXT.')) return { id: `line-${index}-${Date.now()}`, type: 'scene-heading' as ScriptElement, text };
-      if (text.trim().startsWith('(') && text.trim().endsWith(')')) return { id: `line-${index}-${Date.now()}`, type: 'parenthetical' as ScriptElement, text };
-      if (text.trim().endsWith(' TO:')) return { id: `line-${index}-${Date.now()}`, type: 'transition' as ScriptElement, text };
-      if (/^[A-Z\s]+$/.test(text) && text.length > 0 && text.length < 30) return { id: `line-${index}-${Date.now()}`, type: 'character' as ScriptElement, text };
-      return { id: `line-${index}-${Date.now()}`, type: 'action' as ScriptElement, text };
-    });
-    setLines(parsedLines);
-    if (parsedLines.length > 0 && !activeLineId) {
-      setActiveLineId(parsedLines[0].id);
+    if (lines.length > 0 && !activeLineId) {
+      setActiveLineId(lines[0].id);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scriptContent]);
+  }, [lines, activeLineId]);
 
   useEffect(() => {
-    if (lines.length === 0 || scriptContent === undefined) return;
+    if (lines.length === 0) return;
     const newScriptContent = lines.map(line => line.text.replace(/<br>/g, '')).join('\n');
-    setScriptContent(newScriptContent);
 
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = newScriptContent.replace(/<br>/g, '\n');
@@ -215,7 +199,7 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
     
     const minutes = Math.round((count / 160) * 10) / 10;
     setEstimatedMinutes(minutes);
-  }, [lines, setScriptContent, scriptContent]);
+  }, [lines]);
 
   useEffect(() => {
     if (onActiveLineTypeChange && activeLineId) {
@@ -239,11 +223,9 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
     setLines(prevLines => prevLines.map(line => {
       if (line.id === id) {
         let newText = line.text.replace(/<[^>]*>?/gm, '');
-        // Add parenthesis for parenthetical
         if (type === 'parenthetical' && !/^\(.*\)$/.test(newText)) {
           newText = `(${newText})`;
         } else if (line.type === 'parenthetical' && type !== 'parenthetical' && /^\(.*\)$/.test(newText)) {
-          // Remove parenthesis when changing from parenthetical
           newText = newText.substring(1, newText.length - 1);
         }
         return { ...line, type, text: newText };
@@ -274,7 +256,6 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
             const range = selection.getRangeAt(0);
             const container = range.startContainer;
             
-            // Create a temporary div to measure the split point accurately
             const tempDiv = document.createElement("div");
             tempDiv.innerHTML = currentLine.text;
 
@@ -345,11 +326,15 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
 
   const applySuggestion = (suggestion: CorrectionSuggestion) => {
     const { originalText, correctedText } = suggestion;
-    if (scriptContent === undefined) return;
-    // This is a simple implementation. A more robust solution would use a diffing library.
-    const newScriptContent = scriptContent.replace(originalText, correctedText);
-    setScriptContent(newScriptContent);
-    // Remove the applied suggestion from the list
+    const currentContent = lines.map(l => l.text).join('\n');
+    const newContent = currentContent.replace(originalText, correctedText);
+
+    const newParsedLines = newContent.split('\n').map((text, index) => {
+       const oldLine = lines[index] || { type: 'action' };
+       return { ...oldLine, id: `line-${index}-${Date.now()}`, text };
+    });
+    setLines(newParsedLines);
+    
     setSuggestions(prev => prev.filter(s => s !== suggestion));
     toast({
         title: 'Suggestion Applied',
@@ -412,7 +397,7 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
             <DropdownMenuTrigger asChild>
                 <div 
                     style={{ 
-                        position: 'fixed', // Use fixed to position relative to viewport
+                        position: 'fixed',
                         left: contextMenu ? contextMenu.x : 0, 
                         top: contextMenu ? contextMenu.y : 0,
                     }}

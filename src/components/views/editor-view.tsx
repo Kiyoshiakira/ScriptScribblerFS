@@ -11,7 +11,8 @@ interface EditorViewProps {
 }
 
 function EditorWithAssistant({ onActiveLineTypeChange }: EditorViewProps) {
-  const { scriptContent } = useContext(ScriptContext);
+  const { lines } = useContext(ScriptContext);
+  const scriptContent = lines.map(l => l.text).join('\n');
   
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
@@ -21,7 +22,7 @@ function EditorWithAssistant({ onActiveLineTypeChange }: EditorViewProps) {
         />
       </div>
       <div className="lg:col-span-4 xl:col-span-3">
-        <AiAssistant scriptContent={scriptContent || ''} />
+        <AiAssistant scriptContent={scriptContent} />
       </div>
     </div>
   );
