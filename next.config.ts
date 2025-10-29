@@ -39,12 +39,12 @@ const nextConfig: NextConfig = {
   async headers() {
     const cspHeader = `
       default-src 'self';
-      script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com;
-      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.google.com https://www.gstatic.com;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com;
       img-src 'self' blob: data: https://images.unsplash.com https://picsum.photos https://lh3.googleusercontent.com;
       font-src 'self' https://fonts.gstatic.com;
-      connect-src 'self' https://*.google.com https://*.googleapis.com https://*.googleusercontent.com wss://*.cloudworkstations.dev;
-      frame-src 'self' https://studio-2119594896-6c18e.firebaseapp.com;
+      connect-src 'self' https://*.google.com https://*.googleapis.com https://*.googleusercontent.com wss://*.cloudworkstations.dev https://www.googleapis.com;
+      frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://apis.google.com https://www.google.com;
       object-src 'none';
       base-uri 'self';
       form-action 'self';
