@@ -1,4 +1,3 @@
-import { XMLParser } from 'fast-xml-parser';
 import JSZip from 'jszip';
 
 export type NoteCategory = 'Plot' | 'Character' | 'Dialogue' | 'Research' | 'Theme' | 'Scene' | 'General';
@@ -41,97 +40,112 @@ const mapScriteCategoryToNoteCategory = (scriteCategory: string): NoteCategory =
 }
 
 
+// A helper to safely get an array from a JSON object property
+const getAsArray = (obj: any) => {
+    if (!obj) return [];
+    if (Array.isArray(obj)) return obj;
+    return [obj];
+};
+
+// A helper to parse Quill Delta format to plain text
+const parseQuillDelta = (delta: any): string => {
+    if (!delta || !delta.ops) return '';
+    return delta.ops.map((op: any) => op.insert || '').join('');
+};
+
+
 export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScriteFile> => {
   const zip = await JSZip.loadAsync(fileData);
   
-  let contentXmlFile: JSZip.JSZipObject | null = null;
   const headerFile = zip.file('_header.json');
-
-  if (headerFile) {
-    const headerData = await headerFile.async('string');
-    const headerJson = JSON.parse(headerData);
-    // Scrite's header often contains a 'documentPath' pointing to the main content
-    if (headerJson.documentPath) {
-      contentXmlFile = zip.file(headerJson.documentPath);
-    }
-  }
-
-  // Fallback if header doesn't exist or doesn't contain the path
-  if (!contentXmlFile) {
-    const xmlFiles = zip.file(/\.xml$/);
-    if (xmlFiles.length > 0) {
-      contentXmlFile = xmlFiles[0];
-    }
-  }
-
-  if (!contentXmlFile) {
-    // If we still can't find it, throw a detailed error
+  if (!headerFile) {
     const fileList = Object.keys(zip.files).join(', ');
-    throw new Error(`Invalid .scrite file: Could not find main XML content. Files in archive: [${fileList}]`);
+    throw new Error(`Invalid .scrite file: _header.json not found. Files in archive: [${fileList}]`);
   }
-
-  const xmlData = await contentXmlFile.async('string');
-
-  const parser = new XMLParser({
-    ignoreAttributes: false,
-    attributeNamePrefix: '@_',
-    processEntities: false,
-    ignorePiTags: true,
-  });
   
-  // Pre-process the XML to remove the <?xml ... ?> declaration
-  const cleanedXmlData = xmlData.replace(/<\?xml[^>]*\?>/g, '').trim();
-  const jsonObj = parser.parse(cleanedXmlData);
-  const scriteDocument = jsonObj['scrite-document'];
+  const headerData = await headerFile.async('string');
+  const jsonObj = JSON.parse(headerData);
 
-  if (!scriteDocument) {
-    throw new Error('Invalid Scrite XML structure: <scrite-document> tag not found.');
+  const structure = jsonObj.structure;
+  if (!structure) {
+    throw new Error('Invalid Scrite JSON structure: <structure> tag not found.');
   }
 
   // 1. Parse Script Content
-  const content = scriteDocument?.content || '';
+  let scriptContent = '';
+  const scenesFromStructure = getAsArray(structure.elements);
+
+  scenesFromStructure.forEach((sceneContainer: any) => {
+    if (sceneContainer.scene?.elements) {
+      const sceneElements = getAsArray(sceneContainer.scene.elements);
+      const heading = sceneContainer.scene.heading;
+      if (heading) {
+        scriptContent += `${heading.locationType.toUpperCase()} ${heading.location.toUpperCase()} - ${heading.moment.toUpperCase()}\n\n`;
+      }
+      sceneElements.forEach((element: any) => {
+        let text = element.text || '';
+        text = text.replace(/<[^>]*>?/gm, ''); // Strip any HTML tags if present
+
+        switch(element.type) {
+            case 'Action':
+                scriptContent += text + '\n\n';
+                break;
+            case 'Character':
+                scriptContent += `\t${text.toUpperCase()}\n`;
+                break;
+
+            case 'Parenthetical':
+                scriptContent += `\t${text}\n`;
+                break;
+            case 'Dialogue':
+                 scriptContent += `\t\t${text}\n\n`;
+                break;
+             case 'Transition':
+                scriptContent += `\t\t\t\t\t\t${text.toUpperCase()}\n\n`;
+                break;
+            default:
+                scriptContent += text + '\n';
+        }
+      });
+    }
+  });
 
   // 2. Parse Characters
   const characters: ParsedCharacter[] = [];
-  let characterList = scriteDocument?.characters?.character;
-  if (characterList) {
-    if (!Array.isArray(characterList)) {
-        characterList = [characterList]; // Ensure it's an array for consistency
-    }
-    characterList.forEach((char: any) => {
-      characters.push({
-        name: char['@_name'] || 'Unnamed',
-        description: char['@_description'] || '',
-        scenes: 0, // Scrite doesn't directly store scene count per character this way
-        profile: char['@_bio'] || '',
-      });
+  const characterList = getAsArray(structure.characters);
+  
+  characterList.forEach((char: any) => {
+    // Description can be from summary, which might be a Quill Delta object
+    const description = char.summary ? parseQuillDelta(char.summary) : (char.designation || '');
+    characters.push({
+      name: char.name || 'Unnamed',
+      description: description.split('\n')[0], // Use first line as one-line description
+      scenes: 0, // This data is not directly available per character
+      profile: description, // Use the full summary as the profile
     });
-  }
+  });
 
   // 3. Parse Notes
   const notes: ParsedNote[] = [];
-  let notesList = scriteDocument?.notebook?.note;
+  const notesList = getAsArray(jsonObj.screenplay?.notes?.['#data']);
+  
   if (notesList) {
-    if (!Array.isArray(notesList)) {
-        notesList = [notesList]; // Ensure it's an array
-    }
     notesList.forEach((note: any, index: number) => {
-      notes.push({
-        id: Date.now() + index,
-        title: note['@_title'] || 'Untitled Note',
-        content: note['#text'] || '',
-        category: mapScriteCategoryToNoteCategory(note['@_category']),
-      });
+      if(note.type === 'TextNoteType' && note.content){
+         notes.push({
+            id: Date.now() + index,
+            title: note.title || 'Untitled Note',
+            content: parseQuillDelta(note.content),
+            category: 'General', // Scrite notes don't have categories in this structure
+        });
+      }
     });
   }
-
-  // 4. Parse Scenes (basic structure)
+  
   const scenes: ParsedScriteFile['scenes'] = [];
-  // Scrite scenes are derived from scene headings in the content.
-  // A more advanced parser would be needed. For now, we return an empty array.
   
   return {
-    script: content,
+    script: scriptContent.trim(),
     characters,
     notes,
     scenes,
