@@ -31,17 +31,16 @@ import { useToast } from '@/hooks/use-toast';
 import { useRef } from 'react';
 import { parseScriteFile } from '@/lib/scrite-parser';
 import { collection, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
-import Link from 'next/link';
-import { SettingsDialog } from '../settings-dialog';
+import { useRouter } from 'next/navigation';
 import JSZip from 'jszip';
 import type { Character } from '../views/characters-view';
 import type { Scene } from '../views/scenes-view';
 import type { Note } from '../views/notes-view';
-import { useRouter } from 'next/navigation';
 import { useCurrentScript } from '@/context/current-script-context';
+import type { View } from './AppLayout';
 
 
-export default function AppHeader() {
+export default function AppHeader({ setView }: { activeView: View, setView: (view: View) => void }) {
   const auth = useAuth();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -49,8 +48,7 @@ export default function AppHeader() {
   const { script, setScriptTitle, isScriptLoading } = useScript();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
-  const { currentScriptId } = useCurrentScript();
+  const { currentScriptId, setCurrentScriptId } = useCurrentScript();
 
   // Data fetching for export
   // In a real app with better state management, this would come from a layout context
@@ -62,6 +60,7 @@ export default function AppHeader() {
   const handleSignOut = async () => {
     if (auth) {
         await signOut(auth);
+        setCurrentScriptId(null);
         router.push('/login');
     }
   };
@@ -131,7 +130,7 @@ export default function AppHeader() {
           title: 'Import Successful',
           description: `"${projectData.title}" has been added to My Scripts.`,
         });
-        router.push('/profile');
+        setView('profile');
 
     } catch (error) {
         console.error('Scribbler import failed:', error);
@@ -204,7 +203,7 @@ export default function AppHeader() {
           title: 'Import Successful',
           description: `"${scriptTitle}" has been added to My Scripts.`,
         });
-        router.push('/profile');
+        setView('profile');
 
       } catch (error) {
          console.error('--- DEBUG: Import Parsing Failed ---', error);
@@ -298,13 +297,11 @@ export default function AppHeader() {
             <p className="text-xs text-muted-foreground font-normal truncate">{user.email}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-           <DropdownMenuItem asChild>
-                <Link href="/profile">
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    <span>My Scripts</span>
-                </Link>
+           <DropdownMenuItem onClick={() => setView('profile')}>
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>My Scripts</span>
             </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSettingsDialogOpen(true)}>
+          <DropdownMenuItem onClick={() => setView('settings')}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </DropdownMenuItem>
@@ -318,16 +315,19 @@ export default function AppHeader() {
     );
   };
 
+  const isProfileView = !currentScriptId;
 
   return (
     <>
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
       <SidebarTrigger className="flex md:hidden" />
       <div className="flex items-center gap-2">
-        {currentScriptId ? (
+        {isProfileView ? (
+             <h1 className="text-xl font-bold font-headline">My Scripts</h1>
+        ) : (
           <>
             <Book className="h-6 w-6 text-muted-foreground" />
-            {isScriptLoading || !script ? (
+            {(isScriptLoading || !script) && currentScriptId ? (
                 <Skeleton className="h-7 w-64" />
             ) : (
                 <Input
@@ -338,8 +338,6 @@ export default function AppHeader() {
                 />
             )}
           </>
-        ) : (
-            <h1 className="text-xl font-bold font-headline">My Scripts</h1>
         )}
       </div>
       <div className="ml-auto flex items-center gap-2 md:gap-4">
@@ -371,7 +369,7 @@ export default function AppHeader() {
         </DropdownMenu>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button disabled={!currentScriptId}>
+            <Button disabled={isProfileView}>
               <Download className="h-4 w-4 md:mr-2" />
               <span className='hidden md:inline'>Export</span>
               <ChevronDown className="h-4 w-4 ml-0 md:ml-2" />
@@ -395,7 +393,6 @@ export default function AppHeader() {
         <UserMenu />
       </div>
     </header>
-    <SettingsDialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen} />
     </>
   );
 }

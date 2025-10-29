@@ -1,16 +1,10 @@
 'use client';
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import {
   Sidebar,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarFooter,
-  SidebarSeparator,
-  useSidebar,
   SidebarContent
 } from '@/components/ui/sidebar';
 import {
@@ -20,18 +14,14 @@ import {
   Users,
   NotebookPen,
   LayoutDashboard,
+  User as UserIcon
 } from 'lucide-react';
-import type { ScriptElement } from '../script-editor';
 import { cn } from '@/lib/utils';
 import { useScript } from '@/context/script-context';
 import { Skeleton } from '../ui/skeleton';
+import type { View } from './AppLayout';
+import { useCurrentScript } from '@/context/current-script-context';
 
-interface AppSidebarProps {
-  activeView: 'dashboard' | 'editor' | 'scenes' | 'characters' | 'notes' | 'logline' | 'profile';
-  activeScriptElement?: ScriptElement | null;
-  wordCount?: number;
-  estimatedMinutes?: number;
-}
 
 export const Logo = () => (
   <svg
@@ -54,60 +44,71 @@ export const Logo = () => (
 
 export default function AppSidebar({
   activeView,
-}: AppSidebarProps) {
+  setView
+}: {
+  activeView: View;
+  setView: (view: View) => void;
+}) {
   const { isScriptLoading } = useScript();
-  const pathname = usePathname();
-  const isProfilePage = activeView === 'profile';
+  const { currentScriptId } = useCurrentScript();
+  
+  const isProfileView = activeView === 'profile';
+  const noScriptLoaded = !currentScriptId;
 
-  const menuItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/editor', label: 'Editor', icon: BookText },
-    { href: '/logline', label: 'Logline', icon: NotebookPen },
-    { href: '/scenes', label: 'Scenes', icon: Clapperboard },
-    { href: '/characters', label: 'Characters', icon: Users },
-    { href: '/notes', label: 'Notes', icon: StickyNote },
-  ];
+  const scriptMenuItems = [
+    { view: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { view: 'editor', label: 'Editor', icon: BookText },
+    { view: 'logline', label: 'Logline', icon: NotebookPen },
+    { view: 'scenes', label: 'Scenes', icon: Clapperboard },
+    { view: 'characters', label: 'Characters', icon: Users },
+    { view: 'notes', label: 'Notes', icon: StickyNote },
+  ] as const;
 
   return (
     <Sidebar variant="sidebar" collapsible="icon" side="left">
       <SidebarHeader>
-        <Link href="/" className="flex items-center gap-2 p-2">
+        <a href="#" className="flex items-center gap-2 p-2" onClick={() => setView(noScriptLoaded ? 'profile' : 'dashboard')}>
             <Logo />
             <h1 className="text-xl font-bold font-headline">ScriptScribbler</h1>
-        </Link>
+        </a>
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu className="flex-1 overflow-y-auto p-2">
-            {menuItems.map(item => (
-                <SidebarMenuItem key={item.href}>
-                    <Link href={isProfilePage ? '#' : item.href} passHref legacyBehavior>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={pathname.startsWith(item.href) && !isProfilePage}
-                            tooltip={item.label}
-                            aria-disabled={isProfilePage}
-                            className={cn(isProfilePage && "cursor-not-allowed opacity-50")}
-                        >
-                            <a>
-                                <item.icon />
-                                <span>{item.label}</span>
-                            </a>
-                        </SidebarMenuButton>
-                    </Link>
+            <SidebarMenuItem>
+                <SidebarMenuButton
+                    onClick={() => setView('profile')}
+                    isActive={isProfileView}
+                    tooltip="My Scripts"
+                >
+                    <UserIcon />
+                    <span>My Scripts</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            
+            <hr className="my-2 border-sidebar-border" />
+
+            {scriptMenuItems.map(item => (
+                <SidebarMenuItem key={item.view}>
+                    <SidebarMenuButton
+                        onClick={() => setView(item.view)}
+                        isActive={activeView === item.view}
+                        tooltip={item.label}
+                        aria-disabled={noScriptLoaded}
+                        className={cn(noScriptLoaded && "cursor-not-allowed opacity-50")}
+                        disabled={noScriptLoaded}
+                    >
+                        <item.icon />
+                        <span>{item.label}</span>
+                    </SidebarMenuButton>
                 </SidebarMenuItem>
             ))}
         </SidebarMenu>
-        {isScriptLoading && !isProfilePage ? (
+        {(isScriptLoading && !isProfileView) ? (
           <div className='p-2 space-y-2'><Skeleton className='h-24 w-full' /></div>
         ) : (
           null
         )}
       </SidebarContent>
-
-      <SidebarFooter>
-        <SidebarMenu className="p-2">
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   );
 }

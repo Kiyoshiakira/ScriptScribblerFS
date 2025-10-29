@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp, deleteDoc, doc, getDocs, writeBatch } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
-import { useRouter } from 'next/navigation';
+import type { View } from '../layout/AppLayout';
 
 
 const initialScriptContent = `FADE IN:
@@ -50,14 +50,17 @@ interface Script {
     } | null;
 }
 
+interface MyScriptsViewProps {
+  setView: (view: View) => void;
+}
 
-export default function MyScriptsView() {
+
+export default function MyScriptsView({ setView }: MyScriptsViewProps) {
     const { user } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
     const { setCurrentScriptId } = useCurrentScript();
     const [isDeleting, setIsDeleting] = useState(false);
-    const router = useRouter();
     
     const [deleteScriptDoc, setDeleteScriptDoc] = useState(true);
     const [deleteCharacters, setDeleteCharacters] = useState(true);
@@ -87,7 +90,7 @@ export default function MyScriptsView() {
                 description: 'A new untitled script has been added to your collection.',
             });
             setCurrentScriptId(newScriptRef.id);
-            router.push('/dashboard');
+            setView('dashboard');
         } catch (error: any) {
             console.error("Error creating script: ", error);
             toast({
@@ -100,7 +103,7 @@ export default function MyScriptsView() {
 
     const handleOpenScript = (scriptId: string) => {
         setCurrentScriptId(scriptId);
-        router.push('/dashboard');
+        setView('dashboard');
     };
     
     const handleSelectiveDelete = async (scriptId: string) => {
@@ -157,108 +160,115 @@ export default function MyScriptsView() {
         }
     }
 
+    const MainContent = () => {
+        if (areScriptsLoading) {
+            return (
+                 <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-10 w-48" />
+                        <Skeleton className="h-10 w-40" />
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-28" />)}
+                    </div>
+                </div>
+            )
+        }
 
-    if (areScriptsLoading) {
+        const sortedScripts = scripts ? [...scripts].sort((a, b) => {
+            const timeA = a.lastModified ? a.lastModified.toDate().getTime() : 0;
+            const timeB = b.lastModified ? b.lastModified.toDate().getTime() : 0;
+            return timeB - timeA;
+        }) : [];
+
         return (
-             <div className="space-y-6">
+            <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <Skeleton className="h-10 w-48" />
-                    <Skeleton className="h-10 w-40" />
+                    <h2 className="text-2xl font-bold font-headline flex items-center gap-2"> <User /> {user?.displayName}'s Scripts</h2>
+                    <Button onClick={handleCreateNewScript}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Script
+                    </Button>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-28" />)}
-                </div>
+                
+                {sortedScripts.length > 0 ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {sortedScripts.map((script) => (
+                             <Card key={script.id} className="flex flex-col">
+                                <CardHeader>
+                                    <CardTitle className="font-headline flex items-start justify-between">
+                                        <span className="truncate pr-4">{script.title}</span>
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Last modified: {script.lastModified ? new Date(script.lastModified.toDate()).toLocaleDateString() : 'Just now'}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex-grow" />
+                                <CardContent className="flex justify-between items-center">
+                                    <Button onClick={() => handleOpenScript(script.id)}>
+                                        <Book className="mr-2 h-4 w-4" />
+                                        Open
+                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" size="icon">
+                                                <Trash className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Delete Script Components</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This action can be destructive. Select the components you want to permanently delete. Unchecking "Script" will clear its sub-collections but keep the script document itself.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <div className="space-y-4 my-4">
+                                                <div className="flex items-center space-x-2">
+                                                    <Checkbox id="del-script" checked={deleteScriptDoc} onCheckedChange={(c) => setDeleteScriptDoc(c as boolean)} />
+                                                    <Label htmlFor="del-script" className="font-semibold">Script</Label>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <Checkbox id="del-chars" checked={deleteCharacters} onCheckedChange={(c) => setDeleteCharacters(c as boolean)} />
+                                                    <Label htmlFor="del-chars">All Characters</Label>
+                                                </div>
+                                                 <div className="flex items-center space-x-2">
+                                                    <Checkbox id="del-scenes" checked={deleteScenes} onCheckedChange={(c) => setDeleteScenes(c as boolean)} />
+                                                    <Label htmlFor="del-scenes">All Scenes</Label>
+                                                </div>
+                                                 <div className="flex items-center space-x-2">
+                                                    <Checkbox id="del-notes" checked={deleteNotes} onCheckedChange={(c) => setDeleteNotes(c as boolean)} />
+                                                    <Label htmlFor="del-notes">All Notes</Label>
+                                                </div>
+                                            </div>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleSelectiveDelete(script.id)} disabled={isDeleting}>
+                                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                    Delete Selected
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
+                        <Library className="mx-auto h-12 w-12" />
+                        <h3 className="mt-4 text-lg font-medium">No Scripts Found</h3>
+                        <p className="mt-1 text-sm">
+                            Get started by creating your first script or importing one.
+                        </p>
+                    </div>
+                )}
             </div>
         )
     }
 
-    const sortedScripts = scripts ? [...scripts].sort((a, b) => {
-        const timeA = a.lastModified ? a.lastModified.toDate().getTime() : 0;
-        const timeB = b.lastModified ? b.lastModified.toDate().getTime() : 0;
-        return timeB - timeA;
-    }) : [];
-
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold font-headline flex items-center gap-2"> <User /> {user?.displayName}'s Scripts</h2>
-                <Button onClick={handleCreateNewScript}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    New Script
-                </Button>
-            </div>
-            
-            {sortedScripts.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {sortedScripts.map((script) => (
-                         <Card key={script.id} className="flex flex-col">
-                            <CardHeader>
-                                <CardTitle className="font-headline flex items-start justify-between">
-                                    <span className="truncate pr-4">{script.title}</span>
-                                </CardTitle>
-                                <CardDescription>
-                                    Last modified: {script.lastModified ? new Date(script.lastModified.toDate()).toLocaleDateString() : 'Just now'}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow" />
-                            <CardContent className="flex justify-between items-center">
-                                <Button onClick={() => handleOpenScript(script.id)}>
-                                    <Book className="mr-2 h-4 w-4" />
-                                    Open
-                                </Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="destructive" size="icon">
-                                            <Trash className="h-4 w-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Delete Script Components</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                This action can be destructive. Select the components you want to permanently delete. Unchecking "Script" will clear its sub-collections but keep the script document itself.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <div className="space-y-4 my-4">
-                                            <div className="flex items-center space-x-2">
-                                                <Checkbox id="del-script" checked={deleteScriptDoc} onCheckedChange={(c) => setDeleteScriptDoc(c as boolean)} />
-                                                <Label htmlFor="del-script" className="font-semibold">Script</Label>
-                                            </div>
-                                            <div className="flex items-center space-x-2">
-                                                <Checkbox id="del-chars" checked={deleteCharacters} onCheckedChange={(c) => setDeleteCharacters(c as boolean)} />
-                                                <Label htmlFor="del-chars">All Characters</Label>
-                                            </div>
-                                             <div className="flex items-center space-x-2">
-                                                <Checkbox id="del-scenes" checked={deleteScenes} onCheckedChange={(c) => setDeleteScenes(c as boolean)} />
-                                                <Label htmlFor="del-scenes">All Scenes</Label>
-                                            </div>
-                                             <div className="flex items-center space-x-2">
-                                                <Checkbox id="del-notes" checked={deleteNotes} onCheckedChange={(c) => setDeleteNotes(c as boolean)} />
-                                                <Label htmlFor="del-notes">All Notes</Label>
-                                            </div>
-                                        </div>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleSelectiveDelete(script.id)} disabled={isDeleting}>
-                                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Delete Selected
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            ) : (
-                <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
-                    <Library className="mx-auto h-12 w-12" />
-                    <h3 className="mt-4 text-lg font-medium">No Scripts Found</h3>
-                    <p className="mt-1 text-sm">
-                        Get started by creating your first script or importing one.
-                    </p>
-                </div>
-            )}
-        </div>
-    )
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            <MainContent />
+        </main>
+    );
 }
