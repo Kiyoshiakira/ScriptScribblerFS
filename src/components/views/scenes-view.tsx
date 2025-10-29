@@ -54,22 +54,29 @@ export default function ScenesView() {
 
       <div className="space-y-4">
         {scenes.map((scene) => (
-          <Card key={scene.number} className="flex items-center p-4 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-4 flex-1">
-              <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
-              <Clapperboard className="h-8 w-8 text-primary" />
-              <div className="flex-1">
-                <p className="font-bold">Scene {scene.number}: {scene.setting}</p>
-                <p className="text-sm text-muted-foreground">{scene.description}</p>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>{scene.time} min</span>
+          <Card key={scene.number} className="flex items-center p-2 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 sm:gap-4 flex-1">
+              <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab flex-shrink-0" />
+              <div className="flex items-center gap-2 sm:gap-4 flex-1">
+                <Clapperboard className="h-8 w-8 text-primary hidden sm:block" />
+                <div className="flex-1">
+                  <p className="font-bold">Scene {scene.number}: {scene.setting}</p>
+                  <p className="text-sm text-muted-foreground sm:hidden mt-1">{scene.description}</p>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1 sm:hidden">
+                    <Clock className="h-4 w-4" />
+                    <span>{scene.time} min</span>
+                  </div>
+                   <p className="text-sm text-muted-foreground hidden sm:block">{scene.description}</p>
+                </div>
+                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span>{scene.time} min</span>
+                </div>
               </div>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="ml-4">
+                <Button variant="ghost" size="icon" className="ml-2 sm:ml-4 flex-shrink-0">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
