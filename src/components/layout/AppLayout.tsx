@@ -27,7 +27,7 @@ function AppLayoutContent() {
   const [view, setView] = React.useState<View>('dashboard');
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
-  const { lines } = useScript();
+  const { lines, isScriptLoading: isScriptContentLoading } = useScript();
 
   const [wordCount, setWordCount] = React.useState(0);
   const [estimatedMinutes, setEstimatedMinutes] = React.useState(0);
@@ -39,7 +39,7 @@ function AppLayoutContent() {
     () => (user && firestore ? doc(firestore, 'users', user.uid) : null),
     [firestore, user]
   );
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userDocRef);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userDocRef, { revalidateOnFocus: !profileOpen });
 
 
   const charactersCollectionRef = useMemoFirebase(
@@ -80,6 +80,7 @@ function AppLayoutContent() {
       // It correctly switches to the dashboard for that new script.
       setView('dashboard');
     }
+    // This effect should only run when the script loading state changes, not the view.
   }, [isCurrentScriptLoading, currentScriptId]);
 
 
@@ -112,7 +113,7 @@ function AppLayoutContent() {
     estimatedMinutes,
   };
   
-  const isLoading = isCurrentScriptLoading || areCharactersLoading;
+  const isLoading = isCurrentScriptLoading || areCharactersLoading || isScriptContentLoading;
 
   return (
     <SidebarProvider>
@@ -150,7 +151,7 @@ export default function AppLayout() {
   // Otherwise, render the layout which will default to the profile view.
   if (currentScriptId) {
      return (
-       <ScriptProvider scriptId={currentScriptId}>
+       <ScriptProvider key={currentScriptId} scriptId={currentScriptId}>
            <AppLayoutContent />
        </ScriptProvider>
     );
