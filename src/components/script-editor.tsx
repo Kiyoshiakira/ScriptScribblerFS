@@ -66,22 +66,18 @@ const ScriptLineComponent = ({
     }
   }, [line.text]);
   
-  const getElementStyling = (type: ScriptElement, text: string) => {
-    // Add min-height to empty lines to ensure they are visible and clickable
-    if (!text.trim()) {
-        return 'h-[1.5em]';
-    }
+  const getElementStyling = (type: ScriptElement) => {
     switch (type) {
         case 'scene-heading':
             return 'uppercase font-bold';
         case 'action':
-            return ''; // Action should be left-aligned
+            return '';
         case 'character':
-            return 'uppercase pl-[18rem]';
+            return 'uppercase text-center';
         case 'parenthetical':
-            return 'pl-[14rem] text-muted-foreground';
+            return 'text-center mx-auto max-w-xs text-muted-foreground';
         case 'dialogue':
-            return 'pl-[10rem] pr-[10rem]';
+            return 'mx-auto max-w-md';
         case 'transition':
             return 'uppercase text-right';
         default:
@@ -112,8 +108,8 @@ const ScriptLineComponent = ({
       onBlur={handleBlur}
       onContextMenu={(e) => onContextMenu(e, line.id)}
       className={cn(
-        'w-full outline-none focus:bg-primary/10 rounded-sm px-2 py-0.5 leading-relaxed',
-        getElementStyling(line.type, line.text)
+        'w-full outline-none focus:bg-primary/10 rounded-sm px-2 py-0.5 leading-relaxed min-h-[1.5em]',
+        getElementStyling(line.type)
       )}
       dangerouslySetInnerHTML={{ __html: line.text }}
     />
@@ -344,5 +340,4 @@ export default function ScriptEditor({
     </div>
   );
 
-  return editorContent;
 }
