@@ -15,7 +15,7 @@ import LoglineView from '../views/logline-view';
 import ScenesView from '../views/scenes-view';
 import CharactersView from '../views/characters-view';
 import NotesView from '../views/notes-view';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 import type { Character } from '../views/characters-view';
 import { EditProfileDialog } from '../edit-profile-dialog';
@@ -68,12 +68,14 @@ function AppLayoutContent() {
 
 
   React.useEffect(() => {
+    // If loading is finished and no script is selected, force profile view.
     if (!isCurrentScriptLoading && !currentScriptId) {
       setView('profile');
-    } else if (!isCurrentScriptLoading && currentScriptId) {
-        if(view === 'profile') {
-            setView('dashboard');
-        }
+    } 
+    // If a script IS selected, but the current view is profile, switch to dashboard.
+    // This handles the case where a user creates/selects a script from the profile page.
+    else if (!isCurrentScriptLoading && currentScriptId && view === 'profile') {
+        setView('dashboard');
     }
   }, [isCurrentScriptLoading, currentScriptId, view]);
 
@@ -140,6 +142,8 @@ export default function AppLayout() {
       );
   }
   
+  // If there is a scriptId, wrap the content in a ScriptProvider to load it.
+  // If there's no scriptId, we are on the profile view, which doesn't need a script context.
   if (currentScriptId) {
      return (
        <ScriptProvider scriptId={currentScriptId}>
@@ -148,5 +152,6 @@ export default function AppLayout() {
     );
   }
 
+  // Render the layout without a script context (for the profile view)
   return <AppLayoutContent />;
 }
