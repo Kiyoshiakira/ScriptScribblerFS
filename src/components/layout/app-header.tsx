@@ -40,7 +40,7 @@ import { useCurrentScript } from '@/context/current-script-context';
 import type { View } from './AppLayout';
 
 
-export default function AppHeader({ setView }: { activeView: View, setView: (view: View | 'settings' | 'profile') => void }) {
+export default function AppHeader({ activeView, setView }: { activeView: View, setView: (view: View | 'settings' | 'profile') => void }) {
   const auth = useAuth();
   const { user } = useUser();
   const firestore = useFirestore();
