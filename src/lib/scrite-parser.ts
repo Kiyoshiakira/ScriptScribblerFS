@@ -26,20 +26,6 @@ export interface ParsedScriteFile {
   scenes: { number: number; setting: string; description: string; time: number }[];
 }
 
-const mapScriteCategoryToNoteCategory = (scriteCategory: string): NoteCategory => {
-    const mapping: { [key: string]: NoteCategory } = {
-        'Plot Point': 'Plot',
-        'Character Note': 'Character',
-        'Dialogue Note': 'Dialogue',
-        'Research Note': 'Research',
-        'Thematic Note': 'Theme',
-        'Scene Note': 'Scene',
-        'General Note': 'General',
-    };
-    return mapping[scriteCategory] || 'General';
-}
-
-
 // A helper to safely get an array from a JSON object property
 const getAsArray = (obj: any) => {
     if (!obj) return [];
