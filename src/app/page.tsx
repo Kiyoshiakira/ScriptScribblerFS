@@ -34,6 +34,8 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
 
   const renderView = () => {
     switch (view) {
+      case 'profile':
+        return <MyScriptsView setView={setView} />;
       case 'editor':
         return <EditorView 
             onActiveLineTypeChange={setActiveScriptElement}
@@ -59,10 +61,15 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
     }
   };
   
-  if (!currentScriptId) {
+  if (!currentScriptId && view !== 'profile') {
     // This should ideally redirect to the profile page, which now hosts the scripts list.
     // The redirect logic is handled in the MainApp component.
-    return (
+    return null;
+  }
+
+  // If there's no script, but the view is 'profile', we show the MyScriptsView.
+  if (!currentScriptId && view === 'profile') {
+     return (
        <SidebarProvider>
             <div className="flex h-screen bg-background">
                 <AppSidebar
@@ -83,8 +90,9 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
     );
   }
 
+  // This should only render if currentScriptId is truthy
   return (
-    <ScriptProvider scriptId={currentScriptId}>
+    <ScriptProvider scriptId={currentScriptId!}>
       <SidebarProvider>
         <div className="flex h-screen bg-background">
           <AppSidebar
@@ -114,13 +122,14 @@ function MainApp() {
   React.useEffect(() => {
     if (!isCurrentScriptLoading) {
       if (currentScriptId) {
+        // If there's a script, default to the editor view
         setView('editor');
       } else {
-        // If no script is active, redirect to the profile page to see the list.
-        router.push('/profile');
+        // If no script is active, default to the profile view (list of scripts)
+        setView('profile');
       }
     }
-  }, [currentScriptId, isCurrentScriptLoading, router]);
+  }, [currentScriptId, isCurrentScriptLoading]);
 
 
   if (isCurrentScriptLoading) {
@@ -136,13 +145,7 @@ function MainApp() {
       </div>
     );
   }
-
-  // If we are still here and there's no script ID, it means we are about to redirect.
-  // We can render a loading state or null to prevent a flash of the wrong content.
-  if (!currentScriptId) {
-    return null; 
-  }
-
+  
   return <AppLayout view={view} setView={setView} />;
 }
 

@@ -40,7 +40,7 @@ interface AppSidebarProps {
   estimatedMinutes: number;
 }
 
-const Logo = () => (
+export const Logo = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -125,11 +125,11 @@ export default function AppSidebar({
             <SidebarMenuItem>
                 <SidebarMenuButton
                     isActive={activeView === 'profile'}
-                    tooltip="My Profile"
+                    tooltip="My Scripts"
                     onClick={() => setActiveView('profile')}
                 >
-                    <User />
-                    <span>My Profile</span>
+                    <Library />
+                    <span>My Scripts</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarSeparator />
