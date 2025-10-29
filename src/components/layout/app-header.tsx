@@ -57,14 +57,13 @@ export default function AppHeader({ setNotes }: AppHeaderProps) {
 
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const text = e.target?.result as string;
-      console.log('--- DEBUG: Raw Scrite File Content ---');
-      console.log(text);
+      const arrayBuffer = e.target?.result as ArrayBuffer;
+      console.log('--- DEBUG: File read as ArrayBuffer ---');
 
       try {
-        const parsedData = parseScriteFile(text);
+        const parsedData = await parseScriteFile(arrayBuffer);
         console.log('--- DEBUG: Parsed Scrite JSON ---');
-        console.log(parsedData);
+        console.log(JSON.stringify(parsedData, null, 2));
 
 
         // 1. Update script content
@@ -111,7 +110,7 @@ export default function AppHeader({ setNotes }: AppHeaderProps) {
             description: 'There was an error reading the file.',
         });
     }
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
 
     // Reset file input
     if(fileInputRef.current) {

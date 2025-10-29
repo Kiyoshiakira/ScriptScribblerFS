@@ -1,4 +1,5 @@
 import { XMLParser } from 'fast-xml-parser';
+import JSZip from 'jszip';
 
 export type NoteCategory = 'Plot' | 'Character' | 'Dialogue' | 'Research' | 'Theme' | 'Scene' | 'General';
 
@@ -40,17 +41,29 @@ const mapScriteCategoryToNoteCategory = (scriteCategory: string): NoteCategory =
 }
 
 
-export const parseScriteFile = (xmlData: string): ParsedScriteFile => {
+export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScriteFile> => {
+  const zip = await JSZip.loadAsync(fileData);
+  const contentXmlFile = zip.file('content.xml');
+
+  if (!contentXmlFile) {
+    throw new Error('Invalid .scrite file: content.xml not found.');
+  }
+
+  const xmlData = await contentXmlFile.async('string');
+
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: '@_',
+    processEntities: false,
+    ignorePiTags: true,
   });
 
-  // Pre-process the XML data to remove the PI tag that causes parsing errors.
-  const cleanXmlData = xmlData.replace(/<\?xml[^>]*\?>/g, '').trim();
-  const jsonObj = parser.parse(cleanXmlData);
-
+  const jsonObj = parser.parse(xmlData.replace(/<\?xml[^>]*\?>/g, '').trim());
   const scriteDocument = jsonObj['scrite-document'];
+
+  if (!scriteDocument) {
+    throw new Error('Invalid Scrite XML structure: <scrite-document> tag not found.');
+  }
 
   // 1. Parse Script Content
   const content = scriteDocument?.content || '';
