@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { type View } from '@/app/page';
 
 const initialScriptContent = `FADE IN:
 
@@ -47,10 +48,10 @@ interface Script {
 }
 
 interface MyScriptsViewProps {
-    isInitialState?: boolean;
+    setView: (view: View) => void;
 }
 
-export default function MyScriptsView({ isInitialState = false }: MyScriptsViewProps) {
+export default function MyScriptsView({ setView }: MyScriptsViewProps) {
     const { user } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -78,6 +79,7 @@ export default function MyScriptsView({ isInitialState = false }: MyScriptsViewP
                 description: 'A new untitled script has been added to your collection.',
             });
             setCurrentScriptId(newScriptRef.id);
+            setView('editor');
         } catch (error: any) {
             console.error("Error creating script: ", error);
             toast({
@@ -86,6 +88,11 @@ export default function MyScriptsView({ isInitialState = false }: MyScriptsViewP
                 description: 'Could not create a new script.',
             });
         }
+    };
+
+    const handleOpenScript = (scriptId: string) => {
+        setCurrentScriptId(scriptId);
+        setView('editor');
     };
     
     const handleDeleteScript = async (scriptId: string) => {
@@ -150,7 +157,7 @@ export default function MyScriptsView({ isInitialState = false }: MyScriptsViewP
                             </CardHeader>
                             <CardContent className="flex-grow" />
                             <CardContent className="flex justify-between items-center">
-                                <Button onClick={() => setCurrentScriptId(script.id)}>
+                                <Button onClick={() => handleOpenScript(script.id)}>
                                     <Book className="mr-2 h-4 w-4" />
                                     Open
                                 </Button>
@@ -185,9 +192,7 @@ export default function MyScriptsView({ isInitialState = false }: MyScriptsViewP
                     <Library className="mx-auto h-12 w-12" />
                     <h3 className="mt-4 text-lg font-medium">No Scripts Found</h3>
                     <p className="mt-1 text-sm">
-                        {isInitialState 
-                            ? "Get started by creating your first script or importing one."
-                            : "You don't have any scripts yet. Create one to get started."}
+                        Get started by creating your first script or importing one.
                     </p>
                 </div>
             )}

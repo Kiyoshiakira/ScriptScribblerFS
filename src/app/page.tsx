@@ -18,8 +18,7 @@ import { useCurrentScript } from '@/context/current-script-context';
 
 export type View = 'editor' | 'scenes' | 'characters' | 'notes' | 'my-scripts';
 
-function AppLayout() {
-  const [view, setView] = React.useState<View>('editor');
+function AppLayout({ setView, view }: { setView: (view: View) => void, view: View}) {
   const [activeScriptElement, setActiveScriptElement] =
     React.useState<ScriptElement | null>(null);
 
@@ -34,7 +33,7 @@ function AppLayout() {
       case 'notes':
         return <NotesView />;
       case 'my-scripts':
-        return <MyScriptsView />;
+        return <MyScriptsView setView={setView} />;
       default:
         return <EditorView onActiveLineTypeChange={setActiveScriptElement} />;
     }
@@ -61,6 +60,18 @@ function AppLayout() {
 
 function MainApp() {
   const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
+  const [view, setView] = React.useState<View>('my-scripts');
+
+  React.useEffect(() => {
+    if (!isCurrentScriptLoading) {
+      if (currentScriptId) {
+        setView('editor');
+      } else {
+        setView('my-scripts');
+      }
+    }
+  }, [currentScriptId, isCurrentScriptLoading]);
+
 
   if (isCurrentScriptLoading) {
      return (
@@ -76,15 +87,7 @@ function MainApp() {
     );
   }
 
-  if (!currentScriptId) {
-    return <MyScriptsView isInitialState={true} />;
-  }
-  
-  return (
-    <ScriptProvider scriptId={currentScriptId}>
-      <AppLayout />
-    </ScriptProvider>
-  )
+  return <AppLayout view={view} setView={setView} />;
 }
 
 

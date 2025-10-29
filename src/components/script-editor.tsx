@@ -144,7 +144,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = false }: ScriptEditorProps) {
-  const { scriptContent, setScriptContent } = useContext(ScriptContext);
+  const { script, scriptContent, setScriptContent, isScriptLoading } = useContext(ScriptContext);
   const [lines, setLines] = useState<ScriptLine[]>([]);
   const [wordCount, setWordCount] = useState(0);
   const [estimatedMinutes, setEstimatedMinutes] = useState(0);
@@ -160,6 +160,7 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
   const debouncedScriptContent = useDebounce(scriptContent, 2000);
 
   const runProofread = useCallback(async () => {
+    if (!debouncedScriptContent) return;
     setIsProofreading(true);
     const result = await getAiProofreadSuggestions({ script: debouncedScriptContent });
     setIsProofreading(false);
@@ -184,6 +185,7 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
 
 
   useEffect(() => {
+    if (typeof scriptContent !== 'string') return;
     const parsedLines = scriptContent.split('\n').map((text, index) => {
       // Basic logic to infer type from text, can be improved.
       if (text.startsWith('INT.') || text.startsWith('EXT.')) return { id: `line-${index}-${Date.now()}`, type: 'scene-heading' as ScriptElement, text };
@@ -197,9 +199,10 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
       setActiveLineId(parsedLines[0].id);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [scriptContent]);
 
   useEffect(() => {
+    if (lines.length === 0) return;
     const newScriptContent = lines.map(line => line.text.replace(/<br>/g, '')).join('\n');
     setScriptContent(newScriptContent);
 
@@ -342,6 +345,7 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
 
   const applySuggestion = (suggestion: CorrectionSuggestion) => {
     const { originalText, correctedText } = suggestion;
+    if (!scriptContent) return;
     // This is a simple implementation. A more robust solution would use a diffing library.
     const newScriptContent = scriptContent.replace(originalText, correctedText);
     setScriptContent(newScriptContent);
@@ -360,6 +364,32 @@ export default function ScriptEditor({ onActiveLineTypeChange, isStandalone = fa
 
   const formatElementName = (name: string) => {
     return name.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
+  
+  if (isScriptLoading) {
+    return (
+        <Card className="h-full flex flex-col shadow-lg">
+            <CardHeader>
+                <Skeleton className="h-7 w-3/4" />
+            </CardHeader>
+            <CardContent className="flex-1 flex relative">
+                <div className="space-y-4 w-full">
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-6 w-1/2 mx-auto" />
+                    <Skeleton className="h-10 w-3/4" />
+                    <Skeleton className="h-10 w-4/5" />
+                </div>
+            </CardContent>
+            <CardFooter className="justify-between gap-6">
+                <Skeleton className="h-6 w-24" />
+                 <div className='flex items-center gap-6'>
+                    <Skeleton className="h-6 w-20" />
+                    <Skeleton className="h-6 w-24" />
+                </div>
+            </CardFooter>
+        </Card>
+    );
   }
 
   const editorContent = (
