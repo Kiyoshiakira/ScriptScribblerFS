@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Mic, Square, Phone, Bell, History } from 'lucide-react';
+import { Send, Mic, Square, Phone, Bell, History, PlayCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
@@ -175,15 +175,21 @@ export default function CollabAssistant() {
   return (
     <div className="h-full flex flex-col">
       <Tabs defaultValue="chat" className="flex-1 flex flex-col min-h-0">
-        <div className='flex items-center justify-between pr-2'>
+        <div className='flex items-center justify-between pr-2 gap-2'>
             <TabsList>
             <TabsTrigger value="chat">Chat</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             </TabsList>
-            <Button variant={isVoiceConnected ? "destructive" : "outline"} size="sm" onClick={handleVoiceConnectToggle}>
-                <Phone className="mr-2 h-4 w-4" />
-                {isVoiceConnected ? 'Disconnect' : 'Voice Connect'}
-            </Button>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm">
+                    <PlayCircle className="mr-2 h-4 w-4" />
+                    Start Session
+                </Button>
+                <Button variant={isVoiceConnected ? "destructive" : "outline"} size="sm" onClick={handleVoiceConnectToggle}>
+                    <Phone className="mr-2 h-4 w-4" />
+                    {isVoiceConnected ? 'Disconnect' : 'Voice Connect'}
+                </Button>
+            </div>
         </div>
         <TabsContent value="chat" className="flex-1 mt-4 min-h-0">
           <ChatView />
