@@ -315,14 +315,14 @@ export default function AppHeader({ activeView, setView }: { activeView: View, s
     );
   };
 
-  const isMyScriptsView = activeView === 'profile';
+  const isProfileView = activeView === 'profile';
 
   return (
     <>
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
       <SidebarTrigger className="flex md:hidden" />
       <div className="flex items-center gap-2">
-        {isMyScriptsView ? (
+        {isProfileView ? (
              <h1 className="text-xl font-bold font-headline">My Profile</h1>
         ) : (
           <>
@@ -369,7 +369,7 @@ export default function AppHeader({ activeView, setView }: { activeView: View, s
         </DropdownMenu>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button disabled={isMyScriptsView}>
+            <Button disabled={isProfileView}>
               <Download className="h-4 w-4 md:mr-2" />
               <span className='hidden md:inline'>Export</span>
               <ChevronDown className="h-4 w-4 ml-0 md:ml-2" />

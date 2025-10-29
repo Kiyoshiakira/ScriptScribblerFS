@@ -98,28 +98,13 @@ export default function AppSidebar({
   return (
     <Sidebar variant="sidebar" collapsible="icon" side="left">
       <SidebarHeader>
-        <button className="flex items-center gap-2 p-2" onClick={() => setView('dashboard')}>
+        <button className="flex items-center gap-2 p-2" onClick={() => noScriptLoaded ? setView('profile') : setView('dashboard')}>
             <Logo />
             <h1 className="text-xl font-bold font-headline">ScriptScribbler</h1>
         </button>
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu className="flex-1 overflow-y-auto p-2">
-            <SidebarMenuItem>
-                 <SidebarMenuButton
-                    onClick={() => setView('profile')}
-                    isActive={activeView === 'profile'}
-                    tooltip="My Profile"
-                >
-                    <UserIcon />
-                    <span>My Profile</span>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            
-            <div className="px-2">
-                <hr className="my-2 border-sidebar-border" />
-            </div>
-
             {scriptMenuItems.map(item => (
                 <SidebarMenuItem key={item.view}>
                     <SidebarMenuButton
@@ -127,8 +112,8 @@ export default function AppSidebar({
                         isActive={activeView === item.view}
                         tooltip={item.label}
                         aria-disabled={noScriptLoaded}
-                        className={cn(noScriptLoaded && "cursor-not-allowed opacity-50")}
-                        disabled={noScriptLoaded}
+                        className={cn(noScriptLoaded && item.view !== 'dashboard' && "cursor-not-allowed opacity-50")}
+                        disabled={noScriptLoaded && item.view !== 'dashboard'}
                     >
                         <item.icon />
                         <span>{item.label}</span>

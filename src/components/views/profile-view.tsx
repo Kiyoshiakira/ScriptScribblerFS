@@ -6,7 +6,7 @@ import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { collection, addDoc, serverTimestamp, deleteDoc, doc, getDocs, writeBatch } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Book, Edit, Loader2, Plus, Trash, User } from 'lucide-react';
+import { Book, Edit, Loader2, Plus, Trash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentScript } from '@/context/current-script-context';
 import { Skeleton } from '../ui/skeleton';
@@ -77,18 +77,20 @@ export default function ProfileView({ setView, openProfileDialog }: ProfileViewP
     );
 
     const { data: scripts, isLoading: areScriptsLoading } = useCollection<Script>(scriptsCollection);
-    const { data: userProfile, isLoading: isProfileLoading } = useCollection(useMemoFirebase(
-      () => (user && firestore ? collection(firestore, 'users') : null),
+    const userDocRef = useMemoFirebase(
+      () => (user && firestore ? doc(firestore, 'users', user.uid) : null),
       [firestore, user]
-    ));
+    );
+    const { data: userProfile, isLoading: isProfileLoading } = useDoc(userDocRef);
+
 
     const handleCreateNewScript = async () => {
-        if (!scriptsCollection) return;
+        if (!scriptsCollection || !user) return;
         try {
             const newScriptRef = await addDoc(scriptsCollection, {
                 title: 'Untitled Script',
                 content: initialScriptContent,
-                authorId: user?.uid,
+                authorId: user.uid,
                 createdAt: serverTimestamp(),
                 lastModified: serverTimestamp(),
             });
@@ -275,7 +277,7 @@ export default function ProfileView({ setView, openProfileDialog }: ProfileViewP
                 <div className='h-48 bg-muted relative'>
                     {isLoading ? <Skeleton className='h-full w-full' /> : (
                         <Image
-                            src={userProfile?.[0]?.coverImageUrl || 'https://picsum.photos/seed/99/1200/200'}
+                            src={userProfile?.coverImageUrl || 'https://picsum.photos/seed/99/1200/200'}
                             alt="Cover image"
                             fill
                             className='object-cover'
@@ -301,7 +303,7 @@ export default function ProfileView({ setView, openProfileDialog }: ProfileViewP
                              ) : (
                                 <>
                                  <h1 className='text-3xl font-bold font-headline'>{user?.displayName}</h1>
-                                 <p className='text-muted-foreground'>{userProfile?.[0]?.bio || 'No bio yet.'}</p>
+                                 <p className='text-muted-foreground'>{userProfile?.bio || 'No bio yet.'}</p>
                                 </>
                              )}
                         </div>
