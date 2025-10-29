@@ -88,7 +88,7 @@ const ScriptLineComponent = ({
       case 'parenthetical':
         return 'text-center max-w-xs mx-auto text-muted-foreground';
       case 'dialogue':
-        return 'text-center max-w-md mx-auto';
+        return 'max-w-md mx-auto';
       case 'transition':
         return 'uppercase text-right';
       default:
