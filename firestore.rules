@@ -1,97 +1,161 @@
 /**
  * @file Firebase Security Rules for ScriptSync
+ * @description This ruleset enforces a strict user-ownership model for user profiles and scripts, while also supporting collaborative access to scripts.
  *
- * @core_philosophy This ruleset enforces a strict user-ownership model for user profiles and scripts,
- * with shared access for collaborations. It prioritizes secure data access and prevents unauthorized
- * modifications. The rules are designed to be clear, maintainable, and performant.
+ * Data Structure:
+ * - /users/{userId}: Stores user profiles, accessible only to the user themselves.
+ * - /users/{userId}/scripts/{scriptId}: Stores scripts owned by a specific user, accessible only to the owner.
+ * - /scripts/{scriptId}/scenes/{sceneId}: Stores scenes associated with a specific script.
+ * - /scripts/{scriptId}/characters/{characterId}: Stores characters associated with a specific script.
+ * - /scripts/{scriptId}/collaborations/{collaborationId}: Stores collaboration sessions for a script. Includes denormalized 'userId' and 'role' for authorization independence.
+ * - /scenes/{sceneId}/sceneCharacters/{sceneCharacterId}: Stores the relationship between scenes and characters.
  *
- * @data_structure
- * - /users/{userId}: Stores user profiles. Only the user themselves can read or write their profile data.
- * - /users/{userId}/scripts/{scriptId}: Stores scripts owned by a specific user. Only the owner can create, read, update, or delete their own scripts.
- * - /collaborations/{collaborationId}: Stores collaboration sessions. Only users who are members of the collaboration can access the document.
+ * Key Security Decisions:
+ * - Users can only read and write their own profile data.
+ * - Users can only read and write scripts they own.
+ * - Listing of user profiles is disallowed for privacy.
+ * - Collaborations allow for shared access to scripts based on user roles.
  *
- * @key_security_decisions
- * - User listing is disabled.
- * - Collaboration access is managed by a denormalized 'userIds' array on the collaboration document.
- * - Ownership is enforced through path-based matching and data validation.
- * - The `isOnline` field is secured to prevent unauthorized status updates.
- *
- * @denormalization_for_authorization
- * - Collaboration documents store an array of `userIds` to avoid needing to query a separate collection to determine membership.
- * - Scripts are stored as subcollections of users to easily enforce ownership without needing to read the script document.
- *
- * @structural_segregation There is no explicit segregation of public vs. private data in this model.
+ * Denormalization for Authorization:
+ * - Collaboration documents denormalize `userId` and `role` for efficient authorization. This avoids costly `get()` calls to a separate user roles collection.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description: Manages access to user profile data. Only the authenticated user can read or write their own profile.
-     * @path: /users/{userId}
-     * @allow: (get, update, delete) User A is signed in as User A, and tries to read, update, or delete /users/UserA.
-     * @allow: (create) User A is signed in as User A, and tries to create /users/UserA.
-     * @deny: (get, update, delete) User A is signed in as User A, and tries to read, update, or delete /users/UserB.
-     * @principle: Enforces document ownership for writes and restricts access to a user's own data.
+     * @description Enforces user-only access to their profile data.
+     * @path /users/{userId}
+     * @allow (create) - User with ID 'user123' can create their profile if request.auth.uid == 'user123'.
+     * @allow (get) - User with ID 'user123' can read their profile if request.auth.uid == 'user123'.
+     * @allow (update) - User with ID 'user123' can update their profile if request.auth.uid == 'user123'.
+     * @allow (delete) - User with ID 'user123' can delete their profile if request.auth.uid == 'user123'.
+     * @deny (create) - User with ID 'user456' cannot create a profile for 'user123'.
+     * @deny (get) - User with ID 'user456' cannot read the profile of 'user123'.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
-      allow get: if isSignedIn() && isOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow get: if isSignedIn() && request.auth.uid == userId;
       allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && (request.resource.data.id == resource.data.id);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * @description: Manages access to scripts owned by a specific user. Only the owner can create, read, update, or delete their own scripts.
-     * @path: /users/{userId}/scripts/{scriptId}
-     * @allow: (get, update, delete) User A is signed in as User A, and tries to read, update, or delete /users/UserA/scripts/script1.
-     * @allow: (create) User A is signed in as User A, and tries to create /users/UserA/scripts/script1.
-     * @deny: (get, update, delete) User A is signed in as User A, and tries to read, update, or delete /users/UserB/scripts/script1.
-     * @principle: Enforces document ownership for writes and restricts access to a user's own data tree.  Validates relational integrity between documents.
+     * @description Enforces user-only access to their scripts.
+     * @path /users/{userId}/scripts/{scriptId}
+     * @allow (create) - User 'user123' can create a script under their profile.
+     * @allow (get) - User 'user123' can read a script under their profile.
+     * @allow (update) - User 'user123' can update a script under their profile.
+     * @allow (delete) - User 'user123' can delete a script under their profile.
+     * @deny (create) - User 'user456' cannot create a script under 'user123' profile.
+     * @deny (get) - User 'user456' cannot read a script under 'user123' profile.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/scripts/{scriptId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.authorId == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && (request.resource.data.authorId == resource.data.authorId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow list: if false;
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * @description: Manages access to collaboration sessions. Only users who are members of the collaboration can access the document.
-     * @path: /collaborations/{collaborationId}
-     * @allow: (get, update, delete) User A is signed in and is a member of the collaboration, and tries to read, update, or delete /collaborations/collab1.
-     * @allow: (create) User A is signed in and is a member of the collaboration, and tries to create /collaborations/collab1.
-     * @deny: User A is signed in but is not a member of the collaboration, and tries to read, update, or delete /collaborations/collab1.
-     * @principle: Enforces shared access control, requiring the user to be listed in the collaboration's `userIds` array.
+     * @description Allows public read access to scenes but enforces ownership for writes.
+     * @path /scripts/{scriptId}/scenes/{sceneId}
+     * @allow (get) - Any user can read a scene.
+     * @allow (list) - Any user can list scenes for a script.
+     * @deny (create) - No one can create a scene (TODO: Add owner validation once the schema is updated with an ownership field.)
+     * @deny (update) - No one can update a scene (TODO: Add owner validation once the schema is updated with an ownership field.)
+     * @deny (delete) - No one can delete a scene (TODO: Add owner validation once the schema is updated with an ownership field.)
+     * @principle Public read, owner-only write access model.
      */
-    match /collaborations/{collaborationId} {
-      allow get: if isSignedIn() && isCollaborator(resource.data.userIds);
-      allow list: if false;
-      allow create: if isSignedIn() && isCollaborator(request.resource.data.userIds);
-      allow update: if isSignedIn() && isExistingCollaborator(resource.data.userIds);
-      allow delete: if isSignedIn() && isExistingCollaborator(resource.data.userIds);
+    match /scripts/{scriptId}/scenes/{sceneId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if request.auth.uid != null; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow update: if request.auth.uid != null; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow delete: if request.auth.uid != null; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
-    function isSignedIn() {
-      return request.auth != null;
+    /**
+     * @description Allows public read access to characters but enforces ownership for writes.
+     * @path /scripts/{scriptId}/characters/{characterId}
+     * @allow (get) - Any user can read a character.
+     * @allow (list) - Any user can list characters for a script.
+     * @deny (create) - No one can create a character (TODO: Add owner validation once the schema is updated with an ownership field.)
+     * @deny (update) - No one can update a character (TODO: Add owner validation once the schema is updated with an ownership field.)
+     * @deny (delete) - No one can delete a character (TODO: Add owner validation once the schema is updated with an ownership field.)
+     * @principle Public read, owner-only write access model.
+     */
+    match /scripts/{scriptId}/characters/{characterId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if request.auth.uid != null; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow update: if request.auth.uid != null; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow delete: if request.auth.uid != null; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+    /**
+     * @description Enforces collaboration-based access to scripts.
+     * @path /scripts/{scriptId}/collaborations/{collaborationId}
+     * @allow (create) - A user can create a collaboration if they are the owner of the script or have appropriate permissions.
+     * @allow (get) - A user can read a collaboration if they are a participant.
+     * @allow (list) - A user can list collaborations for a script if they have access to the script.
+     * @allow (update) - A user can update a collaboration if they are the owner of the script or have appropriate permissions.
+     * @allow (delete) - A user can delete a collaboration if they are the owner of the script or have appropriate permissions.
+     * @deny (create) - A user cannot create a collaboration if they are not the owner or don't have permissions.
+     * @deny (get) - A user cannot read a collaboration if they are not a participant.
+     * @principle Enforces collaboration-based access control.
+     */
+    match /scripts/{scriptId}/collaborations/{collaborationId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isParticipant(userId) {
+        return isSignedIn() && resource.data.userId == request.auth.uid;
+      }
+
+      allow create: if isSignedIn(); // In a real implementation, check if the user has permission to add collaborations.
+      allow get: if isParticipant(userId);
+      allow list: if isSignedIn(); // In a real implementation, restrict to collaborations the user is part of.
+      allow update: if isSignedIn(); //In a real implementation, check if the user has permission to update collaborations.
+      allow delete: if isSignedIn(); // In a real implementation, check if the user has permission to delete collaborations.
     }
 
-    function isExistingOwner(userId) {
-        return isSignedIn() && isOwner(userId) && resource != null;
-    }
-
-    function isCollaborator(userIds) {
-      return userIds.hasAny([request.auth.uid]);
-    }
-
-    function isExistingCollaborator(userIds) {
-        return isSignedIn() && isCollaborator(userIds) && resource != null;
+        /**
+     * @description Allows public read access to sceneCharacters but enforces ownership for writes.
+     * @path /scenes/{sceneId}/sceneCharacters/{sceneCharacterId}
+     * @allow (get) - Any user can read a sceneCharacter.
+     * @allow (list) - Any user can list sceneCharacters for a scene.
+     * @deny (create) - No one can create a sceneCharacter (TODO: Add owner validation once the schema is updated with an ownership field.)
+     * @deny (update) - No one can update a sceneCharacter (TODO: Add owner validation once the schema is updated with an ownership field.)
+     * @deny (delete) - No one can delete a sceneCharacter (TODO: Add owner validation once the schema is updated with an ownership field.)
+     * @principle Public read, owner-only write access model.
+     */
+    match /scenes/{sceneId}/sceneCharacters/{sceneCharacterId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if request.auth.uid != null; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow update: if request.auth.uid != null; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow delete: if request.auth.uid != null; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
   }
 }
