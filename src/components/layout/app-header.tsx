@@ -52,6 +52,22 @@ export default function AppHeader({ setView }: AppHeaderProps) {
     }
   };
 
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      toast({
+        title: "Link Copied",
+        description: "The link to your script has been copied to your clipboard.",
+      });
+    }).catch(err => {
+      console.error('Failed to copy link: ', err);
+      toast({
+        variant: 'destructive',
+        title: "Copy Failed",
+        description: "Could not copy the link to your clipboard.",
+      });
+    });
+  };
+
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !firestore || !user) return;
@@ -229,7 +245,7 @@ export default function AppHeader({ setView }: AppHeaderProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleCopyLink}>
               <LinkIcon className="h-4 w-4 mr-2" />
               Copy Link
             </DropdownMenuItem>
