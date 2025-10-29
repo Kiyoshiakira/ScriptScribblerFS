@@ -25,6 +25,7 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
   const auth = useAuth();
   const { toast } = useToast();
   const [displayName, setDisplayName] = useState('');
+  const [photoURL, setPhotoURL] = useState('');
   const [bio, setBio] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -32,6 +33,7 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || '');
+      setPhotoURL(user.photoURL || '');
     }
     if (profile) {
       setBio(profile.bio || '');
@@ -45,10 +47,11 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
     setIsSaving(true);
     
     try {
-        // Update Firebase Auth display name
-        if (displayName !== auth.currentUser.displayName) {
+        // Update Firebase Auth display name and photo
+        if (displayName !== auth.currentUser.displayName || photoURL !== auth.currentUser.photoURL) {
             await updateProfile(auth.currentUser, {
                 displayName,
+                photoURL,
             });
         }
 
@@ -83,18 +86,15 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
         <DialogHeader>
           <DialogTitle className="font-headline">Edit Profile</DialogTitle>
           <DialogDescription>
-            Make changes to your public profile.
+            Make changes to your public profile. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
             <div className="flex flex-col items-center gap-2">
-                <div className="relative group">
-                    <Avatar className="w-24 h-24">
-                        <AvatarImage src={user.photoURL || undefined} alt={displayName} />
-                        <AvatarFallback>{displayName?.charAt(0) || 'U'}</AvatarFallback>
-                    </Avatar>
-                </div>
-                 <p className="text-xs text-muted-foreground">Profile photo managed by your Google account.</p>
+                <Avatar className="w-24 h-24">
+                    <AvatarImage src={photoURL || undefined} alt={displayName} />
+                    <AvatarFallback>{displayName?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="displayName">Display Name</Label>
@@ -104,13 +104,22 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
                     onChange={(e) => setDisplayName(e.target.value)}
                 />
             </div>
+             <div className="space-y-2">
+                <Label htmlFor="photoURL">Photo URL</Label>
+                <Input
+                    id="photoURL"
+                    value={photoURL}
+                    onChange={(e) => setPhotoURL(e.target.value)}
+                    placeholder="https://example.com/your-avatar.jpg"
+                />
+            </div>
             <div className="space-y-2">
                 <Label htmlFor="coverImageUrl">Cover Image URL</Label>
                 <Input
                     id="coverImageUrl"
                     value={coverImageUrl}
                     onChange={(e) => setCoverImageUrl(e.target.value)}
-                    placeholder="https://example.com/your-image.jpg"
+                    placeholder="https://example.com/your-banner.jpg"
                 />
             </div>
              <div className="space-y-2">

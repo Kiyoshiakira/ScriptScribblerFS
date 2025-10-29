@@ -60,7 +60,7 @@ function ProfileHeader({ user, profile, onEdit }: { user: any, profile: UserProf
                 <div className="-mt-20 sm:-mt-24 flex items-end justify-between">
                     <div className='flex items-end gap-4'>
                         <div className='relative group'>
-                            <Avatar className="w-32 h-32 sm:w-40 sm:h-40 border-4 border-background outline-primary outline">
+                            <Avatar onClick={onEdit} className="w-32 h-32 sm:w-40 sm:h-40 border-4 border-background outline-primary outline cursor-pointer">
                                 <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
                                 <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
                             </Avatar>
