@@ -68,16 +68,20 @@ function AppLayoutContent() {
 
 
   React.useEffect(() => {
-    // If loading is finished and no script is selected, force profile view.
-    if (!isCurrentScriptLoading && !currentScriptId) {
-      setView('profile');
-    } 
-    // If a script IS selected, but the current view is profile, switch to dashboard.
-    // This handles the case where a user creates/selects a script from the profile page.
-    else if (!isCurrentScriptLoading && currentScriptId && view === 'profile') {
+    // This effect ensures the correct view is shown based on script availability.
+    // It runs only when loading is complete.
+    if (!isCurrentScriptLoading) {
+      if (!currentScriptId) {
+        // If there's no script, always show the profile view.
+        setView('profile');
+      } else if (view === 'profile' && currentScriptId) {
+        // If a script is loaded AND the current view is profile, switch to dashboard.
+        // This handles creating a new script from the profile page.
         setView('dashboard');
+      }
     }
   }, [isCurrentScriptLoading, currentScriptId, view]);
+
 
   const handleSetView = (newView: View | 'settings' | 'profile-edit') => {
     if (newView === 'settings') {
@@ -97,7 +101,7 @@ function AppLayoutContent() {
       case 'scenes': return <ScenesView />;
       case 'characters': return <CharactersView />;
       case 'notes': return <NotesView />;
-      case 'profile': return <ProfileView setView={handleSetView} openProfileDialog={() => setProfileOpen(true)} />;
+      case 'profile': return <ProfileView setView={handleSetView} />;
       default: return <DashboardView setView={handleSetView}/>;
     }
   };
@@ -143,7 +147,7 @@ export default function AppLayout() {
   }
   
   // If there is a scriptId, wrap the content in a ScriptProvider to load it.
-  // If there's no scriptId, we are on the profile view, which doesn't need a script context.
+  // Otherwise, render the layout which will default to the profile view.
   if (currentScriptId) {
      return (
        <ScriptProvider scriptId={currentScriptId}>
@@ -152,6 +156,6 @@ export default function AppLayout() {
     );
   }
 
-  // Render the layout without a script context (for the profile view)
+  // Render the layout without a script context (will show the profile view)
   return <AppLayoutContent />;
 }

@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
-import { collection, addDoc, serverTimestamp, deleteDoc, doc, getDocs, writeBatch } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { collection, addDoc, serverTimestamp, deleteDoc, doc, getDocs, writeBatch, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Book, Edit, Loader2, Plus, Trash } from 'lucide-react';
@@ -54,11 +54,10 @@ interface Script {
 
 interface ProfileViewProps {
   setView: (view: View) => void;
-  openProfileDialog: () => void;
 }
 
 
-export default function ProfileView({ setView, openProfileDialog }: ProfileViewProps) {
+export default function ProfileView({ setView }: ProfileViewProps) {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -70,13 +69,18 @@ export default function ProfileView({ setView, openProfileDialog }: ProfileViewP
     const [deleteScenes, setDeleteScenes] = useState(true);
     const [deleteNotes, setDeleteNotes] = useState(true);
 
-
-    const scriptsCollection = useMemoFirebase(
+    const scriptsCollectionRef = useMemoFirebase(
         () => (user && firestore ? collection(firestore, 'users', user.uid, 'scripts') : null),
         [firestore, user]
     );
 
-    const { data: scripts, isLoading: areScriptsLoading } = useCollection<Script>(scriptsCollection);
+    const scriptsQuery = useMemoFirebase(
+        () => (scriptsCollectionRef ? query(scriptsCollectionRef, orderBy('lastModified', 'desc')) : null),
+        [scriptsCollectionRef]
+    )
+
+    const { data: scripts, isLoading: areScriptsLoading } = useCollection<Script>(scriptsQuery);
+    
     const userDocRef = useMemoFirebase(
       () => (user && firestore ? doc(firestore, 'users', user.uid) : null),
       [firestore, user]
@@ -85,9 +89,9 @@ export default function ProfileView({ setView, openProfileDialog }: ProfileViewP
 
 
     const handleCreateNewScript = async () => {
-        if (!scriptsCollection || !user) return;
+        if (!scriptsCollectionRef || !user) return;
         try {
-            const newScriptRef = await addDoc(scriptsCollection, {
+            const newScriptRef = await addDoc(scriptsCollectionRef, {
                 title: 'Untitled Script',
                 content: initialScriptContent,
                 authorId: user.uid,
@@ -101,7 +105,12 @@ export default function ProfileView({ setView, openProfileDialog }: ProfileViewP
             setCurrentScriptId(newScriptRef.id);
             setView('dashboard');
         } catch (error: any) {
-            console.error("Error creating script: ", error);
+            const permissionError = new FirestorePermissionError({
+                path: scriptsCollectionRef.path,
+                operation: 'create',
+                requestResourceData: { title: 'Untitled Script' }
+            });
+            errorEmitter.emit('permission-error', permissionError);
             toast({
                 variant: 'destructive',
                 title: 'Error',
@@ -131,22 +140,17 @@ export default function ProfileView({ setView, openProfileDialog }: ProfileViewP
         try {
             const batch = writeBatch(firestore);
             
-            if (deleteCharacters) {
-                const subcollectionRef = collection(scriptRef, 'characters');
-                const snapshot = await getDocs(subcollectionRef);
-                snapshot.forEach((doc) => batch.delete(doc.ref));
-            }
-            if (deleteScenes) {
-                const subcollectionRef = collection(scriptRef, 'scenes');
-                const snapshot = await getDocs(subcollectionRef);
-                snapshot.forEach((doc) => batch.delete(doc.ref));
-            }
-            if (deleteNotes) {
-                const subcollectionRef = collection(scriptRef, 'notes');
-                const snapshot = await getDocs(subcollectionRef);
-                snapshot.forEach((doc) => batch.delete(doc.ref));
-            }
+            const subcollectionsToDelete = [];
+            if (deleteCharacters) subcollectionsToDelete.push('characters');
+            if (deleteScenes) subcollectionsToDelete.push('scenes');
+            if (deleteNotes) subcollectionsToDelete.push('notes');
 
+            for (const sub of subcollectionsToDelete) {
+                const subcollectionRef = collection(scriptRef, sub);
+                const snapshot = await getDocs(subcollectionRef);
+                snapshot.forEach((doc) => batch.delete(doc.ref));
+            }
+            
             if (deleteScriptDoc) {
                 batch.delete(scriptRef);
             }
@@ -158,8 +162,12 @@ export default function ProfileView({ setView, openProfileDialog }: ProfileViewP
                 description: 'The selected script components have been deleted.',
             });
         } catch (error: any) {
-             console.error("Error deleting script components: ", error);
-            toast({
+             const permissionError = new FirestorePermissionError({
+                path: scriptRef.path,
+                operation: 'delete',
+             })
+             errorEmitter.emit('permission-error', permissionError);
+             toast({
                 variant: 'destructive',
                 title: 'Error',
                 description: 'Could not delete the selected components.',
@@ -180,12 +188,6 @@ export default function ProfileView({ setView, openProfileDialog }: ProfileViewP
             )
         }
 
-        const sortedScripts = scripts ? [...scripts].sort((a, b) => {
-            const timeA = a.lastModified ? a.lastModified.toDate().getTime() : 0;
-            const timeB = b.lastModified ? b.lastModified.toDate().getTime() : 0;
-            return timeB - timeA;
-        }) : [];
-
         return (
             <div className='mt-6'>
                  <div className="flex items-center justify-between mb-4">
@@ -196,9 +198,9 @@ export default function ProfileView({ setView, openProfileDialog }: ProfileViewP
                     </Button>
                 </div>
                 
-                {sortedScripts.length > 0 ? (
+                {scripts && scripts.length > 0 ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {sortedScripts.map((script) => (
+                        {scripts.map((script) => (
                              <Card key={script.id} className="flex flex-col">
                                 <CardHeader>
                                     <CardTitle className="font-headline flex items-start justify-between">
@@ -276,12 +278,14 @@ export default function ProfileView({ setView, openProfileDialog }: ProfileViewP
             <Card className='overflow-hidden'>
                 <div className='h-48 bg-muted relative'>
                     {isLoading ? <Skeleton className='h-full w-full' /> : (
-                        <Image
-                            src={userProfile?.coverImageUrl || 'https://picsum.photos/seed/99/1200/200'}
-                            alt="Cover image"
-                            fill
-                            className='object-cover'
-                        />
+                        userProfile?.coverImageUrl && (
+                            <Image
+                                src={userProfile.coverImageUrl}
+                                alt="Cover image"
+                                fill
+                                className='object-cover'
+                            />
+                        )
                     )}
                 </div>
                  <div className='p-6 pt-0'>
@@ -307,7 +311,7 @@ export default function ProfileView({ setView, openProfileDialog }: ProfileViewP
                                 </>
                              )}
                         </div>
-                        <Button variant="outline" onClick={openProfileDialog}><Edit className='mr-2 h-4 w-4' /> Edit Profile</Button>
+                        <Button variant="outline" onClick={() => setView('profile-edit' as any)}><Edit className='mr-2 h-4 w-4' /> Edit Profile</Button>
                     </div>
                 </div>
             </Card>

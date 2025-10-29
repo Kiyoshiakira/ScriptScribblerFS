@@ -40,7 +40,7 @@ import { useCurrentScript } from '@/context/current-script-context';
 import type { View } from './AppLayout';
 
 
-export default function AppHeader({ activeView, setView }: { activeView: View, setView: (view: View | 'settings' | 'profile') => void }) {
+export default function AppHeader({ activeView, setView }: { activeView: View, setView: (view: View | 'settings' | 'profile-edit') => void }) {
   const auth = useAuth();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -128,9 +128,10 @@ export default function AppHeader({ activeView, setView }: { activeView: View, s
 
         toast({
           title: 'Import Successful',
-          description: `"${projectData.title}" has been added to My Scripts.`,
+          description: `"${projectData.title}" has been added to your scripts.`,
         });
-        setView('profile');
+        setCurrentScriptId(newScriptRef.id);
+        setView('dashboard');
 
     } catch (error) {
         console.error('Scribbler import failed:', error);
@@ -201,9 +202,10 @@ export default function AppHeader({ activeView, setView }: { activeView: View, s
 
         toast({
           title: 'Import Successful',
-          description: `"${scriptTitle}" has been added to My Scripts.`,
+          description: `"${scriptTitle}" has been added to your scripts.`,
         });
-        setView('profile');
+        setCurrentScriptId(newScriptRef.id);
+        setView('dashboard');
 
       } catch (error) {
          console.error('--- DEBUG: Import Parsing Failed ---', error);
