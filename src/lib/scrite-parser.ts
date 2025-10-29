@@ -43,12 +43,15 @@ const mapScriteCategoryToNoteCategory = (scriteCategory: string): NoteCategory =
 
 export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScriteFile> => {
   const zip = await JSZip.loadAsync(fileData);
-  const contentXmlFile = zip.file('content.xml');
-
-  if (!contentXmlFile) {
-    throw new Error('Invalid .scrite file: content.xml not found.');
+  
+  // Find the content.xml file dynamically. Scrite files should have one primary XML file.
+  const xmlFiles = zip.file(/\.xml$/);
+  
+  if (xmlFiles.length === 0) {
+    throw new Error('Invalid .scrite file: No XML content file found inside the archive.');
   }
 
+  const contentXmlFile = xmlFiles[0];
   const xmlData = await contentXmlFile.async('string');
 
   const parser = new XMLParser({
