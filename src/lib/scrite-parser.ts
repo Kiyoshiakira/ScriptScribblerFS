@@ -30,6 +30,7 @@ export interface ParsedScene {
 
 
 export interface ParsedScriteFile {
+  title: string;
   script: string;
   lines: ScriptLine[];
   characters: ParsedCharacter[];
@@ -71,6 +72,10 @@ export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScri
   if (!structure) {
     throw new Error('Invalid Scrite JSON structure: <structure> tag not found.');
   }
+
+  // Get title from metadata
+  const title = jsonObj.screenplay?.title || 'Untitled Import';
+
 
   // 1. Parse Script Content and Scenes
   const scriptLines: ScriptLine[] = [];
@@ -183,6 +188,7 @@ export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScri
   }
   
   return {
+    title,
     script: scriptLines.map(l => l.text).join('\n'),
     lines: scriptLines,
     characters,

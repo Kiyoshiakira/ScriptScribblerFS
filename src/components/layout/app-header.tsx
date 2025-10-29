@@ -88,7 +88,7 @@ export default function AppHeader({ setView }: AppHeaderProps) {
 
         // Create a new script document
         const newScriptRef = doc(collection(firestore, 'users', user.uid, 'scripts'));
-        const scriptTitle = parsedData.script.split('\n')[0] || 'Untitled Import';
+        const scriptTitle = parsedData.title;
         
         // 1. Set main script data
         batch.set(newScriptRef, {
