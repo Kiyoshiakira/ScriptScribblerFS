@@ -29,18 +29,19 @@ import { useScript } from '@/context/script-context';
 import { useToast } from '@/hooks/use-toast';
 import { useRef } from 'react';
 import { parseScriteFile } from '@/lib/scrite-parser';
-import { collection, writeBatch, getDocs, doc } from 'firebase/firestore';
-import type { Note } from '../views/notes-view';
+import { collection, writeBatch, doc, addDoc, serverTimestamp } from 'firebase/firestore';
+import type { View } from '@/app/page';
 
 interface AppHeaderProps {
-  setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
+  setView: (view: View) => void;
 }
 
-export default function AppHeader({ setNotes }: AppHeaderProps) {
+
+export default function AppHeader({ setView }: AppHeaderProps) {
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { user } = useUser();
   const firestore = useFirestore();
-  const { setScriptContent } = useScript();
+  const { script, setScriptTitle, isScriptLoading } = useScript();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,66 +54,70 @@ export default function AppHeader({ setNotes }: AppHeaderProps) {
 
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !firestore || !user) return;
 
     const reader = new FileReader();
     reader.onload = async (e) => {
       const arrayBuffer = e.target?.result as ArrayBuffer;
-      console.log('--- DEBUG: File read as ArrayBuffer ---');
 
       try {
         const parsedData = await parseScriteFile(arrayBuffer);
-        console.log('--- DEBUG: Parsed Scrite JSON ---');
-        console.log(JSON.stringify(parsedData, null, 2));
+        
+        // Create a new script document
+        const newScriptRef = doc(collection(firestore, 'users', user.uid, 'scripts'));
+        const scriptTitle = parsedData.script.split('\n')[0] || 'Untitled Import';
 
+        const batch = writeBatch(firestore);
 
-        // 1. Update script content
-        setScriptContent(parsedData.script);
+        // 1. Set main script data
+        batch.set(newScriptRef, {
+            title: scriptTitle,
+            content: parsedData.script,
+            authorId: user.uid,
+            createdAt: serverTimestamp(),
+            lastModified: serverTimestamp(),
+        });
+        
+        // 2. Add characters
+        const charactersCollectionRef = collection(firestore, newScriptRef.path, 'characters');
+        parsedData.characters.forEach(char => {
+            const newCharRef = doc(charactersCollectionRef);
+            batch.set(newCharRef, char);
+        });
 
-        // 2. Update notes
-        setNotes(parsedData.notes);
-
-        // 3. Update characters in Firestore
-        if (firestore && user) {
-          const charactersCollection = collection(firestore, 'users', user.uid, 'characters');
-          const batch = writeBatch(firestore);
-
-          // Clear existing characters
-          const existingCharsSnapshot = await getDocs(charactersCollection);
-          existingCharsSnapshot.forEach(doc => batch.delete(doc.ref));
-          
-          // Add new characters
-          parsedData.characters.forEach(char => {
-             const newCharRef = doc(collection(firestore, 'users', user.uid, 'characters'));
-             batch.set(newCharRef, { ...char, userId: user.uid });
-          });
-          
-          batch.commit().catch(serverError => {
+        // 3. Add notes
+        const notesCollectionRef = collection(firestore, newScriptRef.path, 'notes');
+        parsedData.notes.forEach(note => {
+            const newNoteRef = doc(notesCollectionRef);
+            batch.set(newNoteRef, note);
+        });
+        
+        await batch.commit().catch(serverError => {
             const permissionError = new FirestorePermissionError({
-              path: charactersCollection.path,
-              operation: 'write', // Representing a batch write
-              requestResourceData: parsedData.characters,
+              path: `users/${user.uid}/scripts`,
+              operation: 'write', 
+              requestResourceData: {
+                  script: parsedData.script.substring(0, 100) + '...',
+                  characters: parsedData.characters,
+                  notes: parsedData.notes,
+              },
             });
             errorEmitter.emit('permission-error', permissionError);
-            console.error('--- DEBUG: Firestore Batch Commit Failed ---', permissionError);
-            toast({
-              variant: 'destructive',
-              title: 'Import Failed',
-              description: 'Could not save imported characters to the database due to permission errors.',
-            });
-          });
-        }
+            throw permissionError; // Rethrow to be caught by outer catch
+        });
 
         toast({
           title: 'Import Successful',
-          description: `Successfully imported from ${file.name}.`,
+          description: `"${scriptTitle}" has been added to My Scripts.`,
         });
+        setView('my-scripts'); // Switch to scripts view after successful import
+
       } catch (error) {
-         console.error('--- DEBUG: Import Parsing Failed ---', error);
+         console.error('--- DEBUG: Import Failed ---', error);
          toast({
             variant: 'destructive',
             title: 'Import Failed',
-            description: error instanceof Error ? error.message : 'An unknown error occurred during parsing.',
+            description: error instanceof Error ? error.message : 'An unknown error occurred during import.',
         });
       }
     };
@@ -125,7 +130,6 @@ export default function AppHeader({ setNotes }: AppHeaderProps) {
     }
     reader.readAsArrayBuffer(file);
 
-    // Reset file input
     if(fileInputRef.current) {
         fileInputRef.current.value = '';
     }
@@ -136,12 +140,8 @@ export default function AppHeader({ setNotes }: AppHeaderProps) {
   };
 
   const UserMenu = () => {
-    if (isUserLoading) {
-      return <Skeleton className="h-10 w-10 rounded-full" />;
-    }
-
     if (!user) {
-      return null;
+      return <Skeleton className="h-10 w-10 rounded-full" />;
     }
 
     return (
@@ -173,10 +173,16 @@ export default function AppHeader({ setNotes }: AppHeaderProps) {
       <SidebarTrigger className="flex md:hidden" />
       <div className="flex items-center gap-2">
         <Book className="h-6 w-6 text-muted-foreground" />
-        <Input
-          defaultValue="Untitled Screenplay"
-          className="text-lg md:text-xl font-semibold border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 font-headline"
-        />
+        {isScriptLoading ? (
+            <Skeleton className="h-7 w-64" />
+        ) : (
+            <Input
+              key={script?.id} // Re-mount input when script changes
+              defaultValue={script?.title}
+              onBlur={(e) => setScriptTitle(e.target.value)}
+              className="text-lg md:text-xl font-semibold border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 font-headline"
+            />
+        )}
       </div>
       <div className="ml-auto flex items-center gap-2 md:gap-4">
         <input

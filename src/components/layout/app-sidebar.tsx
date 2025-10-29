@@ -20,6 +20,7 @@ import {
   Clapperboard,
   StickyNote,
   CaseSensitive,
+  Library,
 } from 'lucide-react';
 import type { View } from '@/app/page';
 import type { ScriptElement } from '../script-editor';
@@ -72,6 +73,17 @@ export default function AppSidebar({ activeView, setActiveView, activeScriptElem
         </div>
       </SidebarHeader>
       <SidebarMenu className="flex-1 overflow-y-auto p-2">
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            onClick={() => setActiveView('my-scripts')}
+            isActive={activeView === 'my-scripts'}
+            tooltip="My Scripts"
+          >
+            <Library />
+            <span>My Scripts</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarSeparator />
         <SidebarMenuItem>
           <SidebarMenuButton
             onClick={() => setActiveView('editor')}

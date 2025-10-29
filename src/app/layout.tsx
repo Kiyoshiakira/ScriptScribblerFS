@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase';
+import { CurrentScriptProvider } from '@/context/current-script-context';
 
 export const metadata: Metadata = {
   title: 'ScriptScribbler',
@@ -26,8 +27,10 @@ export default function RootLayout({
       </head>
       <body className={cn('font-body antialiased')}>
         <FirebaseClientProvider>
-          {children}
-          <Toaster />
+          <CurrentScriptProvider>
+            {children}
+            <Toaster />
+          </CurrentScriptProvider>
         </FirebaseClientProvider>
       </body>
     </html>

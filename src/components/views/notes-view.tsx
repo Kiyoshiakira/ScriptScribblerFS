@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Upload, Image as ImageIcon } from 'lucide-react';
+import { Plus, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -27,6 +27,10 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useCurrentScript } from '@/context/current-script-context';
+import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
+import { Skeleton } from '../ui/skeleton';
 
 
 const NOTE_CATEGORIES = {
@@ -42,53 +46,12 @@ const NOTE_CATEGORIES = {
 export type NoteCategory = keyof typeof NOTE_CATEGORIES;
 
 export interface Note {
-  id: number;
+  id?: string;
   title: string;
   content: string;
   category: NoteCategory;
   imageUrl?: string;
 }
-
-const NOTES_STORAGE_KEY = 'scriptscribbler-notes';
-
-const initialNotes: Note[] = [
-  {
-    id: 1,
-    title: 'Plot Idea: Twist Ending',
-    content: 'What if the protagonist, Jane, has been imagining Leo all along? He is a manifestation of her creative side that she suppressed to become a lawyer.',
-    category: 'Plot',
-  },
-  {
-    id: 2,
-    title: 'Character Backstory: Leo',
-    content: 'Leo comes from a family of famous architects, but he rebelled to pursue his passion for art. This creates a conflict when his family disapproves of his relationship with Jane.',
-    category: 'Character',
-  },
-  {
-    id: 3,
-    title: 'Dialogue Snippet',
-    content: 'Jane: "You see art in everything."\nLeo: "And you see arguments in everything. Maybe that\'s why we fit."',
-    category: 'Dialogue',
-  },
-  {
-    id: 4,
-    title: 'Location Research: Coffee Shop',
-    content: 'Need to find a coffee shop with a specific aesthetic: a mix of modern industrial and cozy, with large windows. Maybe a real location in Brooklyn?',
-    category: 'Research',
-  },
-    {
-    id: 5,
-    title: 'Theme: Art vs. Commerce',
-    content: 'Explore the central theme through Jane and Leo\'s careers. She is all about logic and commerce, he is about passion and art. Their relationship forces them to confront their own choices.',
-    category: 'Theme',
-  },
-  {
-    id: 6,
-    title: 'Scene Idea: The Argument',
-    content: 'A major argument erupts when Jane\'s boss offers Leo a lucrative but soulless corporate art commission. It brings their core conflict to a head.',
-    category: 'Scene',
-  },
-];
 
 function NoteDialog({ note, onSave, trigger }: { note?: Note | null, onSave: (note: Note) => void, trigger: React.ReactNode }) {
     const [open, setOpen] = useState(false);
@@ -98,6 +61,8 @@ function NoteDialog({ note, onSave, trigger }: { note?: Note | null, onSave: (no
     const [imageUrl, setImageUrl] = useState('');
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const { toast } = useToast();
+    const [isSaving, setIsSaving] = useState(false);
+
 
     React.useEffect(() => {
         if (open) {
@@ -119,18 +84,20 @@ function NoteDialog({ note, onSave, trigger }: { note?: Note | null, onSave: (no
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!title) {
             toast({ variant: 'destructive', title: 'Title Required', description: 'Please enter a title for the note.' });
             return;
         }
-        onSave({
-            id: note?.id || Date.now(),
+        setIsSaving(true);
+        await onSave({
+            ...note,
             title,
             content,
             category,
             imageUrl
         });
+        setIsSaving(false);
         setOpen(false);
     };
 
@@ -184,56 +151,53 @@ function NoteDialog({ note, onSave, trigger }: { note?: Note | null, onSave: (no
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleSave}>Save Note</Button>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Note
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
 
-interface NotesViewProps {
-  notes: Note[];
-  setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
-}
+export default function NotesView() {
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const { currentScriptId } = useCurrentScript();
+  const { toast } = useToast();
 
-export default function NotesView({ notes, setNotes }: NotesViewProps) {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const notesCollection = useMemoFirebase(
+    () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'notes') : null),
+    [firestore, user, currentScriptId]
+  );
+  
+  const { data: notes, isLoading } = useCollection<Note>(notesCollection);
 
-  useEffect(() => {
+  const handleSaveNote = async (noteToSave: Note) => {
+    if (!notesCollection) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Cannot save note: no active script.' });
+      return;
+    }
+    
     try {
-      const item = window.localStorage.getItem(NOTES_STORAGE_KEY);
-      if (item) {
-        setNotes(JSON.parse(item));
-      } else {
-        setNotes(initialNotes);
-      }
-    } catch (error) {
-      console.warn(`Error reading localStorage key “${NOTES_STORAGE_KEY}”:`, error);
-      setNotes(initialNotes);
-    } finally {
-        setIsLoaded(true);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (isLoaded) {
-      try {
-        window.localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
-      } catch (error) {
-        console.warn(`Error setting localStorage key “${NOTES_STORAGE_KEY}”:`, error);
-      }
-    }
-  }, [notes, isLoaded]);
-
-  const handleSaveNote = (noteToSave: Note) => {
-    const existingIndex = notes.findIndex(n => n.id === noteToSave.id);
-    if (existingIndex > -1) {
-        const updatedNotes = [...notes];
-        updatedNotes[existingIndex] = noteToSave;
-        setNotes(updatedNotes);
-    } else {
-        setNotes([noteToSave, ...notes]);
+        if (noteToSave.id) {
+            // Update existing note
+            const noteDocRef = doc(notesCollection, noteToSave.id);
+            await setDoc(noteDocRef, noteToSave, { merge: true });
+            toast({ title: 'Note Updated', description: `"${noteToSave.title}" has been updated.` });
+        } else {
+            // Create new note
+            await addDoc(notesCollection, noteToSave);
+            toast({ title: 'Note Created', description: `"${noteToSave.title}" has been added.` });
+        }
+    } catch(error: any) {
+         console.error("Error saving note: ", error);
+         toast({
+            variant: 'destructive',
+            title: 'Save Error',
+            description: error.message || 'Could not save the note.',
+        });
     }
   };
   
@@ -253,8 +217,13 @@ export default function NotesView({ notes, setNotes }: NotesViewProps) {
         />
       </div>
 
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-64" />)}
+        </div>
+      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {notes.map((note) => (
+        {notes && notes.map((note) => (
           <NoteDialog
             key={note.id}
             note={note}
@@ -280,6 +249,14 @@ export default function NotesView({ notes, setNotes }: NotesViewProps) {
           />
         ))}
       </div>
+      )}
+      {!isLoading && notes && notes.length === 0 && (
+         <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
+            <StickyNote className="mx-auto h-12 w-12" />
+            <h3 className="mt-4 text-lg font-medium">No Notes Yet</h3>
+            <p className="mt-1 text-sm">Create your first note to start organizing your ideas.</p>
+         </div>
+      )}
     </div>
   );
 }

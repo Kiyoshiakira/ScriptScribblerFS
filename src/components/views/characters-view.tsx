@@ -18,11 +18,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { getAiCharacterProfile } from '@/app/actions';
-import type { AiGenerateCharacterProfileInput } from '@/app/actions';
 import { Skeleton } from '../ui/skeleton';
 import React from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { addDoc, collection, doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useCurrentScript } from '@/context/current-script-context';
 
 interface Character {
   id?: string;
@@ -221,25 +221,28 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
 }
 
 export default function CharactersView() {
-  const { user, isUserLoading } = useUser();
+  const { user } = useUser();
   const firestore = useFirestore();
+  const { currentScriptId } = useCurrentScript();
   const { toast } = useToast();
 
   const charactersCollection = useMemoFirebase(
-    () => (user && firestore ? collection(firestore, 'users', user.uid, 'characters') : null),
-    [firestore, user]
+    () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'characters') : null),
+    [firestore, user, currentScriptId]
   );
 
   const { data: characters, isLoading: areCharactersLoading } = useCollection<Character>(charactersCollection);
 
   const handleSaveCharacter = async (charToSave: Character, isNew: boolean) => {
-    if (!firestore || !user) {
-      toast({ variant: 'destructive', title: 'Error', description: 'User not authenticated' });
+    if (!firestore || !user || !currentScriptId) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Cannot save character: no active script.' });
       return;
     }
+    const collectionRef = collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'characters');
+
     try {
       if (isNew) {
-        await addDoc(collection(firestore, 'users', user.uid, 'characters'), {
+        await addDoc(collectionRef, {
           ...charToSave,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -247,7 +250,7 @@ export default function CharactersView() {
         toast({ title: 'Character Created', description: `${charToSave.name} has been added.` });
       } else {
         if (!charToSave.id) throw new Error('Character ID is missing for update');
-        const charDocRef = doc(firestore, 'users', user.uid, 'characters', charToSave.id);
+        const charDocRef = doc(collectionRef, charToSave.id);
         await setDoc(charDocRef, {
           ...charToSave,
           updatedAt: serverTimestamp(),
@@ -264,7 +267,7 @@ export default function CharactersView() {
     }
   };
 
-  if (isUserLoading || areCharactersLoading) {
+  if (areCharactersLoading) {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -352,11 +355,11 @@ export default function CharactersView() {
           );
         })}
       </div>
-      {!isUserLoading && !areCharactersLoading && characters && characters.length === 0 && (
+      {!areCharactersLoading && characters && characters.length === 0 && (
          <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
             <User className="mx-auto h-12 w-12" />
             <h3 className="mt-4 text-lg font-medium">No Characters Yet</h3>
-            <p className="mt-1 text-sm">Get started by adding your first character.</p>
+            <p className="mt-1 text-sm">Add a character to get started, or import a script.</p>
          </div>
       )}
     </div>

@@ -8,20 +8,20 @@ import AppHeader from '@/components/layout/app-header';
 import EditorView from '@/components/views/editor-view';
 import ScenesView from '@/components/views/scenes-view';
 import CharactersView from '@/components/views/characters-view';
-import NotesView, { type Note } from '@/components/views/notes-view';
+import NotesView from '@/components/views/notes-view';
+import MyScriptsView from '@/components/views/my-scripts-view';
 import type { ScriptElement } from '@/components/script-editor';
 import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScriptProvider } from '@/context/script-context';
+import { useCurrentScript } from '@/context/current-script-context';
 
-export type View = 'editor' | 'scenes' | 'characters' | 'notes';
+export type View = 'editor' | 'scenes' | 'characters' | 'notes' | 'my-scripts';
 
 function AppLayout() {
   const [view, setView] = React.useState<View>('editor');
   const [activeScriptElement, setActiveScriptElement] =
     React.useState<ScriptElement | null>(null);
-  const [notes, setNotes] = React.useState<Note[]>([]);
-
 
   const renderView = () => {
     switch (view) {
@@ -32,7 +32,9 @@ function AppLayout() {
       case 'characters':
         return <CharactersView />;
       case 'notes':
-        return <NotesView notes={notes} setNotes={setNotes} />;
+        return <NotesView />;
+      case 'my-scripts':
+        return <MyScriptsView />;
       default:
         return <EditorView onActiveLineTypeChange={setActiveScriptElement} />;
     }
@@ -47,7 +49,7 @@ function AppLayout() {
           activeScriptElement={view === 'editor' ? activeScriptElement : null}
         />
         <div className="flex flex-1 flex-col overflow-hidden">
-          <AppHeader setNotes={setNotes} />
+          <AppHeader setView={setView} />
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
             {renderView()}
           </main>
@@ -55,6 +57,34 @@ function AppLayout() {
       </div>
     </SidebarProvider>
   );
+}
+
+function MainApp() {
+  const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
+
+  if (isCurrentScriptLoading) {
+     return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Skeleton className="h-16 w-16 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[250px]" />
+            <Skeleton className="h-4 w-[200px]" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentScriptId) {
+    return <MyScriptsView isInitialState={true} />;
+  }
+  
+  return (
+    <ScriptProvider scriptId={currentScriptId}>
+      <AppLayout />
+    </ScriptProvider>
+  )
 }
 
 
@@ -82,5 +112,5 @@ export default function Home() {
     );
   }
 
-  return <ScriptProvider><AppLayout /></ScriptProvider>;
+  return <MainApp />;
 }

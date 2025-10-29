@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 export type NoteCategory = 'Plot' | 'Character' | 'Dialogue' | 'Research' | 'Theme' | 'Scene' | 'General';
 
 export interface ParsedNote {
-  id: number;
+  id?: string;
   title: string;
   content: string;
   category: NoteCategory;
@@ -101,13 +101,12 @@ export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScri
   const characterList = getAsArray(structure.characters);
   
   characterList.forEach((char: any) => {
-    // Description can be from summary, which might be a Quill Delta object
     const description = char.summary ? parseQuillDelta(char.summary) : (char.designation || '');
     characters.push({
       name: char.name || 'Unnamed',
-      description: description.split('\n')[0], // Use first line as one-line description
-      scenes: 0, // This data is not directly available per character
-      profile: description, // Use the full summary as the profile
+      description: description.split('\n')[0], 
+      scenes: 0, 
+      profile: description, 
     });
   });
 
@@ -119,10 +118,9 @@ export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScri
     notesList.forEach((note: any, index: number) => {
       if(note.type === 'TextNoteType' && note.content){
          notes.push({
-            id: Date.now() + index,
             title: note.title || 'Untitled Note',
             content: parseQuillDelta(note.content),
-            category: 'General', // Scrite notes don't have categories in this structure
+            category: 'General', 
         });
       }
     });
