@@ -12,8 +12,8 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import {
   aiGenerateCharacterProfile,
+  type AiGenerateCharacterProfileOutput,
 } from './ai-generate-character-profile';
-import type { AiGenerateCharacterProfileOutput } from './ai-generate-character-profile';
 
 
 const AiGenerateCharacterProfileOutputSchema = z.object({
@@ -85,7 +85,7 @@ ${input.request}
 ${input.script}
 ---
 `,
-      model: 'googleai/gemini-2.5-flash-preview',
+      model: 'googleai/gemini-1.5-flash-latest',
       tools: [
         ai.defineTool(
           {
