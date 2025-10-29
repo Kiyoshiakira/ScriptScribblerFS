@@ -20,7 +20,6 @@ import {
     aiGenerateCharacterProfile,
     type AiGenerateCharacterProfileInput,
 } from '@/ai/flows/ai-generate-character-profile';
-import { addDoc, collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { getFirestore } from 'firebase-admin/firestore';
 import { adminApp } from '@/firebase/admin';
 
@@ -127,9 +126,17 @@ export async function saveCharacter(
     scenes: number;
   }
 ) {
+  // Guard clause to prevent action if admin SDK is not initialized
+  if (!adminApp) {
+    const errorMessage = 'Firebase Admin SDK is not initialized. Character cannot be saved.';
+    console.error(errorMessage);
+    return { success: false, error: errorMessage };
+  }
+
   try {
     const db = getFirestore(adminApp);
     const charactersCollectionRef = db.collection(`users/${userId}/scripts/${scriptId}/characters`);
+    const serverTimestamp = admin.firestore.FieldValue.serverTimestamp;
 
     if (characterData.id) {
       // Update existing character

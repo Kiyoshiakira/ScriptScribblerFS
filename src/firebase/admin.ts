@@ -6,31 +6,26 @@ import { firebaseConfig } from '@/firebase/config';
 // It initializes the Firebase Admin SDK, which has elevated privileges.
 
 let adminApp: admin.app.App;
-let adminAuth: admin.auth.Auth;
-let adminDb: admin.firestore.Firestore;
 
 const serviceAccount = process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT
   ? JSON.parse(process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT)
   : undefined;
 
-if (!admin.apps.length) {
-  if (serviceAccount) {
-    adminApp = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`,
-      storageBucket: `${firebaseConfig.projectId}.appspot.com`,
-    });
-  } else {
-    console.warn("Firebase Admin SDK service account credentials are not set. Admin features will be unavailable.");
-    // Create a dummy app to avoid crashing the server if admin features are called.
-    // Functions using adminDb or adminAuth will fail gracefully.
-    adminApp = admin.initializeApp();
-  }
+if (admin.apps.length > 0) {
+  adminApp = admin.apps[0]!;
+} else if (serviceAccount) {
+  adminApp = admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`,
+    storageBucket: `${firebaseConfig.projectId}.appspot.com`,
+  });
 } else {
-    adminApp = admin.apps[0]!;
+  console.warn("Firebase Admin SDK service account credentials are not set. Admin features will be unavailable.");
+  // We don't initialize a dummy app anymore as it causes crashes.
+  // The app will run, but any function calling getFirestore(adminApp) or getAuth(adminApp) will fail
+  // if adminApp is not initialized. We handle this gracefully in the actions.
 }
 
-adminAuth = admin.auth(adminApp);
-adminDb = admin.firestore(adminApp);
-
-export { adminApp, adminAuth, adminDb };
+// We cannot safely export adminAuth and adminDb if adminApp might not be initialized.
+// Instead, functions that need them should get them from the initialized adminApp.
+export { adminApp };
