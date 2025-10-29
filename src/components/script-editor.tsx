@@ -373,11 +373,11 @@ export default function ScriptEditor({
         </DropdownMenu>
 
         <div
-          className="flex-1 resize-none font-code text-base leading-relaxed bg-card flex flex-col gap-2"
+          className="flex-1 resize-none font-code text-base leading-relaxed bg-card flex flex-col"
           style={{ minHeight: '60vh' }}
         >
           {lines.map(line => (
-              <div key={line.id} data-line-id={line.id} onClick={() => setActiveLineId(line.id)}>
+              <div key={line.id} data-line-id={line.id} onClick={() => setActiveLineId(line.id)} className="mb-2">
                 <ScriptLineComponent
                     line={line}
                     onTextChange={handleTextChange}
@@ -407,3 +407,5 @@ export default function ScriptEditor({
     </Card>
   );
 }
+
+    
