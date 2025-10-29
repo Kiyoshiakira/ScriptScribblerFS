@@ -23,6 +23,7 @@ interface UserProfile {
     bio?: string;
     displayName?: string;
     email?: string;
+    coverImageUrl?: string;
 }
 
 function FriendsList() {
@@ -49,10 +50,11 @@ function FriendsList() {
 }
 
 function ProfileHeader({ user, profile, onEdit }: { user: any, profile: UserProfile | null, onEdit: () => void }) {
+    const coverImage = profile?.coverImageUrl || "https://picsum.photos/seed/99/1200/200";
     return (
         <div className="w-full">
             <div className="h-48 bg-muted/50 relative">
-                 <Image src="https://picsum.photos/seed/99/1200/200" alt="Cover" layout="fill" objectFit="cover" />
+                 <Image src={coverImage} alt="Cover" layout="fill" objectFit="cover" />
             </div>
             <div className="px-4 sm:px-6 lg:px-8">
                 <div className="-mt-20 sm:-mt-24 flex items-end justify-between">

@@ -204,7 +204,7 @@ export async function saveCharacter(
 
 export async function updateUserProfile(
   userId: string,
-  data: { bio: string }
+  data: { bio: string, coverImageUrl: string }
 ) {
   if (!adminApp) {
     const errorMessage = 'Firebase Admin SDK is not initialized. Profile cannot be updated.';

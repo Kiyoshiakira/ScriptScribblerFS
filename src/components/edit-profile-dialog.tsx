@@ -18,7 +18,7 @@ interface EditProfileDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User;
-  profile: { bio?: string } | null;
+  profile: { bio?: string, coverImageUrl?: string } | null;
 }
 
 export function EditProfileDialog({ open, onOpenChange, user, profile }: EditProfileDialogProps) {
@@ -26,6 +26,7 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
   const { toast } = useToast();
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
+  const [coverImageUrl, setCoverImageUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
     }
     if (profile) {
       setBio(profile.bio || '');
+      setCoverImageUrl(profile.coverImageUrl || '');
     }
   }, [user, profile, open]);
 
@@ -51,7 +53,7 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
         }
 
         // Update custom data in Firestore
-        await updateUserProfile(auth.currentUser.uid, { bio });
+        await updateUserProfile(auth.currentUser.uid, { bio, coverImageUrl });
 
         toast({
             title: "Profile Updated",
@@ -100,6 +102,15 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
                     id="displayName"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
+                />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="coverImageUrl">Cover Image URL</Label>
+                <Input
+                    id="coverImageUrl"
+                    value={coverImageUrl}
+                    onChange={(e) => setCoverImageUrl(e.target.value)}
+                    placeholder="https://example.com/your-image.jpg"
                 />
             </div>
              <div className="space-y-2">

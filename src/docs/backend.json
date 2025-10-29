@@ -22,6 +22,22 @@
         "displayName": {
           "type": "string",
           "description": "Display name of the user."
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short bio about the user."
+        },
+        "friends": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "A list of user IDs that are friends with this user."
+        },
+        "coverImageUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL for the user's profile cover image."
         }
       },
       "required": [
