@@ -64,7 +64,6 @@ export default function AppSidebar({
 }: AppSidebarProps) {
   const { state: sidebarState } = useSidebar();
   const { isScriptLoading } = useScript();
-  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   
   const formatElementName = (name: string | null) => {
     if (!name) return 'N/A';
@@ -178,16 +177,9 @@ export default function AppSidebar({
 
       <SidebarFooter>
         <SidebarMenu className="p-2">
-          <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Settings" onClick={() => setSettingsDialogOpen(true)}>
-              <Settings />
-              <span>Settings</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
-    <SettingsDialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen} />
     </>
   );
 }
