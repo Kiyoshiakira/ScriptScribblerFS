@@ -22,6 +22,8 @@ interface EditProfileDialogProps {
   profile: { bio?: string, coverImageUrl?: string, photoURL?: string } | null;
 }
 
+const MAX_DATA_URI_SIZE_BYTES = 950 * 1024; // 950 KB, safely below Firestore's 1MB limit
+
 export function EditProfileDialog({ open, onOpenChange, user, profile }: EditProfileDialogProps) {
   const auth = useAuth();
   const firestore = useFirestore();
@@ -36,13 +38,11 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (user) {
+    if (user && open) {
       setDisplayName(user.displayName || '');
       setPhotoURL(profile?.photoURL || user.photoURL || '');
-    }
-    if (profile) {
-      setBio(profile.bio || '');
-      setCoverImageUrl(profile.coverImageUrl || '');
+      setBio(profile?.bio || '');
+      setCoverImageUrl(profile?.coverImageUrl || '');
     }
   }, [user, profile, open]);
 
@@ -62,18 +62,36 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
 
   const handleSave = async () => {
     if (!auth.currentUser || !firestore) return;
+
+    // --- START: New Validation Logic ---
+    if (photoURL.length > MAX_DATA_URI_SIZE_BYTES) {
+        toast({
+            variant: "destructive",
+            title: "Profile Photo Too Large",
+            description: "Please upload a smaller image for your profile picture (under 950KB).",
+        });
+        return;
+    }
+
+    if (coverImageUrl.length > MAX_DATA_URI_SIZE_BYTES) {
+        toast({
+            variant: "destructive",
+            title: "Cover Image Too Large",
+            description: "Please upload a smaller cover image (under 950KB).",
+        });
+        return;
+    }
+    // --- END: New Validation Logic ---
+
     setIsSaving(true);
     
     try {
-      // Update core Firebase Auth profile only if displayName has changed.
-      // This avoids saving large data URIs to the auth profile.
       if (auth.currentUser.displayName !== displayName) {
          await updateProfile(auth.currentUser, {
           displayName,
         });
       }
      
-      // Save large data (like data-uri images) and other metadata to Firestore.
       const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
       const profileData = { 
         displayName,
@@ -84,8 +102,14 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
         updatedAt: serverTimestamp() 
       };
 
-      // Use setDoc with merge to create or update the user's profile document.
-      await setDoc(userDocRef, profileData, { merge: true });
+      setDoc(userDocRef, profileData, { merge: true }).catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'update',
+          requestResourceData: profileData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
 
       toast({
           title: "Profile Updated",
@@ -94,8 +118,6 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
       onOpenChange(false);
       
     } catch (error: any) {
-        // This will now catch errors from either updateProfile or setDoc.
-        // It's more likely to be a permission error from Firestore now.
         const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
         if (error.code?.startsWith('auth/')) {
              toast({
