@@ -187,14 +187,12 @@ export default function AppHeader({ setView }: AppHeaderProps) {
             <p className="text-xs text-muted-foreground font-normal truncate">{user.email}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-           <Link href="/profile" passHref legacyBehavior>
-            <DropdownMenuItem asChild>
-              <a>
+           <DropdownMenuItem asChild>
+              <Link href="/profile">
                 <UserIcon className="mr-2 h-4 w-4" />
                 <span>My Profile</span>
-              </a>
+              </Link>
             </DropdownMenuItem>
-          </Link>
           <DropdownMenuItem onClick={() => setSettingsDialogOpen(true)}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>

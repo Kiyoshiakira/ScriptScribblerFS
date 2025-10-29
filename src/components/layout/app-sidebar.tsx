@@ -116,19 +116,17 @@ export default function AppSidebar({
       <SidebarContent>
         <SidebarMenu className="flex-1 overflow-y-auto p-2">
             <SidebarMenuItem>
-                <Link href="/profile" passHref legacyBehavior>
-                    <SidebarMenuButton
-                        asChild
-                        isActive={activeView === 'profile'}
-                        tooltip="Profile"
-                        onClick={() => setActiveView('profile')}
-                    >
-                        <a>
-                            <Library />
-                            <span>Profile</span>
-                        </a>
-                    </SidebarMenuButton>
-                </Link>
+                <SidebarMenuButton
+                    asChild
+                    isActive={activeView === 'profile'}
+                    tooltip="Profile"
+                    onClick={() => setActiveView('profile')}
+                >
+                    <Link href="/profile">
+                        <Library />
+                        <span>Profile</span>
+                    </Link>
+                </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarSeparator />
             <SidebarMenuItem>
