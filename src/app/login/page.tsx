@@ -13,23 +13,17 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useFirebaseApp, useFirebase } from '@/firebase';
+import { useFirebaseApp } from '@/firebase';
 import { Logo } from '@/components/layout/app-sidebar';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 
 const provider = new GoogleAuthProvider();
 
 function LoginCard() {
-  const { areServicesAvailable } = useFirebase();
   const app = useFirebaseApp();
   const router = useRouter();
 
   const handleSignIn = async () => {
-    if (!areServicesAvailable) {
-      console.error('Firebase services not available.');
-      return;
-    }
     try {
       const auth = getAuth(app);
       await signInWithPopup(auth, provider);
@@ -54,13 +48,9 @@ function LoginCard() {
       </CardHeader>
       <CardContent>
         <div className="flex flex-col space-y-4">
-          {areServicesAvailable ? (
             <Button onClick={handleSignIn} className="w-full">
               Sign in with Google
             </Button>
-          ) : (
-            <Skeleton className="h-10 w-full" />
-          )}
         </div>
       </CardContent>
     </Card>
