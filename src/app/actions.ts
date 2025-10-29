@@ -28,15 +28,14 @@ export async function getAiSuggestions(
     return { data: result, error: null };
   } catch (error) {
     console.error(error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return {
       data: null,
-      error: 'An error occurred while fetching AI suggestions.',
+      error: `An error occurred while fetching AI suggestions: ${errorMessage}`,
     };
   }
 }
 
-// This legacy function is no longer needed as the agent orchestrator handles it.
-// We will remove it in a future step.
 export async function getAiCharacterProfile() {
   return { data: null, error: 'This function is deprecated.' };
 }
@@ -51,9 +50,10 @@ export async function getAiDeepAnalysis(input: AiDeepAnalysisInput) {
     return { data: result, error: null };
   } catch (error) {
     console.error(error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return {
       data: null,
-      error: 'An error occurred while fetching the deep analysis.',
+      error: `An error occurred while fetching the deep analysis: ${errorMessage}`,
     };
   }
 }
