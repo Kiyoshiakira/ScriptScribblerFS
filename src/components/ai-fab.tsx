@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useContext, ReactNode, useEffect } from 'react';
+import { useState, useContext, ReactNode, useEffect, useRef } from 'react';
 import {
   Sparkles,
   Lightbulb,
@@ -13,6 +13,7 @@ import {
   Check,
   X,
   ChevronLeft,
+  Settings,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
@@ -28,6 +29,7 @@ import type { ProofreadSuggestion } from '@/app/page';
 import AiAssistant from './ai-assistant';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 
 
 interface AnalysisItem {
@@ -43,6 +45,7 @@ export type AiFabAction =
   | 'custom';
 
 type AiPopoverView = 'menu' | 'chat' | 'suggestions' | 'analysis' | 'proofread';
+type BubbleMode = 'ai' | 'collab';
 
 
 interface AiFabProps {
@@ -100,6 +103,11 @@ export default function AiFab({
   const isMobile = useIsMobile();
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [activeView, setActiveView] = useState<AiPopoverView>('menu');
+
+  // State for bubble mode and confirmation dialog
+  const [bubbleMode, setBubbleMode] = useState<BubbleMode>('ai');
+  const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   // State for mobile dialogs
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
@@ -254,6 +262,30 @@ export default function AiFab({
     setProofreadSuggestions(proofreadSuggestions.filter(s => s !== suggestion));
   };
 
+  // --- New Handlers for Mode Switching ---
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowSwitchConfirm(true);
+  };
+
+  const handleTouchStart = () => {
+    longPressTimer.current = setTimeout(() => {
+      setShowSwitchConfirm(true);
+    }, 3000); // 3 seconds
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
+  };
+  
+  const handleSwitchMode = () => {
+    setBubbleMode(prev => prev === 'ai' ? 'collab' : 'ai');
+    setShowSwitchConfirm(false);
+    setPopoverOpen(false); // Close any open popover on switch
+  }
+
   const actionComponents = {
     suggestImprovements: (
       <Button
@@ -323,6 +355,25 @@ export default function AiFab({
   const renderContent = () => {
     switch(activeView) {
         case 'menu':
+             if (bubbleMode === 'collab') {
+                return (
+                    <div className="grid gap-2 p-2">
+                        <Button
+                            key="switch-back"
+                            variant="ghost"
+                            className="justify-start"
+                            onClick={handleSwitchMode}
+                        >
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            <span>Switch to AI Bubble</span>
+                        </Button>
+                        <Button key="collab-settings" variant="ghost" className="justify-start">
+                            <Settings className="mr-2 h-4 w-4" />
+                            <span>Collab Settings</span>
+                        </Button>
+                    </div>
+                )
+             }
             return (
                 <div className="grid gap-2 p-2">
                     {actions.map(action => actionComponents[action as keyof typeof actionComponents])}
@@ -469,8 +520,11 @@ export default function AiFab({
           <Button
             size="icon"
             className="rounded-full w-14 h-14 shadow-lg fixed bottom-8 right-8 z-50"
+            onContextMenu={handleContextMenu}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           >
-            <Sparkles className="w-6 h-6" />
+            {bubbleMode === 'ai' ? <Sparkles className="w-6 h-6" /> : <Users className="w-6 h-6" />}
           </Button>
         </PopoverTrigger>
         <PopoverContent 
@@ -485,6 +539,22 @@ export default function AiFab({
           {renderContent()}
         </PopoverContent>
       </Popover>
+
+        <AlertDialog open={showSwitchConfirm} onOpenChange={setShowSwitchConfirm}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Switch Bubble Mode?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Would you like to switch to the {bubbleMode === 'ai' ? 'Collaboration' : 'AI'} bubble? This will change the actions available in the menu.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSwitchMode}>Switch</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
 
       {/* --- Mobile Dialogs --- */}
 
