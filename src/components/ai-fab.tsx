@@ -365,11 +365,9 @@ export default function AiFab({
   };
   
   const renderHeader = (title: string, icon: ReactNode) => (
-      <div className="flex items-center gap-4 p-4 border-b">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setActiveView('menu')}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <h3 className="font-semibold text-sm flex items-center gap-2">{icon}{title}</h3>
+      <div className="flex items-center gap-2 p-4 border-b">
+        {icon}
+        <h3 className="font-semibold text-sm">{title}</h3>
       </div>
   );
 
