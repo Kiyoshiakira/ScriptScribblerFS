@@ -113,6 +113,13 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
         setIsSaving(false);
     }
   };
+  
+  const getDisplayValue = (value: string) => {
+      if (value.startsWith('data:image')) {
+          return '[Uploaded Image]';
+      }
+      return value;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -156,9 +163,10 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
                   <Label htmlFor="photoURL">Photo URL</Label>
                   <Input
                       id="photoURL"
-                      value={photoURL}
+                      value={getDisplayValue(photoURL)}
                       onChange={(e) => setPhotoURL(e.target.value)}
                       placeholder="https://example.com/your-avatar.jpg"
+                      readOnly={photoURL.startsWith('data:image')}
                   />
               </div>
               <div className="space-y-2">
@@ -166,9 +174,10 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
                   <div className="flex gap-2">
                       <Input
                           id="coverImageUrl"
-                          value={coverImageUrl}
+                          value={getDisplayValue(coverImageUrl)}
                           onChange={(e) => setCoverImageUrl(e.target.value)}
                           placeholder="https://example.com/your-banner.jpg"
+                          readOnly={coverImageUrl.startsWith('data:image')}
                       />
                       <Button variant="outline" onClick={() => coverInputRef.current?.click()} className="flex-shrink-0">
                           <Upload className="mr-2 h-4 w-4" />
