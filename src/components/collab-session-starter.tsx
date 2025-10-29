@@ -33,7 +33,7 @@ export default function CollabSessionStarter({ onStartSession }: CollabSessionSt
               <Users className="w-8 h-8 text-primary" />
               <p className="font-semibold">Persistent</p>
               <p className="text-xs text-muted-foreground">
-                Changes and chats are saved. Work anytime.
+                Collaborators can join and edit anytime.
               </p>
             </CardContent>
           </Card>
@@ -49,7 +49,7 @@ export default function CollabSessionStarter({ onStartSession }: CollabSessionSt
               <Wifi className="w-8 h-8 text-accent" />
               <p className="font-semibold">Live</p>
               <p className="text-xs text-muted-foreground">
-                For real-time sessions. Data is not saved.
+                For active, real-time sessions you control.
               </p>
             </CardContent>
           </Card>
