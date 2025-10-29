@@ -5,7 +5,7 @@ import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { collection, addDoc, serverTimestamp, deleteDoc, doc, getDocs, writeBatch } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Book, Library, Loader2, Plus, Trash } from 'lucide-react';
+import { Book, Library, Loader2, Plus, Trash, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentScript } from '@/context/current-script-context';
 import { Skeleton } from '../ui/skeleton';
@@ -23,7 +23,6 @@ import {
 import { type View } from '@/app/page';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
-import { useRouter } from 'next/navigation';
 
 const initialScriptContent = `FADE IN:
 
@@ -51,16 +50,15 @@ interface Script {
 }
 
 interface MyScriptsViewProps {
-    // setView is no longer needed as we navigate directly
+    setView: (view: View) => void;
 }
 
-export default function MyScriptsView(props: MyScriptsViewProps) {
+export default function MyScriptsView({ setView }: MyScriptsViewProps) {
     const { user } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
     const { setCurrentScriptId } = useCurrentScript();
     const [isDeleting, setIsDeleting] = useState(false);
-    const router = useRouter();
     
     // State for selective delete
     const [deleteScriptDoc, setDeleteScriptDoc] = useState(true);
@@ -91,7 +89,7 @@ export default function MyScriptsView(props: MyScriptsViewProps) {
                 description: 'A new untitled script has been added to your collection.',
             });
             setCurrentScriptId(newScriptRef.id);
-            router.push('/');
+            setView('dashboard');
         } catch (error: any) {
             console.error("Error creating script: ", error);
             toast({
@@ -104,7 +102,7 @@ export default function MyScriptsView(props: MyScriptsViewProps) {
 
     const handleOpenScript = (scriptId: string) => {
         setCurrentScriptId(scriptId);
-        router.push('/');
+        setView('dashboard');
     };
     
     const handleSelectiveDelete = async (scriptId: string) => {
@@ -185,7 +183,7 @@ export default function MyScriptsView(props: MyScriptsViewProps) {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold font-headline">My Scripts</h2>
+                <h2 className="text-2xl font-bold font-headline flex items-center gap-2"> <User /> {user?.displayName}'s Scripts</h2>
                 <Button onClick={handleCreateNewScript}>
                     <Plus className="mr-2 h-4 w-4" />
                     New Script

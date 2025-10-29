@@ -312,11 +312,9 @@ export default function AppHeader({ setView, characters, scenes, notes }: AppHea
             <p className="text-xs text-muted-foreground font-normal truncate">{user.email}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-           <DropdownMenuItem asChild>
-              <Link href="/profile">
+           <DropdownMenuItem onClick={() => setView('profile')}>
                 <UserIcon className="mr-2 h-4 w-4" />
-                <span>My Profile</span>
-              </Link>
+                <span>My Scripts</span>
             </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setSettingsDialogOpen(true)}>
             <Settings className="mr-2 h-4 w-4" />
@@ -339,7 +337,7 @@ export default function AppHeader({ setView, characters, scenes, notes }: AppHea
       <SidebarTrigger className="flex md:hidden" />
       <div className="flex items-center gap-2">
         <Book className="h-6 w-6 text-muted-foreground" />
-        {isScriptLoading ? (
+        {isScriptLoading || !script ? (
             <Skeleton className="h-7 w-64" />
         ) : (
             <Input

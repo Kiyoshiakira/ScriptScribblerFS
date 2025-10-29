@@ -21,6 +21,7 @@ import {
   Clock,
   NotebookPen,
   LayoutDashboard,
+  User,
 } from 'lucide-react';
 import type { View } from '@/app/page';
 import type { ScriptElement } from '../script-editor';
@@ -177,6 +178,17 @@ export default function AppSidebar({
                 <StickyNote />
                 <span>Notes</span>
             </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarSeparator />
+             <SidebarMenuItem>
+                <SidebarMenuButton
+                    onClick={() => setActiveView('profile')}
+                    isActive={activeView === 'profile'}
+                    tooltip="My Scripts"
+                >
+                    <User />
+                    <span>My Scripts</span>
+                </SidebarMenuButton>
             </SidebarMenuItem>
         </SidebarMenu>
         {isScriptLoading && activeView === 'editor' ? (

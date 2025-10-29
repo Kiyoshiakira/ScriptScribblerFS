@@ -11,6 +11,7 @@ import CharactersView from '@/components/views/characters-view';
 import NotesView from '@/components/views/notes-view';
 import LoglineView from '@/components/views/logline-view';
 import DashboardView from '@/components/views/dashboard-view';
+import MyScriptsView from '@/components/views/my-scripts-view';
 import type { ScriptElement } from '@/components/script-editor';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
@@ -58,71 +59,105 @@ function AppLayout({ setView, view }: { setView: (view: View) => void, view: Vie
     const { data: scenes } = useCollection<Scene>(scenesCollection);
 
   const renderView = () => {
-    switch (view) {
-      case 'dashboard':
-        return <DashboardView setView={setView} />;
-      case 'editor':
-        return <EditorView 
-            onActiveLineTypeChange={setActiveScriptElement}
-            setWordCount={setWordCount}
-            setEstimatedMinutes={setEstimatedMinutes}
-            isStandalone={false}
-         />;
-      case 'scenes':
-        return <ScenesView />;
-      case 'characters':
-        return <CharactersView />;
-      case 'notes':
-        return <NotesView />;
-      case 'logline':
-        return <LoglineView />;
-      default:
-        return <DashboardView setView={setView} />;
+    // The profile view is now part of the main app layout
+    if (view === 'profile') {
+      return <MyScriptsView setView={setView} />;
     }
+
+    // These views require a script context
+    if (!currentScriptId) {
+      return <MyScriptsView setView={setView} />;
+    }
+
+    return (
+       <ScriptProvider scriptId={currentScriptId}>
+          {
+            {
+              'dashboard': <DashboardView setView={setView} />,
+              'editor': <EditorView 
+                  onActiveLineTypeChange={setActiveScriptElement}
+                  setWordCount={setWordCount}
+                  setEstimatedMinutes={setEstimatedMinutes}
+                  isStandalone={false}
+              />,
+              'scenes': <ScenesView />,
+              'characters': <CharactersView />,
+              'notes': <NotesView />,
+              'logline': <LoglineView />,
+            }[view]
+          }
+       </ScriptProvider>
+    )
   };
   
-  return (
-    <ScriptProvider scriptId={currentScriptId!}>
-      <SidebarProvider>
-        <div className="flex h-screen bg-background">
-          <AppSidebar
-            activeView={view}
-            setActiveView={setView}
-            activeScriptElement={view === 'editor' ? activeScriptElement : null}
-            wordCount={wordCount}
-            estimatedMinutes={estimatedMinutes}
+  // Conditionally wrap with ScriptProvider if a script is active
+  const MainContent = () => (
+    <SidebarProvider>
+      <div className="flex h-screen bg-background">
+        <AppSidebar
+          activeView={view}
+          setActiveView={setView}
+          activeScriptElement={view === 'editor' ? activeScriptElement : null}
+          wordCount={wordCount}
+          estimatedMinutes={estimatedMinutes}
+        />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <AppHeader 
+            setView={setView} 
+            characters={characters}
+            scenes={scenes}
+            notes={notes}
           />
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <AppHeader 
-              setView={setView} 
-              characters={characters}
-              scenes={scenes}
-              notes={notes}
-            />
-            <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-              {renderView()}
-            </main>
-          </div>
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            {renderView()}
+          </main>
         </div>
-      </SidebarProvider>
-    </ScriptProvider>
+      </div>
+    </SidebarProvider>
   );
+
+  // If the view is profile, it has its own header/layout needs
+  if (view === 'profile') {
+    return (
+        <SidebarProvider>
+          <div className="flex h-screen bg-background">
+              <AppSidebar
+                activeView={'profile'}
+                setActiveView={setView}
+                activeScriptElement={null}
+                wordCount={0}
+                estimatedMinutes={0}
+              />
+               <div className="flex flex-1 flex-col overflow-hidden">
+                <AppHeader 
+                  setView={setView} 
+                />
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                  <MyScriptsView setView={setView} />
+                </main>
+              </div>
+          </div>
+        </SidebarProvider>
+    );
+  }
+
+  // For all other views, render the main layout which may or may not have a script
+   return <MainContent />;
 }
 
 function MainApp() {
   const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
   const [view, setView] = React.useState<View>('dashboard');
-  const router = useRouter();
-
+  
   React.useEffect(() => {
-    // This effect now reliably redirects if the script ID is missing after loading.
+    // If loading is done and there's no script, show the profile view to select one.
     if (!isCurrentScriptLoading && !currentScriptId) {
-      router.push('/profile');
+      setView('profile');
     }
-  }, [isCurrentScriptLoading, currentScriptId, router]);
+  }, [isCurrentScriptLoading, currentScriptId]);
 
-  // While waiting for script context, show a full-page loader.
-  if (isCurrentScriptLoading || !currentScriptId) {
+  // While waiting for user/script context, show a full-page loader.
+  if (isCurrentScriptLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -135,8 +170,7 @@ function MainApp() {
       </div>
     );
   }
-
-  // Once the script is confirmed, render the main app layout.
+  
   return <AppLayout view={view} setView={setView} />;
 }
 
