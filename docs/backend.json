@@ -22,6 +22,13 @@
         "displayName": {
           "type": "string",
           "description": "Display name of the user."
+        },
+        "friends": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "A list of user IDs that are friends with this user."
         }
       },
       "required": [
@@ -44,6 +51,10 @@
         "title": {
           "type": "string",
           "description": "Title of the script."
+        },
+        "logline": {
+            "type": "string",
+            "description": "A one-sentence summary of the script."
         },
         "content": {
           "type": "string",

@@ -9,6 +9,36 @@ import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { View } from '@/app/page';
 import { useCurrentScript } from '@/context/current-script-context';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Camera, UserPlus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardTitle, CardHeader } from '@/components/ui/card';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+
+function FriendsList() {
+  const friends = PlaceHolderImages.filter(img => img.id.startsWith('user')).slice(0, 4);
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {friends.map(friend => (
+        <Card key={friend.id} className="text-center">
+            <CardContent className="p-6 flex flex-col items-center gap-4">
+                <Avatar className="w-24 h-24 border-4 border-background outline-primary outline">
+                    <AvatarImage src={friend.imageUrl} alt={friend.description} />
+                    <AvatarFallback>{friend.description.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="space-y-1">
+                    <h3 className="font-semibold text-lg">User {friend.id.slice(-1)}</h3>
+                    <p className="text-sm text-muted-foreground">Joined 2 months ago</p>
+                </div>
+                <Button variant="secondary" className="w-full">View Profile</Button>
+            </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
 
 
 export default function ProfilePage() {
@@ -25,17 +55,12 @@ export default function ProfilePage() {
 
   const handleSetView = (newView: View) => {
     if (newView === 'profile') {
-      // Already on profile page, or navigating to it.
-      // We can clear the active script if needed.
       setCurrentScriptId(null);
       router.push('/profile');
     } else {
-      // Navigate to the main app page to see other views
       router.push('/');
-      // The view will be set by the main app page component
     }
   }
-
 
   if (isUserLoading || !user) {
     return (
@@ -63,8 +88,55 @@ export default function ProfilePage() {
         />
         <div className="flex flex-1 flex-col overflow-hidden">
           <AppHeader setView={handleSetView} />
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-            <MyScriptsView setView={handleSetView} />
+          <main className="flex-1 overflow-y-auto">
+            <div className="w-full">
+                {/* Profile Header */}
+                <div className="h-48 bg-muted/50 relative">
+                     <Image src="https://picsum.photos/seed/99/1200/200" alt="Cover" layout="fill" objectFit="cover" />
+                </div>
+                <div className="px-4 sm:px-6 lg:px-8">
+                    <div className="-mt-20 sm:-mt-24 flex items-end justify-between">
+                        <div className='flex items-end gap-4'>
+                            <div className='relative group'>
+                                <Avatar className="w-32 h-32 sm:w-40 sm:h-40 border-4 border-background outline-primary outline">
+                                    <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
+                                    <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                                </Avatar>
+                                <div className='absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer'>
+                                    <Camera className='w-8 h-8 text-white' />
+                                </div>
+                            </div>
+                            <div className="py-4">
+                                <h1 className="text-2xl sm:text-3xl font-bold font-headline truncate">{user.displayName}</h1>
+                                <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 mb-4">
+                            <Button variant="outline">Edit Profile</Button>
+                             <Button><UserPlus className="mr-2" /> Add Friend</Button>
+                        </div>
+                    </div>
+                     <p className="mt-4 max-w-2xl text-muted-foreground">
+                        Fledgling screenwriter and director with a passion for sci-fi comedies and character-driven stories. Turning coffee into scripts since 2021.
+                    </p>
+                </div>
+                
+                 {/* Tabs */}
+                <div className="mt-6 px-4 sm:px-6 lg:px-8">
+                    <Tabs defaultValue="scripts" className="w-full">
+                        <TabsList>
+                            <TabsTrigger value="scripts">Scripts</TabsTrigger>
+                            <TabsTrigger value="friends">Friends</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="scripts" className="py-6">
+                            <MyScriptsView setView={handleSetView} />
+                        </TabsContent>
+                        <TabsContent value="friends" className="py-6">
+                            <FriendsList />
+                        </TabsContent>
+                    </Tabs>
+                </div>
+            </div>
           </main>
         </div>
       </div>

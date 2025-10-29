@@ -21,6 +21,7 @@ import {
   Library,
   Clock,
   NotebookPen,
+  User,
 } from 'lucide-react';
 import type { View } from '@/app/page';
 import type { ScriptElement } from '../script-editor';
@@ -124,11 +125,11 @@ export default function AppSidebar({
             <SidebarMenuItem>
                 <SidebarMenuButton
                     isActive={activeView === 'profile'}
-                    tooltip="My Scripts"
+                    tooltip="My Profile"
                     onClick={() => setActiveView('profile')}
                 >
-                    <Library />
-                    <span>My Scripts</span>
+                    <User />
+                    <span>My Profile</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarSeparator />
