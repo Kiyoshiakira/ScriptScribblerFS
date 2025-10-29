@@ -193,7 +193,7 @@ function NoteDialog({ note, onSave, trigger }: { note?: Note | null, onSave: (no
 
 
 export default function NotesView() {
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [notes, setNotes] = useState<Note[]>(initialNotes);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -201,12 +201,10 @@ export default function NotesView() {
       const item = window.localStorage.getItem(NOTES_STORAGE_KEY);
       if (item) {
         setNotes(JSON.parse(item));
-      } else {
-        setNotes(initialNotes);
       }
     } catch (error) {
       console.warn(`Error reading localStorage key “${NOTES_STORAGE_KEY}”:`, error);
-      setNotes(initialNotes);
+      // Keep initial notes
     } finally {
         setIsLoaded(true);
     }

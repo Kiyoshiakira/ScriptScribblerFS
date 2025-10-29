@@ -256,7 +256,7 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
 }
 
 export default function CharactersView() {
-  const [characters, setCharacters] = useState<Character[]>([]);
+  const [characters, setCharacters] = useState<Character[]>(initialCharacters);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -264,12 +264,10 @@ export default function CharactersView() {
       const item = window.localStorage.getItem(CHARACTERS_STORAGE_KEY);
       if (item) {
         setCharacters(JSON.parse(item));
-      } else {
-        setCharacters(initialCharacters);
       }
     } catch (error) {
       console.warn(`Error reading localStorage key “${CHARACTERS_STORAGE_KEY}”:`, error);
-      setCharacters(initialCharacters);
+      // Keep initial characters
     } finally {
       setIsLoaded(true);
     }
