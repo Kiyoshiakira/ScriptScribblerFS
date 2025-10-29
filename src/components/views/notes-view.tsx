@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Upload, Image as ImageIcon } from 'lucide-react';
@@ -48,6 +48,8 @@ interface Note {
   category: NoteCategory;
   imageUrl?: string;
 }
+
+const NOTES_STORAGE_KEY = 'scriptsync-notes';
 
 const initialNotes: Note[] = [
   {
@@ -191,7 +193,34 @@ function NoteDialog({ note, onSave, trigger }: { note?: Note | null, onSave: (no
 
 
 export default function NotesView() {
-  const [notes, setNotes] = useState<Note[]>(initialNotes);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const item = window.localStorage.getItem(NOTES_STORAGE_KEY);
+      if (item) {
+        setNotes(JSON.parse(item));
+      } else {
+        setNotes(initialNotes);
+      }
+    } catch (error) {
+      console.warn(`Error reading localStorage key “${NOTES_STORAGE_KEY}”:`, error);
+      setNotes(initialNotes);
+    } finally {
+        setIsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      try {
+        window.localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
+      } catch (error) {
+        console.warn(`Error setting localStorage key “${NOTES_STORAGE_KEY}”:`, error);
+      }
+    }
+  }, [notes, isLoaded]);
 
   const handleSaveNote = (noteToSave: Note) => {
     const existingIndex = notes.findIndex(n => n.id === noteToSave.id);

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Sparkles, User, FileText, Upload } from 'lucide-react';
@@ -32,6 +32,8 @@ interface Character {
   profile?: string;
   imageUrl?: string;
 }
+
+const CHARACTERS_STORAGE_KEY = 'scriptsync-characters';
 
 const initialCharacters: Character[] = [
   {
@@ -254,7 +256,34 @@ function CharacterDialog({ character, onSave, trigger }: { character?: Character
 }
 
 export default function CharactersView() {
-  const [characters, setCharacters] = useState<Character[]>(initialCharacters);
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const item = window.localStorage.getItem(CHARACTERS_STORAGE_KEY);
+      if (item) {
+        setCharacters(JSON.parse(item));
+      } else {
+        setCharacters(initialCharacters);
+      }
+    } catch (error) {
+      console.warn(`Error reading localStorage key “${CHARACTERS_STORAGE_KEY}”:`, error);
+      setCharacters(initialCharacters);
+    } finally {
+      setIsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      try {
+        window.localStorage.setItem(CHARACTERS_STORAGE_KEY, JSON.stringify(characters));
+      } catch (error) {
+        console.warn(`Error setting localStorage key “${CHARACTERS_STORAGE_KEY}”:`, error);
+      }
+    }
+  }, [characters, isLoaded]);
 
   const handleSaveCharacter = (charToSave: Character) => {
     const existingIndex = characters.findIndex(c => c.imageId === charToSave.imageId);
