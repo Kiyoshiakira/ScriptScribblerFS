@@ -138,7 +138,7 @@ function AppLayoutContent() {
                     setView={handleSetView}
                 />
                  <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                    {renderView()}
+                    {isLoading && view !== 'profile' ? <div className='w-full h-full flex items-center justify-center'><Skeleton className="h-32 w-32" /></div> : renderView()}
                 </main>
             </div>
             <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
@@ -163,13 +163,9 @@ export default function AppLayout() {
       );
   }
   
-  if (currentScriptId) {
-     return (
-       <ScriptProvider key={currentScriptId} scriptId={currentScriptId}>
-           <AppLayoutContent />
-       </ScriptProvider>
-    );
-  }
-
-  return <AppLayoutContent />;
+  return (
+    <ScriptProvider key={currentScriptId} scriptId={currentScriptId}>
+      <AppLayoutContent />
+    </ScriptProvider>
+  );
 }
