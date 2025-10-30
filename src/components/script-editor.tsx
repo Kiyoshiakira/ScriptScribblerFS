@@ -38,45 +38,37 @@ interface ScriptLineComponentProps {
 }
 
 const ScriptRuler = () => {
-    // Generate ticks for every 1/8th of an inch up to 8.5 inches
-    const totalInches = 8.5;
-    const ticksPerInch = 8;
-    const numTicks = totalInches * ticksPerInch;
-
-    const ticks = Array.from({ length: numTicks + 1 }).map((_, i) => {
-        const inch = i / ticksPerInch;
-        let height = '25%';
-        if (i % ticksPerInch === 0) height = '75%'; // Full inch
-        else if (i % (ticksPerInch / 2) === 0) height = '50%'; // Half inch
-        else if (i % (ticksPerInch / 4) === 0) height = '35%'; // Quarter inch
-
-        return (
-            <div
-                key={i}
-                className="absolute bottom-0 border-l border-muted-foreground"
-                style={{
-                    left: `calc(${inch}in)`,
-                    height: height,
-                }}
-            />
-        );
-    });
-
-    const numbers = Array.from({ length: Math.floor(totalInches) }).map((_, i) => (
-        <div
-            key={i}
-            className="absolute top-0 text-xs text-muted-foreground"
-            style={{ left: `calc(${i + 1}in + 2px)` }}
-        >
-            {i + 1}
-        </div>
-    ));
-
+    // Re-engineered based on user feedback for a more accurate, compact, and professional look.
+    // Uses repeating linear gradients for crisp, efficient tick marks.
     return (
-        <div className="relative h-6 w-full mb-2">
+        <div
+            className="relative h-5 w-full bg-no-repeat"
+            style={{
+                backgroundImage: `
+                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)) 0, hsl(var(--muted-foreground)) 1px, transparent 1px, transparent 0.125in),
+                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)) 0, hsl(var(--muted-foreground)) 1px, transparent 1px, transparent 0.25in),
+                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)) 0, hsl(var(--muted-foreground)) 1px, transparent 1px, transparent 0.5in),
+                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)) 0, hsl(var(--muted-foreground)) 1px, transparent 1px, transparent 1in)
+                `,
+                backgroundSize: `
+                    100% 25%,
+                    100% 40%,
+                    100% 55%,
+                    100% 70%
+                `,
+                backgroundPosition: 'bottom',
+            }}
+        >
             <div className="absolute bottom-0 h-px w-full bg-muted-foreground"></div>
-            {ticks}
-            {numbers}
+            {[...Array(8)].map((_, i) => (
+                <div
+                    key={i}
+                    className="absolute -bottom-1 text-xs text-muted-foreground"
+                    style={{ left: `calc(${i + 1}in - 3px)` }}
+                >
+                    {i + 1}
+                </div>
+            ))}
         </div>
     );
 };
@@ -118,9 +110,9 @@ const ScriptLineComponent = ({
         case 'action':
             return 'pl-[1.5in] pr-[1in]';
         case 'character':
-            return 'uppercase pl-[3.5in]';
+            return 'uppercase pl-[3.5in] pr-[1in]';
         case 'parenthetical':
-            return 'pl-[3in]';
+            return 'pl-[3in] pr-[1in]';
         case 'dialogue':
             return 'pl-[2.5in] pr-[2.5in]';
         case 'transition':
