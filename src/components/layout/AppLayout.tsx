@@ -69,7 +69,7 @@ function AppLayoutContent() {
   const characterCount = characters?.length || 0;
   const pageCount = Math.round(estimatedMinutes);
 
- React.useEffect(() => {
+  React.useEffect(() => {
     if (lines.length === 0) {
       setWordCount(0);
       setEstimatedMinutes(0);
@@ -77,14 +77,12 @@ function AppLayoutContent() {
     }
     const scriptContent = lines.map(l => l.text).join('\n');
     const words = scriptContent.trim().split(/\s+/).filter(Boolean);
-    const count = words.length;
-    setWordCount(count);
-    const minutes = Math.round((count / 160) * 10) / 10;
-    setEstimatedMinutes(minutes);
+    setWordCount(words.length);
+    setEstimatedMinutes(Math.round((words.length / 160) * 10) / 10);
   }, [lines]);
 
 
-  React.useEffect(() => {
+ React.useEffect(() => {
     if (isCurrentScriptLoading) {
       return; // Do nothing while loading
     }
@@ -95,7 +93,6 @@ function AppLayoutContent() {
     } else {
       // If there is a script, but the current view is profile, switch to dashboard.
       // This handles creating a new script from the profile page.
-      // Otherwise, we keep the user's current view.
       if (view === 'profile') {
         setView('dashboard');
       }
