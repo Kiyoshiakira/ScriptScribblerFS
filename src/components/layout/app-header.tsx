@@ -316,12 +316,12 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
     <>
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
       <SidebarTrigger className="flex md:hidden" />
-      <div className="flex items-center gap-2">
+      <div className="flex flex-1 items-center gap-2 min-w-0">
         {isProfileView ? (
-             <h1 className="text-xl font-bold font-headline">My Profile</h1>
+             <h1 className="text-xl font-bold font-headline truncate">My Profile</h1>
         ) : (
           <>
-            <Book className="h-6 w-6 text-muted-foreground" />
+            <Book className="h-6 w-6 text-muted-foreground hidden sm:block" />
             {(isScriptLoading || !script) && currentScriptId ? (
                 <Skeleton className="h-7 w-64" />
             ) : (
@@ -329,13 +329,13 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
                   key={script?.id}
                   defaultValue={script?.title}
                   onBlur={(e) => setScriptTitle(e.target.value)}
-                  className="text-lg md:text-xl font-semibold border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 font-headline"
+                  className="text-lg md:text-xl font-semibold border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 font-headline min-w-0"
                 />
             )}
           </>
         )}
       </div>
-      <div className="ml-auto flex items-center gap-2 md:gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
         <input
             type="file"
             ref={fileInputRef}

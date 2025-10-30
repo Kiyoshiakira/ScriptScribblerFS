@@ -282,63 +282,58 @@ export default function ScriptEditor({
     <div
         ref={editorRef}
         className={cn(
-            "flex-1 relative",
+            "flex-1 relative font-code text-sm leading-relaxed",
             isStandalone ? "bg-background p-4" : ""
         )}
         onContextMenu={(e) => e.preventDefault()}
         onClick={() => setContextMenu(null)}
       >
-        <div className={cn(
-            !isStandalone && "p-6 bg-card rounded-lg shadow-lg",
-            "font-code text-sm leading-relaxed"
-        )}>
-            <DropdownMenu open={!!contextMenu} onOpenChange={() => setContextMenu(null)}>
-                <DropdownMenuTrigger asChild>
-                    <div
-                        style={{
-                            position: 'fixed',
-                            left: contextMenu ? contextMenu.x : 0,
-                            top: contextMenu ? contextMenu.y : 0,
-                        }}
-                    />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="start">
-                    {SCRIPT_ELEMENTS_CYCLE.map(element => (
-                        <DropdownMenuItem
-                            key={element}
-                            onClick={() => contextMenu && handleTypeChange(contextMenu.lineId, element)}
-                        >
-                            {formatElementName(element)}
-                        </DropdownMenuItem>
-                    ))}
-                    {!isStandalone && (
-                    <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handlePopOut}>
-                            <ExternalLink className="mr-2 h-4 w-4" />
-                            <span>Pop-out Editor</span>
-                        </DropdownMenuItem>
-                    </>
-                    )}
-                </DropdownMenuContent>
-            </DropdownMenu>
+        <DropdownMenu open={!!contextMenu} onOpenChange={() => setContextMenu(null)}>
+            <DropdownMenuTrigger asChild>
+                <div
+                    style={{
+                        position: 'fixed',
+                        left: contextMenu ? contextMenu.x : 0,
+                        top: contextMenu ? contextMenu.y : 0,
+                    }}
+                />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="start">
+                {SCRIPT_ELEMENTS_CYCLE.map(element => (
+                    <DropdownMenuItem
+                        key={element}
+                        onClick={() => contextMenu && handleTypeChange(contextMenu.lineId, element)}
+                    >
+                        {formatElementName(element)}
+                    </DropdownMenuItem>
+                ))}
+                {!isStandalone && (
+                <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handlePopOut}>
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        <span>Pop-out Editor</span>
+                    </DropdownMenuItem>
+                </>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
 
-            <div
-                className="space-y-1"
-                style={{ minHeight: '60vh' }}
-            >
-            {lines.map(line => (
-                <div key={line.id} data-line-id={line.id} onClick={() => setActiveLineId(line.id)}>
-                    <ScriptLineComponent
-                        line={line}
-                        onTextChange={handleTextChange}
-                        onKeyDown={handleKeyDown}
-                        onContextMenu={handleContextMenu}
-                        isFocused={line.id === activeLineId}
-                    />
-                </div>
-            ))}
+        <div
+            className="space-y-1"
+            style={{ minHeight: '60vh' }}
+        >
+        {lines.map(line => (
+            <div key={line.id} data-line-id={line.id} onClick={() => setActiveLineId(line.id)}>
+                <ScriptLineComponent
+                    line={line}
+                    onTextChange={handleTextChange}
+                    onKeyDown={handleKeyDown}
+                    onContextMenu={handleContextMenu}
+                    isFocused={line.id === activeLineId}
+                />
             </div>
+        ))}
         </div>
     </div>
   );
