@@ -37,6 +37,24 @@ interface ScriptLineComponentProps {
   isFocused: boolean;
 }
 
+const ScriptRuler = () => (
+    <div className="relative h-6 w-full bg-card border-b mb-4">
+        <div className="absolute left-0 top-0 h-full" style={{ paddingLeft: '1.5in' }}>
+             <div className="h-full border-l"></div>
+        </div>
+        {[...Array(8)].map((_, i) => (
+            <div key={i} className="absolute top-0 h-full flex flex-col items-center" style={{ left: `${i + 1}.5in`}}>
+                <div className="h-3 border-l"></div>
+                <div className="text-xs -mt-1">{i + 1}</div>
+            </div>
+        ))}
+         <div className="absolute left-0 top-0 h-full" style={{ paddingLeft: '7.7in' }}>
+             <div className="h-full border-r border-red-500"></div>
+        </div>
+    </div>
+)
+
+
 const ScriptLineComponent = ({
   line,
   onTextChange,
@@ -67,21 +85,28 @@ const ScriptLineComponent = ({
   }, [line.text]);
   
   const getElementStyling = (type: ScriptElement) => {
+    // 1 inch = 96px. Tailwind's default font-size: 1rem = 16px.
+    // So 1 inch = 6rem.
+    // Margins from Scrite:
+    // Action: 1.5in left, 1.0in right -> pl-[1.5in] pr-[1.0in] -> Total width 6in on 8.5in paper
+    // Character: 3.7in left -> pl-[3.7in]
+    // Parenthetical: 3.1in left -> pl-[3.1in]
+    // Dialogue: 2.5in left, 2.5in right -> pl-[2.5in] pr-[2.5in]
     switch (type) {
         case 'scene-heading':
-            return 'uppercase font-bold';
+            return 'uppercase font-bold pl-[1.5in]';
         case 'action':
-            return '';
+            return 'pl-[1.5in] pr-[1in]';
         case 'character':
-            return 'uppercase text-center';
+            return 'uppercase pl-[3.5in]';
         case 'parenthetical':
-            return 'text-center mx-auto max-w-xs text-muted-foreground';
+            return 'pl-[3in] pr-[3in]';
         case 'dialogue':
-            return 'mx-auto max-w-md';
+            return 'pl-[2.5in] pr-[2.5in] max-w-full'; // max-w-full overrides other constraints
         case 'transition':
-            return 'uppercase text-right';
+            return 'uppercase text-right pr-[1in]';
         default:
-            return '';
+            return 'pl-[1.5in]';
     }
   };
 
@@ -108,7 +133,7 @@ const ScriptLineComponent = ({
       onBlur={handleBlur}
       onContextMenu={(e) => onContextMenu(e, line.id)}
       className={cn(
-        'w-full outline-none focus:bg-primary/10 rounded-sm px-2 py-0.5 leading-relaxed min-h-[1.5em]',
+        'w-full outline-none focus:bg-primary/10 rounded-sm py-0.5 min-h-[1.5em]',
         getElementStyling(line.type)
       )}
       dangerouslySetInnerHTML={{ __html: line.text }}
@@ -281,13 +306,11 @@ export default function ScriptEditor({
         onContextMenu={(e) => e.preventDefault()}
         onClick={() => setContextMenu(null)}
       >
-        <div className={cn(!isStandalone && "p-6 bg-card rounded-lg shadow-lg")}>
-            <div className="flex items-center justify-between gap-4 mb-4">
-                <h2 className="font-headline flex items-center gap-2 text-lg font-semibold">
-                    <Film className="w-5 h-5 text-primary" />
-                    <span className="truncate">SCENE 1: INT. COFFEE SHOP - DAY</span>
-                </h2>
-            </div>
+        <div className={cn(
+            !isStandalone && "p-6 bg-card rounded-lg shadow-lg",
+            "font-code text-sm leading-relaxed" // Use text-sm and leading-relaxed
+        )}>
+            <ScriptRuler />
             
             <DropdownMenu open={!!contextMenu} onOpenChange={() => setContextMenu(null)}>
                 <DropdownMenuTrigger asChild>
@@ -321,8 +344,8 @@ export default function ScriptEditor({
             </DropdownMenu>
 
             <div
-            className="font-code text-base px-12 space-y-4"
-            style={{ minHeight: '60vh' }}
+                className="space-y-4"
+                style={{ minHeight: '60vh', width: '8.5in' }}
             >
             {lines.map(line => (
                 <div key={line.id} data-line-id={line.id} onClick={() => setActiveLineId(line.id)}>
