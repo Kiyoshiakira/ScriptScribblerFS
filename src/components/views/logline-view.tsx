@@ -11,8 +11,7 @@ import { Skeleton } from "../ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 
 export default function LoglineView() {
-    const { script, setScriptLogline, lines, isScriptLoading } = useScript();
-    const scriptContent = lines.map(l => l.text).join('\n');
+    const { script, setScriptLogline, isScriptLoading } = useScript();
     const [logline, setLogline] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const { toast } = useToast();
@@ -26,8 +25,16 @@ export default function LoglineView() {
     }, [script?.logline]);
 
     const handleGenerate = async () => {
+        if (!script?.content) {
+            toast({
+                variant: "destructive",
+                title: "Script is empty",
+                description: "Cannot generate a logline from an empty script.",
+            });
+            return;
+        }
         setIsGenerating(true);
-        const result = await aiGenerateLogline({ screenplay: scriptContent });
+        const result = await aiGenerateLogline({ screenplay: script.content });
         setIsGenerating(false);
 
         if (result.error || !result.data) {
@@ -83,7 +90,7 @@ export default function LoglineView() {
                         />
                      )}
                      <div className="flex justify-end gap-2">
-                         <Button variant="outline" onClick={handleGenerate} disabled={isGenerating}>
+                         <Button variant="outline" onClick={handleGenerate} disabled={isGenerating || isScriptLoading}>
                             {isGenerating ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             ) : (
@@ -91,7 +98,7 @@ export default function LoglineView() {
                             )}
                             Generate with AI
                         </Button>
-                        <Button onClick={handleSave}>Save Logline</Button>
+                        <Button onClick={handleSave} disabled={isScriptLoading}>Save Logline</Button>
                      </div>
                 </CardContent>
             </Card>

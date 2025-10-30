@@ -36,9 +36,8 @@ export default function ScenesView() {
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionsDialogOpen, setSuggestionsDialogOpen] = useState(false);
-  const { lines } = useScript();
+  const { script } = useScript();
   const { toast } = useToast();
-  const scriptContent = lines.map(l => l.text).join('\n');
 
   const scenesCollection = useMemoFirebase(
     () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'scenes') : null),
@@ -53,10 +52,18 @@ export default function ScenesView() {
   const { data: scenes, isLoading: areScenesLoading } = useCollection<Scene>(scenesQuery);
 
   const handleGetSuggestions = async () => {
+    if (!script?.content) {
+      toast({
+        variant: 'destructive',
+        title: 'Script is empty',
+        description: 'Cannot generate suggestions for an empty script.',
+      });
+      return;
+    }
     setIsSuggestionsLoading(true);
     setSuggestions([]);
     setSuggestionsDialogOpen(true);
-    const result = await getAiSuggestions({ screenplay: scriptContent });
+    const result = await getAiSuggestions({ screenplay: script.content });
     setIsSuggestionsLoading(false);
 
     if (result.error) {

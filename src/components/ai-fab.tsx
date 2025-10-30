@@ -22,7 +22,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ScriptContext, useScript } from '@/context/script-context';
+import { useScript } from '@/context/script-context';
 import { getAiSuggestions, getAiDeepAnalysis, getAiProofreadSuggestions } from '@/app/actions';
 import type { AiDeepAnalysisOutput } from '@/ai/flows/ai-deep-analysis';
 import AiAssistant from './ai-assistant';
@@ -133,8 +133,8 @@ export default function AiFab({
   const [proofreadSuggestions, setProofreadSuggestions] = useState<ProofreadSuggestion[]>([]);
 
   const { toast } = useToast();
-  const { lines, setLines: setScriptLines } = useScript();
-  const scriptContent = lines.map(l => l.text).join('\n');
+  const { script, setLines: setScriptContent } = useScript();
+  const scriptContent = script?.content || '';
 
   const [proofreadStatus, setProofreadStatus] = useState(PROOFREAD_STATUS_MESSAGES[0]);
 
@@ -259,7 +259,7 @@ export default function AiFab({
 
   const applySuggestion = (suggestion: ProofreadSuggestion) => {
     const newContent = scriptContent.replace(suggestion.originalText, suggestion.correctedText);
-    setScriptLines(newContent);
+    setScriptContent(newContent);
     toast({
       title: 'Suggestion Applied',
       description: 'The script has been updated with the correction.',
@@ -756,5 +756,3 @@ export default function AiFab({
     </>
   );
 }
-
-    

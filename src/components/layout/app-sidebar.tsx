@@ -56,9 +56,9 @@ const StatDisplay = ({ icon, value, label, isLoading }: { icon: React.ReactNode,
 );
 
 const ScriptStatsPanel = () => {
-    const { scenes, characters, lines, isScriptLoading } = useScript();
+    const { script, characters, isScriptLoading } = useScript();
 
-    const wordCount = lines.map(l => l.text).join(' ').trim().split(/\s+/).filter(Boolean).length;
+    const wordCount = script?.content?.trim().split(/\s+/).filter(Boolean).length || 0;
     const pageCount = Math.round(wordCount / 160); // Simple estimation
     const estimatedMinutes = Math.round((wordCount / 160) * 10) / 10;
     const characterCount = characters?.length || 0;
@@ -114,8 +114,8 @@ export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
                         isActive={activeView === item.view}
                         tooltip={item.label}
                         aria-disabled={noScriptLoaded}
-                        className={cn(noScriptLoaded && "cursor-not-allowed opacity-50")}
-                        disabled={noScriptLoaded}
+                        className={cn(noScriptLoaded && item.view !== 'dashboard' && item.view !== 'profile' && "cursor-not-allowed opacity-50")}
+                        disabled={noScriptLoaded && item.view !== 'dashboard' && item.view !== 'profile'}
                     >
                         <item.icon />
                         <span>{item.label}</span>

@@ -4,7 +4,6 @@ import React, { createContext, useState, useEffect, ReactNode, useContext, useCa
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { doc, collection, setDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { useDebounce } from 'use-debounce';
-import type { ScriptElement } from '@/components/script-editor';
 import type { Character } from '@/components/views/characters-view';
 import type { Scene } from '@/components/views/scenes-view';
 import type { Note } from '@/components/views/notes-view';
@@ -17,78 +16,33 @@ interface Script {
     [key: string]: any; 
 }
 
-export interface ScriptLine {
-  id: string;
-  type: ScriptElement;
-  text: string;
-}
-
 interface ScriptContextType {
   script: Script | null;
-  lines: ScriptLine[];
-  characters: Character[] | null;
-  scenes: Scene[] | null;
-  notes: Note[] | null;
-  setLines: (linesOrContent: ScriptLine[] | string | ((prev: ScriptLine[]) => ScriptLine[])) => void;
+  setLines: (content: string) => void;
   setScriptTitle: (title: string) => void;
   setScriptLogline: (logline: string) => void;
   isScriptLoading: boolean;
+  characters: Character[] | null;
+  scenes: Scene[] | null;
+  notes: Note[] | null;
 }
 
 export const ScriptContext = createContext<ScriptContextType>({
   script: null,
-  lines: [],
-  characters: null,
-  scenes: null,
-  notes: null,
   setLines: () => {},
   setScriptTitle: () => {},
   setScriptLogline: () => {},
   isScriptLoading: true,
+  characters: null,
+  scenes: null,
+  notes: null,
 });
-
-// A more robust function to parse the raw script content into lines
-const parseContentToLines = (content: string): ScriptLine[] => {
-    if (typeof content !== 'string' || !content) return [];
-    
-    const rawLines = content.split('\n');
-    const parsedLines: ScriptLine[] = [];
-
-    for (let i = 0; i < rawLines.length; i++) {
-        const text = rawLines[i];
-        const trimmedText = text.trim();
-        let type: ScriptElement = 'action'; // Default to action
-
-        const isAllUpperCase = trimmedText === trimmedText.toUpperCase() && trimmedText !== '' && !/[0-9]/.test(trimmedText);
-
-        if (trimmedText.startsWith('INT.') || trimmedText.startsWith('EXT.') || trimmedText.startsWith('EST.')) {
-            type = 'scene-heading';
-        } else if (trimmedText.endsWith(' TO:')) {
-            type = 'transition';
-        } else if (trimmedText.startsWith('(') && trimmedText.endsWith(')')) {
-            type = 'parenthetical';
-        } else if (isAllUpperCase && i > 0 && (parsedLines[i - 1]?.type === 'action' || parsedLines[i - 1]?.type === 'scene-heading' || parsedLines[i-1]?.type === 'transition') && text.length < 35) {
-             type = 'character';
-        } else if (i > 0 && (parsedLines[i-1]?.type === 'character' || parsedLines[i-1]?.type === 'parenthetical') && text !== '') {
-            type = 'dialogue';
-        }
-        
-        parsedLines.push({
-            id: `line-${i}-${Date.now()}`,
-            type,
-            text,
-        });
-    }
-
-    return parsedLines;
-};
-
 
 export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, scriptId: string }) => {
   const { user } = useUser();
   const firestore = useFirestore();
+  
   const [localScript, setLocalScript] = useState<Script | null>(null);
-  const [lines, setLocalLines] = useState<ScriptLine[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const scriptDocRef = useMemoFirebase(
@@ -98,7 +52,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   
   const { data: firestoreScript, isLoading: isDocLoading } = useDoc<Script>(scriptDocRef);
 
-  const [debouncedLines] = useDebounce(lines, 1000);
+  const [debouncedScript] = useDebounce(localScript, 1000);
 
   const charactersCollectionRef = useMemoFirebase(
     () => (user && firestore && scriptId ? collection(firestore, 'users', user.uid, 'scripts', scriptId, 'characters') : null),
@@ -122,16 +76,17 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   );
   const { data: notes, isLoading: areNotesLoading } = useCollection<Note>(notesCollection);
 
-  const updateFirestore = useCallback((field: 'content' | 'title' | 'logline', value: string) => {
+  const updateFirestore = useCallback((dataToUpdate: Partial<Script>) => {
     if (scriptDocRef) {
-        setDoc(scriptDocRef, { 
-            [field]: value,
+        const payload = { 
+            ...dataToUpdate,
             lastModified: serverTimestamp()
-        }, { merge: true }).catch(serverError => {
+        };
+        setDoc(scriptDocRef, payload, { merge: true }).catch(serverError => {
              const permissionError = new FirestorePermissionError({
                 path: scriptDocRef.path,
                 operation: 'update',
-                requestResourceData: { [field]: value },
+                requestResourceData: payload,
             });
             errorEmitter.emit('permission-error', permissionError);
         });
@@ -140,12 +95,15 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   
   useEffect(() => {
     if (firestoreScript) {
-        setLocalScript(firestoreScript);
-        const currentContent = lines.map(line => line.text.replace(/<br>/g, '')).join('\n');
-        if (isInitialLoad && firestoreScript.content !== currentContent) {
-           const parsed = parseContentToLines(firestoreScript.content || '');
-           setLocalLines(parsed);
-           setIsInitialLoad(false);
+        if (isInitialLoad) {
+            setLocalScript(firestoreScript);
+            setIsInitialLoad(false);
+        } else {
+             // Only update from Firestore if it's different from the debounced local state
+             // to prevent overwriting user's typing
+            if (debouncedScript && firestoreScript.content !== debouncedScript.content) {
+                setLocalScript(prev => prev ? { ...prev, content: firestoreScript.content } : firestoreScript);
+            }
         }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,48 +111,47 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
 
 
   useEffect(() => {
-    if (isInitialLoad || isDocLoading) {
+    if (isInitialLoad || isDocLoading || !debouncedScript || !firestoreScript) {
         return;
     }
-    const newContent = debouncedLines.map(line => line.text.replace(/<br\s*\/?>/gi, '')).join('\n');
-    if (localScript && newContent !== localScript.content) {
-      updateFirestore('content', newContent);
+    
+    const changes: Partial<Script> = {};
+    if (debouncedScript.content !== firestoreScript.content) {
+        changes.content = debouncedScript.content;
     }
-  }, [debouncedLines, localScript, isInitialLoad, isDocLoading, updateFirestore]);
+    if (debouncedScript.title !== firestoreScript.title) {
+        changes.title = debouncedScript.title;
+    }
+    if (debouncedScript.logline !== firestoreScript.logline) {
+        changes.logline = debouncedScript.logline;
+    }
 
-  const setLines = useCallback((linesOrContent: ScriptLine[] | string | ((prev: ScriptLine[]) => ScriptLine[])) => {
-    if (typeof linesOrContent === 'string') {
-        const newLines = parseContentToLines(linesOrContent);
-        setLocalLines(newLines);
-    } else {
-        setLocalLines(linesOrContent);
+    if (Object.keys(changes).length > 0) {
+      updateFirestore(changes);
     }
+  }, [debouncedScript, firestoreScript, isInitialLoad, isDocLoading, updateFirestore]);
+
+  const setLines = useCallback((content: string) => {
+    setLocalScript(prev => prev ? { ...prev, content } : null);
   }, []);
 
   const setScriptTitle = (title: string) => {
-    if (localScript && localScript.title !== title) {
-        setLocalScript(prev => prev ? { ...prev, title } : null);
-        updateFirestore('title', title);
-    }
+    setLocalScript(prev => prev ? { ...prev, title } : null);
   };
   
   const setScriptLogline = (logline: string) => {
-      if (localScript && localScript.logline !== logline) {
-        setLocalScript(prev => prev ? { ...prev, logline } : null);
-        updateFirestore('logline', logline);
-      }
+    setLocalScript(prev => prev ? { ...prev, logline } : null);
   }
   
   const value = { 
     script: localScript,
-    lines,
-    characters,
-    scenes,
-    notes,
     setLines,
     setScriptTitle,
     setScriptLogline,
-    isScriptLoading: isInitialLoad || isDocLoading || areCharactersLoading || areScenesLoading || areNotesLoading
+    isScriptLoading: isInitialLoad || isDocLoading || areCharactersLoading || areScenesLoading || areNotesLoading,
+    characters,
+    scenes,
+    notes,
   };
 
   return (

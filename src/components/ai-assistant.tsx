@@ -13,7 +13,7 @@ import { Sparkles, Mic, Send, Square } from 'lucide-react';
 import { Input } from './ui/input';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { cn } from '@/lib/utils';
-import { ScriptContext } from '@/context/script-context';
+import { useScript } from '@/context/script-context';
 import { useUser, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useCurrentScript } from '@/context/current-script-context';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
@@ -38,8 +38,8 @@ interface AiAssistantProps {
 
 
 export default function AiAssistant({ openProofreadDialog }: AiAssistantProps) {
-  const { lines, setLines } = useContext(ScriptContext);
-  const scriptContent = lines.map(l => l.text).join('\n');
+  const { script, setLines } = useScript();
+  const scriptContent = script?.content || '';
   const { toast } = useToast();
 
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
