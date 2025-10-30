@@ -87,19 +87,19 @@ const ScriptLineComponent = ({
   const getElementStyling = (type: ScriptElement) => {
     switch (type) {
         case 'scene-heading':
-            return 'uppercase font-bold pl-[1.5in]';
+            return 'uppercase font-bold pl-[1.5in] pr-[1in]';
         case 'action':
             return 'pl-[1.5in] pr-[1in]';
         case 'character':
-            return 'uppercase pl-[3.5in]';
+            return 'uppercase pl-[3.5in] pr-[1in]';
         case 'parenthetical':
-            return 'pl-[3in] pr-[3in]';
+            return 'pl-[3in] pr-[1in]';
         case 'dialogue':
             return 'pl-[2.5in] pr-[2.5in]';
         case 'transition':
             return 'uppercase text-right pr-[1.5in]';
         default:
-            return 'pl-[1.5in]';
+            return 'pl-[1.5in] pr-[1in]';
     }
   };
 
