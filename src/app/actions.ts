@@ -28,8 +28,30 @@ import {
     aiGenerateLogline as aiGenerateLoglineFlow,
     type AiGenerateLoglineInput,
 } from '@/ai/flows/ai-generate-logline';
+import {
+    aiReformatScript as aiReformatScriptFlow,
+    type AiReformatScriptInput,
+} from '@/ai/flows/ai-reformat-script';
+
 
 const SCRIPT_TOKEN_LIMIT = 1000000; // 1 million characters
+
+export async function aiReformatScript(input: AiReformatScriptInput) {
+    if (!process.env.GEMINI_API_KEY) {
+        return { data: null, error: 'GEMINI_API_KEY is not set. Please create a .env.local file and add your key.' };
+    }
+    try {
+        const result = await aiReformatScriptFlow(input);
+        return { data: result, error: null };
+    } catch (error) {
+        console.error(error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return {
+        data: null,
+        error: `An error occurred while reformatting the script: ${errorMessage}`,
+        };
+    }
+}
 
 export async function getAiSuggestions(
   input: AiSuggestSceneImprovementsInput

@@ -8,3 +8,4 @@ import '@/ai/flows/ai-proofread-script.ts';
 import '@/ai/flows/ai-generate-character-profile.ts';
 import '@/ai/flows/ai-generate-note.ts';
 import '@/ai/flows/ai-generate-logline.ts';
+import '@/ai/flows/ai-reformat-script.ts';
