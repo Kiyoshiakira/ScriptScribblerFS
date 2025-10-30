@@ -230,43 +230,45 @@ export default function ProfileView({ setView }: ProfileViewProps) {
 
     return (
         <div className="max-w-5xl mx-auto space-y-8">
-            <Card className='overflow-hidden'>
-                <div className='h-48 bg-muted relative'>
-                    {isLoading ? <Skeleton className='h-full w-full' /> : (
+            <Card className="overflow-hidden">
+                <div className="h-32 sm:h-48 bg-muted relative">
+                    {isLoading ? <Skeleton className="h-full w-full" /> : (
                         userProfile?.coverImageUrl && (
                             <Image
                                 src={userProfile.coverImageUrl}
                                 alt="Cover image"
                                 fill
-                                className='object-cover'
+                                className="object-cover"
                             />
                         )
                     )}
                 </div>
-                 <div className='p-6 pt-0'>
-                    <div className='flex items-end gap-4 -mt-16'>
-                        <Avatar className='w-32 h-32 border-4 border-background'>
-                            {isLoading ? <Skeleton className='h-full w-full rounded-full' /> : (
+                <div className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-16 sm:-mt-20">
+                        <Avatar className="w-28 h-28 sm:w-32 sm:h-32 border-4 border-background">
+                            {isLoading ? <Skeleton className="h-full w-full rounded-full" /> : (
                                 <>
                                     <AvatarImage src={userProfile?.photoURL || user?.photoURL || undefined} />
-                                    <AvatarFallback className='text-4xl'>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                                    <AvatarFallback className="text-4xl">{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                                 </>
                             )}
                         </Avatar>
-                        <div className='flex-1 pb-2'>
+                        <div className="flex-1 mt-16 sm:mt-0 sm:pb-2">
                              {isLoading ? (
-                                <div className='space-y-2'>
-                                    <Skeleton className='h-8 w-48' />
-                                    <Skeleton className='h-5 w-64' />
+                                <div className="space-y-2">
+                                    <Skeleton className="h-8 w-48" />
+                                    <Skeleton className="h-5 w-64" />
                                 </div>
                              ) : (
                                 <>
-                                 <h1 className='text-3xl font-bold font-headline'>{user?.displayName}</h1>
-                                 <div className='text-muted-foreground'>{userProfile?.bio || 'No bio yet.'}</div>
+                                 <h1 className="text-2xl sm:text-3xl font-bold font-headline">{user?.displayName}</h1>
+                                 <div className="text-muted-foreground mt-1">{userProfile?.bio || 'No bio yet.'}</div>
                                 </>
                              )}
                         </div>
-                        <Button variant="outline" onClick={() => setView('profile-edit')}><Edit className='mr-2 h-4 w-4' /> Edit Profile</Button>
+                        <Button variant="outline" onClick={() => setView('profile-edit')} className="w-full sm:w-auto">
+                            <Edit className="mr-2 h-4 w-4" /> Edit Profile
+                        </Button>
                     </div>
                 </div>
             </Card>
