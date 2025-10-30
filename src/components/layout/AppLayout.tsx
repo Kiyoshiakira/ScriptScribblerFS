@@ -15,30 +15,37 @@ import LoglineView from '../views/logline-view';
 import ScenesView from '../views/scenes-view';
 import CharactersView from '../views/characters-view';
 import NotesView from '../views/notes-view';
-import { useUser } from '@/firebase';
+import { useUser, useDoc } from '@/firebase';
 import { EditProfileDialog } from '../edit-profile-dialog';
+import { doc } from 'firebase/firestore';
 
 export type View = 'dashboard' | 'editor' | 'scenes' | 'characters' | 'notes' | 'logline' | 'profile';
 
 function AppLayoutContent() {
-  const { currentScriptId } = useCurrentScript();
-  const [view, setView] = React.useState<View>(currentScriptId ? 'dashboard' : 'profile');
+  const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
+  const { user, isUserLoading, firestore } = useUser();
+  
+  // Set the initial view based on whether a script is loaded.
+  // This avoids using a useEffect which was causing conflicts.
+  const [view, setView] = React.useState<View>(() => currentScriptId ? 'dashboard' : 'profile');
+
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
-
-  const { user, isUserLoading } = useUser();
-  const { isScriptLoading } = useCurrentScript();
-
-
-  // This effect ensures the correct view is shown based on script presence.
+  
+  // This effect synchronizes the view if the script ID is removed (e.g., deleted or user signs out)
   React.useEffect(() => {
-    if (currentScriptId && view === 'profile') {
-        setView('dashboard');
-    } else if (!currentScriptId) {
-        setView('profile');
+    if (!isCurrentScriptLoading && !currentScriptId) {
+      setView('profile');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentScriptId]);
+  }, [currentScriptId, isCurrentScriptLoading]);
+  
+  const userProfileRef = React.useMemo(() => {
+    if (user && firestore) {
+      return doc(firestore, 'users', user.uid);
+    }
+    return null;
+  }, [user, firestore]);
+  const { data: userProfile } = useDoc(userProfileRef);
 
   const handleSetView = (newView: View | 'settings' | 'profile-edit') => {
     if (newView === 'settings') {
@@ -46,16 +53,13 @@ function AppLayoutContent() {
     } else if (newView === 'profile-edit') {
       setProfileOpen(true);
     } else {
-      // Prevent switching to a script-based view if no script is loaded
-      if (!currentScriptId && newView !== 'profile') {
-          return;
-      }
       setView(newView);
     }
   };
 
   const renderView = () => {
-    if (!currentScriptId) {
+    // If a script-based view is selected but no script is loaded, show the profile.
+    if (!currentScriptId && view !== 'profile') {
       return <ProfileView setView={handleSetView} />;
     }
 
@@ -71,7 +75,7 @@ function AppLayoutContent() {
     }
   };
 
-  if (isUserLoading || isScriptLoading) {
+  if (isUserLoading || isCurrentScriptLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -94,7 +98,7 @@ function AppLayoutContent() {
         </div>
       </div>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
-      {user && <EditProfileDialog open={profileOpen} onOpenChange={setProfileOpen} user={user} profile={null} />}
+      {user && <EditProfileDialog open={profileOpen} onOpenChange={setProfileOpen} user={user} profile={userProfile} />}
     </>
   );
 }
@@ -105,7 +109,7 @@ export default function AppLayout() {
 
   if (isCurrentScriptLoading) {
       return (
-        <div className="flex h-full w-full items-center justify-center bg-background">
+        <div className="flex h-screen w-screen items-center justify-center bg-background">
           <div className="flex flex-col items-center gap-4">
             <Skeleton className="h-16 w-16 rounded-full" />
             <p className="text-muted-foreground">Loading workspace...</p>
@@ -126,7 +130,6 @@ export default function AppLayout() {
   }
 
   // If there is no script, render the layout content directly.
-  // AppLayoutContent will handle showing the ProfileView, which does not need the ScriptContext.
   return (
     <SidebarProvider>
         <AppLayoutContent />
