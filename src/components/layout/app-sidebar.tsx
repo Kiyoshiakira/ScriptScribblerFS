@@ -7,6 +7,7 @@ import {
   SidebarMenuItem,
   SidebarContent,
   SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   BookText,
@@ -24,7 +25,7 @@ import { useScript } from '@/context/script-context';
 import { Skeleton } from '../ui/skeleton';
 import type { View } from './AppLayout';
 import { useCurrentScript } from '@/context/current-script-context';
-import { useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useDoc, useMemoFirebase, useFirestore } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { doc } from 'firebase/firestore';
 
@@ -86,8 +87,18 @@ interface AppSidebarProps {
 
 export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
   const { currentScriptId } = useCurrentScript();
-  const { user, isUserLoading, firestore } = useUser();
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const { isMobile, setOpenMobile } = useSidebar();
   const noScriptLoaded = !currentScriptId;
+
+  const handleViewChange = (view: View | 'profile-edit') => {
+    setView(view);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
 
   const userProfileRef = useMemoFirebase(() => {
     if (user && firestore) {
@@ -109,7 +120,7 @@ export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" side="left">
       <SidebarHeader>
-        <button className="flex items-center gap-2 p-2" onClick={() => setView('profile')}>
+        <button className="flex items-center gap-2 p-2" onClick={() => handleViewChange('profile')}>
             <Logo />
             <h1 className="text-xl font-bold font-headline">ScriptScribbler</h1>
         </button>
@@ -119,10 +130,10 @@ export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
             {scriptMenuItems.map(item => (
                 <SidebarMenuItem key={item.view}>
                     <SidebarMenuButton
-                        onClick={() => setView(item.view)}
+                        onClick={() => handleViewChange(item.view)}
                         isActive={activeView === item.view}
                         tooltip={item.label}
-                        aria-disabled={noScriptLoaded}
+                        aria-disabled={noScriptLoaded && item.view !== 'dashboard'}
                         className={cn(noScriptLoaded && item.view !== 'dashboard' && 'opacity-50 cursor-not-allowed')}
                     >
                         <item.icon />
@@ -134,7 +145,7 @@ export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
       </SidebarContent>
       <SidebarFooter className="p-2">
           {currentScriptId && !noScriptLoaded && <ScriptStatsPanel />}
-          <div className="flex items-center gap-2 p-2 mt-2 border-t border-sidebar-border cursor-pointer hover:bg-sidebar-accent rounded-md" onClick={() => setView('profile')}>
+          <div className="flex items-center gap-2 p-2 mt-2 border-t border-sidebar-border cursor-pointer hover:bg-sidebar-accent rounded-md" onClick={() => handleViewChange('profile')}>
             {isUserLoading || isProfileLoading ? (
               <>
                 <Skeleton className="w-8 h-8 rounded-full" />

@@ -554,29 +554,6 @@ const SidebarMenuButton = React.forwardRef<
     const Comp = asChild ? Slot : 'button';
     const { isMobile, state } = useSidebar();
 
-    const buttonContent = (
-      <>
-        {React.Children.map(children, child => {
-          if (React.isValidElement(child) && typeof child.type !== 'string') {
-            return React.cloneElement(child as React.ReactElement<any>, {
-              className: cn(
-                child.props.className,
-                'shrink-0 size-4'
-              ),
-            });
-          }
-          return child;
-        })}
-        <span
-          className={cn(
-            'truncate transition-opacity duration-200',
-            state === 'collapsed' && 'opacity-0 hidden'
-          )}
-        >
-          {children && React.Children.toArray(children)[1]}
-        </span>
-      </>
-    );
      const button = (
       <Comp
         ref={ref}
@@ -590,7 +567,20 @@ const SidebarMenuButton = React.forwardRef<
         )}
         {...props}
       >
-        {children}
+        {React.Children.map(children, (child, index) => {
+          if (index === 0 && React.isValidElement(child) && typeof child.type !== 'string') {
+            return React.cloneElement(child, {
+              className: cn(child.props.className, 'shrink-0 size-4'),
+            });
+          }
+          if (index === 1) {
+            return <span className={cn('truncate transition-opacity duration-200', 
+                                        state === 'collapsed' && 'opacity-0 hidden')}>
+              {child}
+            </span>;
+          }
+          return child;
+        })}
       </Comp>
     );
 
