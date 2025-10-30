@@ -170,41 +170,37 @@ export default function ScriptEditor({
         e.preventDefault();
         const currentLine = lines[currentIndex];
         const selection = window.getSelection();
-        let beforeEnter = currentLine.text;
+
+        let beforeEnter = '';
         let afterEnter = '';
 
         if (selection && selection.rangeCount > 0) {
             const range = selection.getRangeAt(0);
-            const container = range.startContainer;
+            const lineElement = e.currentTarget;
 
-            // Create a temporary div to reconstruct HTML content and measure
-            const tempDiv = document.createElement("div");
-            tempDiv.innerHTML = currentLine.text;
-            
-            // Recreate the range within the temporary div
+            // Create a temporary range to get content BEFORE the caret
             const preCaretRange = document.createRange();
-            preCaretRange.selectNodeContents(tempDiv);
+            preCaretRange.selectNodeContents(lineElement);
+            preCaretRange.setEnd(range.startContainer, range.startOffset);
             
-            // This is tricky. If the container is a text node, we need its parent element.
-            const endContainer = (container.nodeType === Node.TEXT_NODE) ? container : tempDiv.childNodes[range.endOffset];
-            try {
-                preCaretRange.setEnd(endContainer, range.endOffset);
-                beforeEnter = preCaretRange.cloneContents().textContent || '';
-                
-                // Extracting what's after is also complex
-                const postCaretRange = range.cloneRange();
-                postCaretRange.selectNodeContents(tempDiv);
-                postCaretRange.setStart(endContainer, range.endOffset);
-                afterEnter = postCaretRange.cloneContents().textContent || '';
+            // Create a temporary div to hold the HTML content
+            const tempDiv = document.createElement('div');
+            tempDiv.appendChild(preCaretRange.cloneContents());
+            beforeEnter = tempDiv.innerHTML;
 
-            } catch (err) {
-                 // Fallback for complex cases
-                const fullText = tempDiv.textContent || '';
-                const offset = range.startOffset;
-                beforeEnter = fullText.substring(0, offset);
-                afterEnter = fullText.substring(offset);
-            }
+            // Create a temporary range to get content AFTER the caret
+            const postCaretRange = document.createRange();
+            postCaretRange.selectNodeContents(lineElement);
+            postCaretRange.setStart(range.endContainer, range.endOffset);
+
+            const tempDiv2 = document.createElement('div');
+            tempDiv2.appendChild(postCaretRange.cloneContents());
+            afterEnter = tempDiv2.innerHTML;
+        } else {
+            // Fallback if no selection is found (e.g., just set everything to before)
+            beforeEnter = currentLine.text;
         }
+
 
         const newLines = [...lines];
         newLines[currentIndex] = { ...currentLine, text: beforeEnter };
@@ -282,8 +278,8 @@ export default function ScriptEditor({
     <div
         ref={editorRef}
         className={cn(
-            "relative font-code text-sm leading-relaxed flex-1 flex flex-col",
-            isStandalone ? "bg-background p-4" : ""
+            "relative font-code text-sm leading-relaxed",
+            isStandalone ? "bg-background p-4 flex-1" : ""
         )}
         onContextMenu={(e) => e.preventDefault()}
         onClick={() => setContextMenu(null)}
