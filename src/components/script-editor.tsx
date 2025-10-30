@@ -61,6 +61,7 @@ const ScriptLineComponent = ({
   }, [isFocused]);
 
   useEffect(() => {
+    // This is the critical part that was removed. It ensures the div has content.
     if (ref.current && ref.current.innerHTML !== line.text) {
       ref.current.innerHTML = line.text;
     }
@@ -69,24 +70,20 @@ const ScriptLineComponent = ({
   const getElementStyling = (type: ScriptElement) => {
     switch (type) {
         case 'scene-heading':
-            return 'uppercase font-bold pl-4';
+            return 'uppercase font-bold pl-6';
         case 'action':
-            return 'pl-4';
+            return 'pl-6';
         case 'character':
             return 'uppercase pl-32';
         case 'parenthetical':
-            return 'pl-24';
+            return 'pl-28';
         case 'dialogue':
-            return 'pl-16';
+            return 'pl-20';
         case 'transition':
-            return 'uppercase text-right pr-4';
+            return 'uppercase text-right pr-6';
         default:
-            return 'pl-4';
+            return 'pl-6';
     }
-  };
-
-  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    // This is handled onBlur now
   };
 
   const handleBlur = (e: React.FormEvent<HTMLDivElement>) => {
@@ -104,7 +101,6 @@ const ScriptLineComponent = ({
       contentEditable
       suppressContentEditableWarning
       onKeyDown={(e) => onKeyDown(e, line.id)}
-      onInput={handleInput}
       onBlur={handleBlur}
       onContextMenu={(e) => onContextMenu(e, line.id)}
       className={cn(
