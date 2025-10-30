@@ -69,7 +69,7 @@ const aiReformatScriptFlow = ai.defineFlow(
       prompt: prompt.prompt,
       input: input,
       output: { schema: AiReformatScriptOutputSchema },
-      model: googleAI('gemini-1.5-pro-latest'),
+      model: googleAI('gemini-1.5-pro'),
     });
     return output!;
   }

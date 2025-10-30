@@ -90,7 +90,7 @@ const aiProofreadScriptFlow = ai.defineFlow(
       prompt: prompt.prompt,
       input: input,
       output: { schema: AiProofreadScriptOutputSchema },
-      model: googleAI('gemini-1.5-pro-latest'),
+      model: googleAI('gemini-1.5-pro'),
     });
     return output!;
   }
