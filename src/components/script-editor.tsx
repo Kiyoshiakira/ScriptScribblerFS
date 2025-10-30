@@ -40,19 +40,19 @@ interface ScriptLineComponentProps {
 const ScriptRuler = () => {
     return (
         <div
-            className="relative h-4 w-full bg-no-repeat mb-4"
+            className="relative h-6 w-full bg-no-repeat mb-4"
             style={{
                 backgroundImage: `
-                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)/0.3) 0, hsl(var(--muted-foreground)/0.3) 1px, transparent 1px, transparent 0.125in),
-                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)/0.5) 0, hsl(var(--muted-foreground)/0.5) 1px, transparent 1px, transparent 0.25in),
-                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)/0.7) 0, hsl(var(--muted-foreground)/0.7) 1px, transparent 1px, transparent 0.5in),
+                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)/0.2) 0, hsl(var(--muted-foreground)/0.2) 1px, transparent 1px, transparent 0.125in),
+                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)/0.4) 0, hsl(var(--muted-foreground)/0.4) 1px, transparent 1px, transparent 0.25in),
+                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)/0.6) 0, hsl(var(--muted-foreground)/0.6) 1px, transparent 1px, transparent 0.5in),
                     repeating-linear-gradient(to right, hsl(var(--muted-foreground)) 0, hsl(var(--muted-foreground)) 1px, transparent 1px, transparent 1in)
                 `,
                 backgroundSize: `
-                    100% 20%,
-                    100% 35%,
-                    100% 50%,
-                    100% 75%
+                    100% 0.25rem,
+                    100% 0.5rem,
+                    100% 0.75rem,
+                    100% 1rem
                 `,
                 backgroundPosition: 'bottom',
             }}
@@ -104,19 +104,19 @@ const ScriptLineComponent = ({
   const getElementStyling = (type: ScriptElement) => {
     switch (type) {
         case 'scene-heading':
-            return 'uppercase font-bold ml-[1.5in] mr-[1in]';
+            return 'uppercase font-bold pl-[1.5in] pr-[1in]';
         case 'action':
-            return 'ml-[1.5in] mr-[1in]';
+            return 'pl-[1.5in] pr-[1in]';
         case 'character':
-            return 'uppercase text-center ml-[3.5in] mr-[1in]';
+            return 'uppercase pl-[3.5in] pr-[1in]';
         case 'parenthetical':
-            return 'ml-[3in] mr-[1in] text-center';
+            return 'pl-[3in] pr-[1in]';
         case 'dialogue':
-            return 'ml-[2.5in] mr-[2.5in]';
+            return 'pl-[2.5in] pr-[2.5in]';
         case 'transition':
-            return 'uppercase text-right ml-[1.5in] mr-[1in]';
+            return 'uppercase text-right pr-[1in]';
         default:
-            return 'ml-[1.5in] mr-[1in]';
+            return 'pl-[1.5in] pr-[1in]';
     }
   };
 
