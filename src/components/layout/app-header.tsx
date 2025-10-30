@@ -40,7 +40,15 @@ import { useCurrentScript } from '@/context/current-script-context';
 import type { View } from './AppLayout';
 
 
-export default function AppHeader({ activeView, setView }: { activeView: View, setView: (view: View | 'settings' | 'profile-edit') => void }) {
+interface AppHeaderProps {
+  activeView: View;
+  setView: (view: View | 'settings' | 'profile-edit') => void;
+  characters: Character[];
+  scenes: Scene[];
+  notes: Note[];
+}
+
+export default function AppHeader({ activeView, setView, characters, scenes, notes }: AppHeaderProps) {
   const auth = useAuth();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -49,13 +57,6 @@ export default function AppHeader({ activeView, setView }: { activeView: View, s
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { currentScriptId, setCurrentScriptId } = useCurrentScript();
-
-  // Data fetching for export
-  // In a real app with better state management, this would come from a layout context
-  const [characters, setCharacters] = useState<Character[] | null>(null);
-  const [scenes, setScenes] = useState<Scene[] | null>(null);
-  const [notes, setNotes] = useState<Note[] | null>(null);
-
 
   const handleSignOut = async () => {
     if (auth) {
@@ -396,3 +397,5 @@ export default function AppHeader({ activeView, setView }: { activeView: View, s
     </>
   );
 }
+
+    

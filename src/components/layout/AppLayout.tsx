@@ -16,8 +16,10 @@ import ScenesView from '../views/scenes-view';
 import CharactersView from '../views/characters-view';
 import NotesView from '../views/notes-view';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, collection } from 'firebase/firestore';
+import { doc, collection, query, orderBy } from 'firebase/firestore';
 import type { Character } from '../views/characters-view';
+import type { Scene } from '../views/scenes-view';
+import type { Note } from '../views/notes-view';
 import { EditProfileDialog } from '../edit-profile-dialog';
 
 export type View = 'dashboard' | 'editor' | 'scenes' | 'characters' | 'notes' | 'logline' | 'profile';
@@ -47,6 +49,22 @@ function AppLayoutContent() {
     [firestore, user, currentScriptId]
   );
   const { data: characters, isLoading: areCharactersLoading } = useCollection<Character>(charactersCollectionRef);
+
+  const scenesCollection = useMemoFirebase(
+    () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'scenes') : null),
+    [firestore, user, currentScriptId]
+  );
+  const scenesQuery = useMemoFirebase(
+    () => (scenesCollection ? query(scenesCollection, orderBy('sceneNumber', 'asc')) : null),
+    [scenesCollection]
+  );
+  const { data: scenes, isLoading: areScenesLoading } = useCollection<Scene>(scenesQuery);
+  
+  const notesCollection = useMemoFirebase(
+    () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'notes') : null),
+    [firestore, user, currentScriptId]
+  );
+  const { data: notes, isLoading: areNotesLoading } = useCollection<Note>(notesCollection);
   
   const characterCount = characters?.length || 0;
   const pageCount = Math.round(estimatedMinutes);
@@ -113,14 +131,20 @@ function AppLayoutContent() {
     estimatedMinutes,
   };
   
-  const isLoading = isCurrentScriptLoading || areCharactersLoading || isScriptContentLoading;
+  const isLoading = isCurrentScriptLoading || areCharactersLoading || isScriptContentLoading || areScenesLoading || areNotesLoading;
 
   return (
     <SidebarProvider>
         <div className="flex h-screen bg-background">
             <AppSidebar activeView={view} setView={handleSetView} stats={stats} isLoadingStats={isLoading} />
             <div className="flex flex-1 flex-col overflow-hidden">
-                <AppHeader activeView={view} setView={handleSetView} />
+                <AppHeader 
+                    activeView={view} 
+                    setView={handleSetView}
+                    characters={characters || []}
+                    scenes={scenes || []}
+                    notes={notes || []}
+                />
                  <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
                     {renderView()}
                 </main>
@@ -160,3 +184,5 @@ export default function AppLayout() {
   // Render the layout without a script context (will show the profile view)
   return <AppLayoutContent />;
 }
+
+    
