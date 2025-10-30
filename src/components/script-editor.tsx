@@ -38,7 +38,7 @@ interface ScriptLineComponentProps {
 }
 
 const ScriptRuler = () => (
-    <div className="relative h-6 w-full bg-card border-b mb-4">
+    <div className="relative h-6 w-full bg-card border-b mb-4 overflow-hidden">
         <div className="absolute left-0 top-0 h-full" style={{ paddingLeft: '1.5in' }}>
              <div className="h-full border-l"></div>
         </div>
@@ -85,13 +85,6 @@ const ScriptLineComponent = ({
   }, [line.text]);
   
   const getElementStyling = (type: ScriptElement) => {
-    // 1 inch = 96px. Tailwind's default font-size: 1rem = 16px.
-    // So 1 inch = 6rem.
-    // Margins from Scrite:
-    // Action: 1.5in left, 1.0in right -> pl-[1.5in] pr-[1.0in] -> Total width 6in on 8.5in paper
-    // Character: 3.7in left -> pl-[3.7in]
-    // Parenthetical: 3.1in left -> pl-[3.1in]
-    // Dialogue: 2.5in left, 2.5in right -> pl-[2.5in] pr-[2.5in]
     switch (type) {
         case 'scene-heading':
             return 'uppercase font-bold pl-[1.5in]';
@@ -102,9 +95,9 @@ const ScriptLineComponent = ({
         case 'parenthetical':
             return 'pl-[3in] pr-[3in]';
         case 'dialogue':
-            return 'pl-[2.5in] pr-[2.5in] max-w-full'; // max-w-full overrides other constraints
+            return 'pl-[2.5in] pr-[2.5in]';
         case 'transition':
-            return 'uppercase text-right pr-[1in]';
+            return 'uppercase text-right pr-[1.5in]';
         default:
             return 'pl-[1.5in]';
     }
@@ -308,7 +301,7 @@ export default function ScriptEditor({
       >
         <div className={cn(
             !isStandalone && "p-6 bg-card rounded-lg shadow-lg",
-            "font-code text-sm leading-relaxed" // Use text-sm and leading-relaxed
+            "font-code text-sm leading-relaxed mx-auto max-w-[8.5in]"
         )}>
             <ScriptRuler />
             
@@ -345,7 +338,7 @@ export default function ScriptEditor({
 
             <div
                 className="space-y-4"
-                style={{ minHeight: '60vh', width: '8.5in' }}
+                style={{ minHeight: '60vh' }}
             >
             {lines.map(line => (
                 <div key={line.id} data-line-id={line.id} onClick={() => setActiveLineId(line.id)}>
