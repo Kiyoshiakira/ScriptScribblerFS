@@ -15,31 +15,39 @@ import LoglineView from '../views/logline-view';
 import ScenesView from '../views/scenes-view';
 import CharactersView from '../views/characters-view';
 import NotesView from '../views/notes-view';
-import { useUser, useDoc } from '@/firebase';
+import { useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { EditProfileDialog } from '../edit-profile-dialog';
 import { doc } from 'firebase/firestore';
 
 export type View = 'dashboard' | 'editor' | 'scenes' | 'characters' | 'notes' | 'logline' | 'profile';
 
-function AppLayoutContent() {
+function AppLayoutInternal() {
   const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
   const { user, isUserLoading, firestore } = useUser();
-  
-  // Set the initial view based on whether a script is loaded.
-  // This avoids using a useEffect which was causing conflicts.
-  const [view, setView] = React.useState<View>(() => currentScriptId ? 'dashboard' : 'profile');
 
+  // Set the initial view based on whether a script is loaded.
+  const [view, setView] = React.useState<View>(() => currentScriptId ? 'dashboard' : 'profile');
+  
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
-  
+
   // This effect synchronizes the view if the script ID is removed (e.g., deleted or user signs out)
   React.useEffect(() => {
-    if (!isCurrentScriptLoading && !currentScriptId) {
-      setView('profile');
+    if (!isCurrentScriptLoading) {
+      if (currentScriptId) {
+        // If a script becomes active, switch to the dashboard if we're on the profile view.
+        if (view === 'profile') {
+          setView('dashboard');
+        }
+      } else {
+        // If the script is removed, always go back to the profile view.
+        setView('profile');
+      }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentScriptId, isCurrentScriptLoading]);
   
-  const userProfileRef = React.useMemo(() => {
+  const userProfileRef = useMemoFirebase(() => {
     if (user && firestore) {
       return doc(firestore, 'users', user.uid);
     }
@@ -53,6 +61,11 @@ function AppLayoutContent() {
     } else if (newView === 'profile-edit') {
       setProfileOpen(true);
     } else {
+       // If no script is loaded, only allow navigating to the profile view.
+      if (!currentScriptId && newView !== 'profile') {
+          setView('profile');
+          return;
+      }
       setView(newView);
     }
   };
@@ -118,21 +131,15 @@ export default function AppLayout() {
       );
   }
   
-  // If there is a script, wrap with the provider.
-  if (currentScriptId) {
-    return (
-      <SidebarProvider>
-        <ScriptProvider key={currentScriptId} scriptId={currentScriptId}>
-            <AppLayoutContent />
-        </ScriptProvider>
-      </SidebarProvider>
-    );
-  }
-
-  // If there is no script, render the layout content directly.
   return (
     <SidebarProvider>
-        <AppLayoutContent />
+      {currentScriptId ? (
+        <ScriptProvider key={currentScriptId} scriptId={currentScriptId}>
+            <AppLayoutInternal />
+        </ScriptProvider>
+      ) : (
+        <AppLayoutInternal />
+      )}
     </SidebarProvider>
   );
 }
