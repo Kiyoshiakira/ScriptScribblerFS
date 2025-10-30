@@ -15,7 +15,7 @@ import LoglineView from '../views/logline-view';
 import ScenesView from '../views/scenes-view';
 import CharactersView from '../views/characters-view';
 import NotesView from '../views/notes-view';
-import { useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useDoc, useMemoFirebase, useFirestore } from '@/firebase';
 import { EditProfileDialog } from '../edit-profile-dialog';
 import { doc } from 'firebase/firestore';
 
@@ -23,7 +23,8 @@ export type View = 'dashboard' | 'editor' | 'scenes' | 'characters' | 'notes' | 
 
 function AppLayoutInternal() {
   const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
-  const { user, isUserLoading, firestore } = useUser();
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
 
   // Set the initial view based on whether a script is loaded.
   const [view, setView] = React.useState<View>(() => currentScriptId ? 'dashboard' : 'profile');
