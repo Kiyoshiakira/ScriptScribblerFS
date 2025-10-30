@@ -69,17 +69,16 @@ function AppLayoutContent() {
   const characterCount = characters?.length || 0;
   const pageCount = Math.round(estimatedMinutes);
 
-  React.useEffect(() => {
+ React.useEffect(() => {
     if (lines.length === 0) {
-        setWordCount(0);
-        setEstimatedMinutes(0);
-        return;
-    };
+      setWordCount(0);
+      setEstimatedMinutes(0);
+      return;
+    }
     const scriptContent = lines.map(l => l.text).join('\n');
     const words = scriptContent.trim().split(/\s+/).filter(Boolean);
     const count = words.length;
     setWordCount(count);
-    
     const minutes = Math.round((count / 160) * 10) / 10;
     setEstimatedMinutes(minutes);
   }, [lines]);
