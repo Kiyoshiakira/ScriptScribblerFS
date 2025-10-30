@@ -23,7 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '../ui/sidebar';
 import { GoogleDocIcon } from '../ui/icons';
-import { useAuth, useUser, useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { useAuth, useUser, useFirestore, FirestorePermissionError, errorEmitter, useDoc, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Skeleton } from '../ui/skeleton';
 import { useScript } from '@/context/script-context';
@@ -52,6 +52,14 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { currentScriptId, setCurrentScriptId } = useCurrentScript();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (user && firestore) {
+      return doc(firestore, 'users', user.uid);
+    }
+    return null;
+  }, [user, firestore]);
+  const { data: userProfile } = useDoc(userProfileRef);
 
   const handleSignOut = async () => {
     if (auth) {
@@ -293,7 +301,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Avatar className="cursor-pointer border-2 border-transparent hover:border-primary transition-colors">
-            <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
+            <AvatarImage src={userProfile?.photoURL || user.photoURL || undefined} alt={user.displayName || 'User'} />
             <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
           </Avatar>
         </DropdownMenuTrigger>

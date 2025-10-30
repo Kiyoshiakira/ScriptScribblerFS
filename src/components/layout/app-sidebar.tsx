@@ -6,7 +6,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarContent,
-  SidebarFooter
+  SidebarFooter,
 } from '@/components/ui/sidebar';
 import {
   BookText,
@@ -24,8 +24,9 @@ import { useScript } from '@/context/script-context';
 import { Skeleton } from '../ui/skeleton';
 import type { View } from './AppLayout';
 import { useCurrentScript } from '@/context/current-script-context';
-import { useUser } from '@/firebase';
+import { useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { doc } from 'firebase/firestore';
 
 export const Logo = () => (
   <svg
@@ -85,8 +86,16 @@ interface AppSidebarProps {
 
 export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
   const { currentScriptId } = useCurrentScript();
+  const { user, isUserLoading, firestore } = useUser();
   const noScriptLoaded = !currentScriptId;
-  const { user, isUserLoading } = useUser();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (user && firestore) {
+      return doc(firestore, 'users', user.uid);
+    }
+    return null;
+  }, [user, firestore]);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
   const scriptMenuItems = [
     { view: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -126,7 +135,7 @@ export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
       <SidebarFooter className="p-2">
           {currentScriptId && !noScriptLoaded && <ScriptStatsPanel />}
           <div className="flex items-center gap-2 p-2 mt-2 border-t border-sidebar-border cursor-pointer hover:bg-sidebar-accent rounded-md" onClick={() => setView('profile')}>
-            {isUserLoading ? (
+            {isUserLoading || isProfileLoading ? (
               <>
                 <Skeleton className="w-8 h-8 rounded-full" />
                 <Skeleton className="h-5 w-24" />
@@ -134,7 +143,7 @@ export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
             ) : user ? (
               <>
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.photoURL || undefined} />
+                  <AvatarImage src={userProfile?.photoURL || user.photoURL || undefined} />
                   <AvatarFallback>{user.displayName?.charAt(0) || <User />}</AvatarFallback>
                 </Avatar>
                 <span className="font-semibold truncate">{user.displayName}</span>

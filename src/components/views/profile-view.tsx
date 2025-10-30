@@ -243,8 +243,8 @@ export default function ProfileView({ setView }: ProfileViewProps) {
                         )
                     )}
                 </div>
-                <div className="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-end gap-4 -mt-20">
-                     <Avatar className="w-28 h-28 sm:w-32 sm:h-32 border-4 border-background flex-shrink-0">
+                <div className="p-4 sm:p-6 flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:-mt-20">
+                     <Avatar className="w-28 h-28 sm:w-32 sm:h-32 border-4 border-background flex-shrink-0 -mt-16 sm:mt-0">
                         {isLoading ? <Skeleton className="h-full w-full rounded-full" /> : (
                             <>
                                 <AvatarImage src={userProfile?.photoURL || user?.photoURL || undefined} />
@@ -252,7 +252,7 @@ export default function ProfileView({ setView }: ProfileViewProps) {
                             </>
                         )}
                     </Avatar>
-                     <div className="w-full sm:flex-1 mt-4 sm:mt-0 sm:pb-2">
+                     <div className="w-full sm:flex-1 mt-2 sm:mt-0 sm:pb-2">
                          {isLoading ? (
                             <div className="space-y-2">
                                 <Skeleton className="h-8 w-48" />
