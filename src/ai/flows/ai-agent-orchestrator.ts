@@ -18,6 +18,10 @@ import {
   aiProofreadScript,
   type AiProofreadScriptOutput,
 } from './ai-proofread-script';
+import {
+    aiReformatScript,
+    type AiReformatScriptOutput,
+} from './ai-reformat-script';
 
 const AiGenerateCharacterProfileOutputSchema = z.object({
   name: z.string().describe("The character's full name."),
@@ -37,6 +41,11 @@ const AiProofreadScriptOutputSchema = z.object({
     })
   ),
 });
+
+const AiReformatScriptOutputSchema = z.object({
+    formattedScript: z.string(),
+});
+
 
 const AiAgentOrchestratorInputSchema = z.object({
   request: z.string().describe("The user's natural language request."),
@@ -106,6 +115,20 @@ const proofreadScriptTool = ai.defineTool(
     }
 );
 
+const reformatScriptTool = ai.defineTool(
+    {
+        name: 'reformatScript',
+        description: 'Reformats the entire script into standard screenplay format. Use this when the user asks to "reformat", "clean up", or "fix formatting".',
+        inputSchema: z.object({
+            script: z.string().describe('The full script content to reformat.'),
+        }),
+        outputSchema: AiReformatScriptOutputSchema,
+    },
+     async ({script}): Promise<AiReformatScriptOutput> => {
+        return await aiReformatScript({ rawScript: script });
+    }
+);
+
 const orchestratorPrompt = `You are an expert AI assistant for a screenwriting application.
 Your goal is to help the user modify their script and other project elements.
 
@@ -113,7 +136,8 @@ Analyze the user's request and the current script content.
 
 - If the user is asking to create a character, use the generateCharacter tool.
 - If the user is asking to proofread, check formatting, or find errors, use the proofreadScript tool with the current script content.
-- If the user is asking for a direct change to the script content (and not just proofreading), rewrite the script and provide a response explaining what you did.
+- If the user is asking to reformat, clean up, or fix the formatting of the script, use the reformatScript tool.
+- If the user is asking for a direct change to the script content (and not just proofreading or reformatting), rewrite the script and provide a response explaining what you did.
 - If the user is asking a general question or for analysis, respond directly with text.
 
 **User Request:**
@@ -137,7 +161,7 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
     let llmResponse = await ai.generate({
       prompt: orchestratorPrompt,
       input,
-      tools: [generateCharacterTool, proofreadScriptTool],
+      tools: [generateCharacterTool, proofreadScriptTool, reformatScriptTool],
       output: {
         format: 'json',
         schema: z.object({
@@ -164,6 +188,7 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
        for (const toolRequest of llmResponse.toolRequests) {
          let toolOutput: any;
          let toolType: string | null = null;
+         
          if (toolRequest.name === 'generateCharacter') {
            toolOutput = await toolRequest.run();
            toolType = 'character';
@@ -171,6 +196,15 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
          if (toolRequest.name === 'proofreadScript') {
            toolOutput = await toolRequest.run();
            toolType = 'proofread';
+         }
+         if (toolRequest.name === 'reformatScript') {
+            const reformatOutput = await toolRequest.run();
+            // The tool output is an object { formattedScript: '...' }
+            // But the orchestrator expects modifiedScript to be a top-level property
+            // in the final response. So we'll handle this specially.
+            llmResponse.output!.modifiedScript = reformatOutput.formattedScript;
+            toolOutput = reformatOutput; // Keep it for the log
+            toolType = 'reformat';
          }
 
          if (toolOutput) {
@@ -186,7 +220,7 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
        llmResponse = await ai.generate({
           prompt: orchestratorPrompt,
           input,
-          tools: [generateCharacterTool, proofreadScriptTool],
+          tools: [generateCharacterTool, proofreadScriptTool, reformatScriptTool],
           history: [
             ...llmResponse.history,
             {role: 'model', content: llmResponse.toolRequests.map(tr => ({toolRequest: tr}))},
@@ -204,7 +238,7 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
                 .string()
                 .optional()
                 .describe(
-                  "This should be omitted when summarizing a tool call."
+                  "This should be omitted when summarizing a tool call, UNLESS the tool was 'reformatScript'."
                 ),
             }),
           },
@@ -215,6 +249,12 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
     if (!output) {
       return { response: "I'm sorry, I wasn't able to process that request." };
     }
+    
+    // Ensure the reformatted script from the tool call is passed through.
+    if (toolResult?.type === 'reformat') {
+      output.modifiedScript = toolResult.data.formattedScript;
+    }
+
 
     return {
       response: output.response,
@@ -223,3 +263,5 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
     };
   }
 );
+
+    
