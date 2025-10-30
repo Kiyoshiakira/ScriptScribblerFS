@@ -134,10 +134,10 @@ Your goal is to help the user modify their script and other project elements.
 
 Analyze the user's request and the current script content to determine the user's intent.
 
+- **IF the user asks for a direct change to the story or dialogue (e.g., "change the character's name", "make this scene more suspenseful", "add a line of dialogue")**, you MUST rewrite the script yourself. This is the highest priority. In this case, do not call a tool, and instead just provide the full new content in the 'modifiedScript' field of your response.
 - **IF the user asks to create a character**, use the \`generateCharacter\` tool.
 - **IF the user asks to proofread, check for errors, or find mistakes**, use the \`proofreadScript\` tool.
 - **IF the user asks to reformat, clean up the layout, or fix formatting (e.g., "it's too squished")**, use the \`reformatScript\` tool.
-- **IF the user asks for a direct change to the story or dialogue (and not just reformatting or proofreading)**, you must rewrite the script yourself. In this case, do not call a tool, and instead just provide the full new content in the 'modifiedScript' field of your response.
 - **IF the user is asking a general question or for analysis**, respond directly with text and do not use a tool.
 
 **User Request:**
@@ -204,7 +204,7 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
         // STEP 3: Generate the final conversational response based on the action taken.
         const finalResponse = await ai.generate({
             prompt: `You are an expert AI assistant. Based on the user's request, an action was just performed.
-            - If a script was modified, state that clearly.
+            - If a script was modified, state that you've made the requested changes to the script.
             - If a character was generated, present the character.
             - If proofreading was done, summarize what you found.
             - If reformatting was done, confirm it.
