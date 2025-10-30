@@ -37,41 +37,6 @@ interface ScriptLineComponentProps {
   isFocused: boolean;
 }
 
-const ScriptRuler = () => {
-    return (
-        <div
-            className="relative h-6 w-full bg-no-repeat mb-4"
-            style={{
-                backgroundImage: `
-                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)/0.2) 0, hsl(var(--muted-foreground)/0.2) 1px, transparent 1px, transparent 0.125in),
-                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)/0.4) 0, hsl(var(--muted-foreground)/0.4) 1px, transparent 1px, transparent 0.25in),
-                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)/0.6) 0, hsl(var(--muted-foreground)/0.6) 1px, transparent 1px, transparent 0.5in),
-                    repeating-linear-gradient(to right, hsl(var(--muted-foreground)) 0, hsl(var(--muted-foreground)) 1px, transparent 1px, transparent 1in)
-                `,
-                backgroundSize: `
-                    100% 0.25rem,
-                    100% 0.5rem,
-                    100% 0.75rem,
-                    100% 1rem
-                `,
-                backgroundPosition: 'bottom',
-            }}
-        >
-            <div className="absolute -bottom-px h-px w-full bg-muted-foreground"></div>
-            {[...Array(8)].map((_, i) => (
-                <div
-                    key={i}
-                    className="absolute -bottom-5 text-xs text-muted-foreground"
-                    style={{ left: `calc(${i + 1}in - 4px)` }}
-                >
-                    {i + 1}
-                </div>
-            ))}
-        </div>
-    );
-};
-
-
 const ScriptLineComponent = ({
   line,
   onTextChange,
@@ -104,19 +69,19 @@ const ScriptLineComponent = ({
   const getElementStyling = (type: ScriptElement) => {
     switch (type) {
         case 'scene-heading':
-            return 'uppercase font-bold pl-[1.5in] pr-[1in]';
+            return 'uppercase font-bold pl-4';
         case 'action':
-            return 'pl-[1.5in] pr-[1in]';
+            return 'pl-4';
         case 'character':
-            return 'uppercase pl-[3.5in] pr-[1in]';
+            return 'uppercase pl-32';
         case 'parenthetical':
-            return 'pl-[3in] pr-[1in]';
+            return 'pl-24';
         case 'dialogue':
-            return 'pl-[2.5in] pr-[2.5in]';
+            return 'pl-16';
         case 'transition':
-            return 'uppercase text-right pr-[1in]';
+            return 'uppercase text-right pr-4';
         default:
-            return 'pl-[1.5in] pr-[1in]';
+            return 'pl-4';
     }
   };
 
@@ -317,10 +282,8 @@ export default function ScriptEditor({
       >
         <div className={cn(
             !isStandalone && "p-6 bg-card rounded-lg shadow-lg",
-            "font-code text-sm leading-relaxed mx-auto max-w-[8.5in]"
+            "font-code text-sm leading-relaxed"
         )}>
-            <ScriptRuler />
-            
             <DropdownMenu open={!!contextMenu} onOpenChange={() => setContextMenu(null)}>
                 <DropdownMenuTrigger asChild>
                     <div 
