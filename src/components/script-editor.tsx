@@ -282,7 +282,7 @@ export default function ScriptEditor({
     <div
         ref={editorRef}
         className={cn(
-            "flex-1 relative font-code text-sm leading-relaxed",
+            "relative font-code text-sm leading-relaxed",
             isStandalone ? "bg-background p-4" : ""
         )}
         onContextMenu={(e) => e.preventDefault()}

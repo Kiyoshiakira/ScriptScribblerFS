@@ -5,8 +5,10 @@ import ScriptEditor from '@/components/script-editor';
 
 export default function EditorView() {
   return (
-    <div className="h-full w-full">
-      <ScriptEditor isStandalone={false} />
+    <div className="relative h-full w-full flex flex-col">
+      <div className="flex-1 overflow-y-auto">
+        <ScriptEditor isStandalone={false} />
+      </div>
       <AiFab />
     </div>
   );
