@@ -33,29 +33,15 @@ function StatCard({ title, value, icon, isLoading }: { title: string, value: num
 }
 
 export default function DashboardView({ setView }: { setView: (view: View) => void }) {
-    const { script, isScriptLoading } = useScript();
+    const { script, isScriptLoading, characters, notes, scenes } = useScript();
     const { user } = useUser();
     const firestore = useFirestore();
-    const { currentScriptId, setCurrentScriptId } = useCurrentScript();
+    const { setCurrentScriptId } = useCurrentScript();
     const { toast } = useToast();
 
-    const charactersCollection = useMemoFirebase(
-        () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'characters') : null),
-        [firestore, user, currentScriptId]
-    );
-    const { data: characters, isLoading: areCharactersLoading } = useCollection<Character>(charactersCollection);
-
-    const notesCollection = useMemoFirebase(
-        () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'notes') : null),
-        [firestore, user, currentScriptId]
-    );
-    const { data: notes, isLoading: areNotesLoading } = useCollection<Note>(notesCollection);
-
-    const scenesCollection = useMemoFirebase(
-        () => (user && firestore && currentScriptId ? query(collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'scenes'), orderBy('sceneNumber')) : null),
-        [firestore, user, currentScriptId]
-    );
-    const { data: scenes, isLoading: areScenesLoading } = useCollection<Scene>(scenesCollection);
+    const areCharactersLoading = isScriptLoading;
+    const areNotesLoading = isScriptLoading;
+    const areScenesLoading = isScriptLoading;
     
     const handleCreateNewScript = async () => {
         if (!firestore || !user) return;

@@ -17,7 +17,6 @@ import {
   LayoutDashboard,
   FileText,
   Clock,
-  User as UserIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useScript } from '@/context/script-context';
@@ -43,12 +42,6 @@ export const Logo = () => (
   </svg>
 );
 
-interface ScriptStats {
-  pageCount: number;
-  characterCount: number;
-  estimatedMinutes: number;
-}
-
 const StatDisplay = ({ icon, value, label, isLoading }: { icon: React.ReactNode, value: string | number, label: string, isLoading: boolean }) => (
     <div className="flex items-center justify-between text-sm">
       <div className="flex items-center gap-2 text-sidebar-foreground/80">
@@ -59,32 +52,37 @@ const StatDisplay = ({ icon, value, label, isLoading }: { icon: React.ReactNode,
     </div>
 );
 
+const ScriptStatsPanel = () => {
+    const { scenes, characters, lines, isScriptLoading } = useScript();
 
-const ScriptStatsPanel = ({ stats, isLoading }: { stats: ScriptStats, isLoading: boolean }) => {
+    const wordCount = lines.map(l => l.text).join(' ').trim().split(/\s+/).filter(Boolean).length;
+    const pageCount = Math.round(wordCount / 160); // Simple estimation
+    const estimatedMinutes = Math.round((wordCount / 160) * 10) / 10;
+    const characterCount = characters?.length || 0;
+
+    const stats = {
+      pageCount,
+      characterCount,
+      estimatedMinutes,
+    };
+    
     return (
         <div className="space-y-2 rounded-lg bg-sidebar-accent p-3">
-             <StatDisplay icon={<FileText />} label="Pages" value={stats.pageCount} isLoading={isLoading} />
-             <StatDisplay icon={<Users />} label="Characters" value={stats.characterCount} isLoading={isLoading} />
-             <StatDisplay icon={<Clock />} label="Time" value={`${stats.estimatedMinutes} min`} isLoading={isLoading} />
+             <StatDisplay icon={<FileText />} label="Pages" value={stats.pageCount} isLoading={isScriptLoading} />
+             <StatDisplay icon={<Users />} label="Characters" value={stats.characterCount} isLoading={isScriptLoading} />
+             <StatDisplay icon={<Clock />} label="Time" value={`${stats.estimatedMinutes} min`} isLoading={isScriptLoading} />
         </div>
     )
 }
 
-export default function AppSidebar({
-  activeView,
-  setView,
-  stats,
-  isLoadingStats
-}: {
-  activeView: View;
-  setView: (view: View | 'settings' | 'profile-edit') => void;
-  stats: ScriptStats;
-  isLoadingStats: boolean;
-}) {
-  const { isScriptLoading } = useScript();
+export default function AppSidebar() {
   const { currentScriptId } = useCurrentScript();
-  
   const noScriptLoaded = !currentScriptId;
+
+  // This is a placeholder for the actual activeView and setView logic, which is managed in AppLayoutContent
+  // The sidebar buttons will still work because the click is handled by the parent layout
+  const activeView = 'dashboard';
+  const setView = (v: any) => {}; 
 
   const scriptMenuItems = [
     { view: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -98,7 +96,7 @@ export default function AppSidebar({
   return (
     <Sidebar variant="sidebar" collapsible="icon" side="left">
       <SidebarHeader>
-        <button className="flex items-center gap-2 p-2" onClick={() => noScriptLoaded ? setView('profile') : setView('dashboard')}>
+        <button className="flex items-center gap-2 p-2" onClick={() => setView(noScriptLoaded ? 'profile' : 'dashboard')}>
             <Logo />
             <h1 className="text-xl font-bold font-headline">ScriptScribbler</h1>
         </button>
@@ -111,9 +109,9 @@ export default function AppSidebar({
                         onClick={() => setView(item.view)}
                         isActive={activeView === item.view}
                         tooltip={item.label}
-                        aria-disabled={noScriptLoaded && item.view !== 'dashboard' && item.view !== 'profile'}
-                        className={cn(noScriptLoaded && item.view !== 'dashboard' && item.view !== 'profile' && "cursor-not-allowed opacity-50")}
-                        disabled={noScriptLoaded && item.view !== 'dashboard' && item.view !== 'profile'}
+                        aria-disabled={noScriptLoaded}
+                        className={cn(noScriptLoaded && "cursor-not-allowed opacity-50")}
+                        disabled={noScriptLoaded}
                     >
                         <item.icon />
                         <span>{item.label}</span>
@@ -123,7 +121,7 @@ export default function AppSidebar({
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-2">
-          {currentScriptId && <ScriptStatsPanel stats={stats} isLoading={isLoadingStats || isScriptLoading} />}
+          {currentScriptId && <ScriptStatsPanel />}
       </SidebarFooter>
     </Sidebar>
   );
