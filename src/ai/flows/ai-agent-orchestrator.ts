@@ -137,7 +137,7 @@ Analyze the user's request and the current script content to determine the user'
 - **IF the user asks to create a character**, use the \`generateCharacter\` tool.
 - **IF the user asks to proofread, check for errors, or find mistakes**, use the \`proofreadScript\` tool.
 - **IF the user asks to reformat, clean up the layout, or fix formatting (e.g., "it's too squished")**, use the \`reformatScript\` tool.
-- **IF the user asks for a direct change to the story or dialogue (and not just reformatting or proofreading)**, you must rewrite the script yourself and provide the full new content in the 'modifiedScript' field.
+- **IF the user asks for a direct change to the story or dialogue (and not just reformatting or proofreading)**, you must rewrite the script yourself. In this case, do not call a tool, and instead just provide the full new content in the 'modifiedScript' field of your response.
 - **IF the user is asking a general question or for analysis**, respond directly with text and do not use a tool.
 
 **User Request:**
@@ -157,109 +157,86 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
     outputSchema: AiAgentOrchestratorOutputSchema,
   },
   async (input) => {
-    // First, generate a response from the model.
-    let llmResponse = await ai.generate({
+    // STEP 1: Tool-Selection-Only Generation
+    // Force the model to decide on an action (call a tool or write a script) without generating conversational text yet.
+    let decision = await ai.generate({
       prompt: orchestratorPrompt,
       input,
       tools: [generateCharacterTool, proofreadScriptTool, reformatScriptTool],
       output: {
         format: 'json',
         schema: z.object({
-          response: z
-            .string()
-            .describe(
-              "The AI's friendly, conversational response to the user."
-            ),
+          thoughts: z.string().describe("A brief analysis of the user's request to decide on a course of action."),
           modifiedScript: z
             .string()
             .optional()
             .describe(
-              "If the user's request required changing the script, this is the FULL, new script content. Otherwise, this is omitted."
+              "If the request requires a direct script change, this is the FULL new script. Omit if calling a tool."
             ),
         }),
       },
     });
 
     let toolResult: any = null;
+    let modifiedScript = decision.output?.modifiedScript;
 
-    // Check if the model requested any tools to be called.
-    if (llmResponse.toolRequests.length > 0) {
-      const toolResponses = [];
-       for (const toolRequest of llmResponse.toolRequests) {
-         let toolOutput: any;
-         let toolType: string | null = null;
-         
-         if (toolRequest.name === 'generateCharacter') {
-           toolOutput = await toolRequest.run();
-           toolType = 'character';
-         }
-         if (toolRequest.name === 'proofreadScript') {
-           toolOutput = await toolRequest.run();
-           toolType = 'proofread';
-         }
-         if (toolRequest.name === 'reformatScript') {
-            const reformatOutput = await toolRequest.run();
-            // The tool output is an object { formattedScript: '...' }
-            // But the orchestrator expects modifiedScript to be a top-level property
-            // in the final response. So we'll handle this specially.
-            llmResponse.output!.modifiedScript = reformatOutput.formattedScript;
-            toolOutput = reformatOutput; // Keep it for the log
-            toolType = 'reformat';
-         }
-
-         if (toolOutput) {
-            toolResult = {
-                type: toolType,
-                data: toolOutput,
-            };
-            toolResponses.push(toolRequest.response(toolOutput));
-         }
-       }
+    // STEP 2: Execute the chosen tool, if any.
+    if (decision.toolRequests.length > 0) {
+        const toolRequest = decision.toolRequests[0]; // Assume one tool for now
+        const toolOutput = await toolRequest.run();
         
-       // If tools were called, send the results back to the model for a final response.
-       llmResponse = await ai.generate({
-          prompt: orchestratorPrompt,
-          input,
-          tools: [generateCharacterTool, proofreadScriptTool, reformatScriptTool],
-          history: [
-            ...llmResponse.history,
-            {role: 'model', content: llmResponse.toolRequests.map(tr => ({toolRequest: tr}))},
-            {role: 'user', content: toolResponses.map(tr => ({toolResponse: tr}))}
-          ],
-          output: {
-            format: 'json',
-            schema: z.object({
-              response: z
-                .string()
-                .describe(
-                  "The AI's friendly, conversational response to the user, summarizing the results of the tool call."
-                ),
-              modifiedScript: z
-                .string()
-                .optional()
-                .describe(
-                  "This should be omitted when summarizing a tool call, UNLESS the tool was 'reformatScript'."
-                ),
-            }),
-          },
-       });
+        let toolType: string | null = null;
+        if (toolRequest.name === 'generateCharacter') toolType = 'character';
+        if (toolRequest.name === 'proofreadScript') toolType = 'proofread';
+        if (toolRequest.name === 'reformatScript') {
+             toolType = 'reformat';
+             modifiedScript = (toolOutput as AiReformatScriptOutput).formattedScript;
+        }
+
+        toolResult = {
+            type: toolType,
+            data: toolOutput,
+        };
     }
     
-    const output = llmResponse.output;
-    if (!output) {
-      return { response: "I'm sorry, I wasn't able to process that request." };
-    }
-    
-    // Ensure the reformatted script from the tool call is passed through.
-    if (toolResult?.type === 'reformat') {
-      output.modifiedScript = toolResult.data.formattedScript;
+    // If we have a result (either from a direct script modification or a tool), we generate a final response.
+    if (modifiedScript || toolResult) {
+        // STEP 3: Generate the final conversational response based on the action taken.
+        const finalResponse = await ai.generate({
+            prompt: `You are an expert AI assistant. Based on the user's request, an action was just performed.
+            - If a script was modified, state that clearly.
+            - If a character was generated, present the character.
+            - If proofreading was done, summarize what you found.
+            - If reformatting was done, confirm it.
+
+            Keep your response concise and friendly.
+
+            User Request: "${input.request}"
+            Action Result: ${JSON.stringify(toolResult || { action: 'Direct Script Modification' })}
+            `,
+            output: {
+                format: 'json',
+                schema: z.object({
+                    response: z.string().describe("The AI's friendly, conversational response to the user, summarizing the action taken."),
+                })
+            }
+        });
+        
+        return {
+            response: finalResponse.output?.response || "I've completed your request.",
+            modifiedScript: modifiedScript,
+            toolResult: toolResult,
+        };
     }
 
+    // If no tool was called and no script was modified, it's likely a general question.
+    const generalResponse = await ai.generate({
+        prompt: `You are an expert AI assistant. The user asked: "${input.request}". The script content is: ---{{{script}}}---. Provide a helpful, conversational answer to their question.`,
+        input,
+    });
 
     return {
-      response: output.response,
-      modifiedScript: output.modifiedScript,
-      toolResult: toolResult,
+      response: generalResponse.text,
     };
   }
 );
