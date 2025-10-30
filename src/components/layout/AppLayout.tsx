@@ -29,7 +29,11 @@ function AppLayoutContent() {
   const [view, setView] = React.useState<View>('dashboard');
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
-  const { lines, isScriptLoading: isScriptContentLoading } = useScript();
+  
+  // Safely use useScript only if a script is active
+  const scriptContext = currentScriptId ? useScript() : null;
+  const lines = scriptContext?.lines || [];
+  const isScriptContentLoading = scriptContext?.isScriptLoading ?? false;
 
   const [wordCount, setWordCount] = React.useState(0);
   const [estimatedMinutes, setEstimatedMinutes] = React.useState(0);
@@ -83,18 +87,21 @@ function AppLayoutContent() {
 
 
  React.useEffect(() => {
+    // This effect ensures the correct view is shown based on script presence.
     if (isCurrentScriptLoading) {
-      return; 
+      return; // Wait until loading is complete
     }
+
     if (!currentScriptId) {
-      setView('profile'); 
+      setView('profile'); // If no script is loaded, always show profile
     } else {
+      // If a script IS loaded, but the view is stuck on profile, switch to dashboard.
       if (view === 'profile') {
         setView('dashboard');
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCurrentScriptLoading, currentScriptId]); 
+  }, [isCurrentScriptLoading, currentScriptId]);
 
 
   const handleSetView = (newView: View | 'settings' | 'profile-edit') => {
@@ -116,7 +123,7 @@ function AppLayoutContent() {
       case 'characters': return <CharactersView />;
       case 'notes': return <NotesView />;
       case 'profile': return <ProfileView setView={handleSetView} />;
-      default: return <DashboardView setView={handleSetView}/>;
+      default: return <ProfileView setView={handleSetView} />;
     }
   };
 
@@ -163,9 +170,16 @@ export default function AppLayout() {
       );
   }
   
-  return (
-    <ScriptProvider key={currentScriptId} scriptId={currentScriptId}>
-      <AppLayoutContent />
-    </ScriptProvider>
-  );
+  // This is the critical fix: Only wrap with ScriptProvider if we have a scriptId.
+  // The AppLayoutContent is now safe to render outside of the provider
+  // because it will default to the 'profile' view, which doesn't need the script context.
+  if (currentScriptId) {
+    return (
+      <ScriptProvider key={currentScriptId} scriptId={currentScriptId}>
+        <AppLayoutContent />
+      </ScriptProvider>
+    );
+  }
+
+  return <AppLayoutContent />;
 }
