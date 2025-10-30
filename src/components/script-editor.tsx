@@ -64,17 +64,17 @@ const ScriptLineComponent = React.memo(({
   const getElementStyling = (type: ScriptElement) => {
     switch (type) {
       case 'scene-heading':
-        return 'pl-6';
+        return 'pl-6 font-bold uppercase';
       case 'action':
         return 'pl-6';
       case 'character':
-        return 'pl-32';
+        return 'pl-32 uppercase';
       case 'parenthetical':
         return 'pl-28';
       case 'dialogue':
         return 'pl-20';
       case 'transition':
-        return 'text-right pr-6';
+        return 'text-right pr-6 uppercase';
       default:
         return 'pl-6';
     }
@@ -176,17 +176,33 @@ export default function ScriptEditor({
             const range = selection.getRangeAt(0);
             const container = range.startContainer;
 
+            // Create a temporary div to reconstruct HTML content and measure
             const tempDiv = document.createElement("div");
             tempDiv.innerHTML = currentLine.text;
-
+            
+            // Recreate the range within the temporary div
             const preCaretRange = document.createRange();
             preCaretRange.selectNodeContents(tempDiv);
-
+            
+            // This is tricky. If the container is a text node, we need its parent element.
             const endContainer = (container.nodeType === Node.TEXT_NODE) ? container : tempDiv.childNodes[range.endOffset];
-            preCaretRange.setEnd(endContainer, range.endOffset);
+            try {
+                preCaretRange.setEnd(endContainer, range.endOffset);
+                beforeEnter = preCaretRange.cloneContents().textContent || '';
+                
+                // Extracting what's after is also complex
+                const postCaretRange = range.cloneRange();
+                postCaretRange.selectNodeContents(tempDiv);
+                postCaretRange.setStart(endContainer, range.endOffset);
+                afterEnter = postCaretRange.cloneContents().textContent || '';
 
-            beforeEnter = preCaretRange.toString();
-            afterEnter = currentLine.text.substring(beforeEnter.length).replace(/^<br>/, '');
+            } catch (err) {
+                 // Fallback for complex cases
+                const fullText = tempDiv.textContent || '';
+                const offset = range.startOffset;
+                beforeEnter = fullText.substring(0, offset);
+                afterEnter = fullText.substring(offset);
+            }
         }
 
         const newLines = [...lines];
@@ -307,7 +323,7 @@ export default function ScriptEditor({
             </DropdownMenu>
 
             <div
-                className="space-y-4"
+                className="space-y-1"
                 style={{ minHeight: '60vh' }}
             >
             {lines.map(line => (

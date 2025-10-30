@@ -84,15 +84,11 @@ function AppLayoutContent() {
 
  React.useEffect(() => {
     if (isCurrentScriptLoading) {
-      return; // Do nothing while loading
+      return; 
     }
-  
-    // After loading, decide the view
     if (!currentScriptId) {
-      setView('profile'); // If no scripts, show profile
+      setView('profile'); 
     } else {
-      // If there is a script, but the current view is profile, switch to dashboard.
-      // This handles creating a new script from the profile page.
       if (view === 'profile') {
         setView('dashboard');
       }
@@ -167,8 +163,6 @@ export default function AppLayout() {
       );
   }
   
-  // If there is a scriptId, wrap the content in a ScriptProvider to load it.
-  // Otherwise, render the layout which will default to the profile view.
   if (currentScriptId) {
      return (
        <ScriptProvider key={currentScriptId} scriptId={currentScriptId}>
@@ -177,6 +171,5 @@ export default function AppLayout() {
     );
   }
 
-  // Render the layout without a script context (will show the profile view)
   return <AppLayoutContent />;
 }

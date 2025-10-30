@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useState, useEffect, ReactNode, useContext, useCallback } from 'react';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { doc, collection, setDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { useDebounce } from 'use-debounce';
 import type { ScriptElement } from '@/components/script-editor';
@@ -59,7 +59,7 @@ const parseContentToLines = (content: string): ScriptLine[] => {
         const trimmedText = text.trim();
         let type: ScriptElement = 'action'; // Default to action
 
-        const isAllUpperCase = trimmedText === trimmedText.toUpperCase() && trimmedText !== '' && !/\d/.test(trimmedText);
+        const isAllUpperCase = trimmedText === trimmedText.toUpperCase() && trimmedText !== '' && !/^[0-9()., -]+$/.test(trimmedText);
         const prevLine = parsedLines[i - 1];
         
         if (trimmedText.startsWith('INT.') || trimmedText.startsWith('EXT.') || trimmedText.startsWith('EST.')) {
@@ -70,7 +70,7 @@ const parseContentToLines = (content: string): ScriptLine[] => {
             type = 'parenthetical';
         } else if (prevLine && (prevLine.type === 'character' || prevLine.type === 'parenthetical')) {
             type = 'dialogue';
-        } else if (isAllUpperCase && text.length < 35) {
+        } else if (isAllUpperCase && text.length < 35 && text.startsWith('  ')) {
              type = 'character';
         }
         
@@ -127,7 +127,14 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
         setDoc(scriptDocRef, { 
             [field]: value,
             lastModified: serverTimestamp()
-        }, { merge: true });
+        }, { merge: true }).catch(serverError => {
+             const permissionError = new FirestorePermissionError({
+                path: scriptDocRef.path,
+                operation: 'update',
+                requestResourceData: { [field]: value },
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
     }
   }, [scriptDocRef]);
   
@@ -145,11 +152,14 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
 
 
   useEffect(() => {
-    const newContent = debouncedLines.map(line => line.text.replace(/<br>/g, '')).join('\n');
-    if (debouncedLines.length > 0 && localScript && newContent !== localScript.content) {
+    if (debouncedLines.length === 0 && !isDocLoading && localScript?.content === '') {
+        return;
+    }
+    const newContent = debouncedLines.map(line => line.text.replace(/<br\s*\/?>/gi, '')).join('\n');
+    if (localScript && newContent !== localScript.content) {
       updateFirestore('content', newContent);
     }
-  }, [debouncedLines, localScript, updateFirestore]);
+  }, [debouncedLines, localScript, isDocLoading, updateFirestore]);
 
   const setLines = useCallback((linesOrContent: ScriptLine[] | string | ((prev: ScriptLine[]) => ScriptLine[])) => {
     if (typeof linesOrContent === 'string') {
@@ -161,13 +171,17 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   }, []);
 
   const setScriptTitle = (title: string) => {
-    setLocalScript(prev => prev ? { ...prev, title } : null);
-    updateFirestore('title', title);
+    if (localScript && localScript.title !== title) {
+        setLocalScript(prev => prev ? { ...prev, title } : null);
+        updateFirestore('title', title);
+    }
   };
   
   const setScriptLogline = (logline: string) => {
-      setLocalScript(prev => prev ? { ...prev, logline } : null);
-      updateFirestore('logline', logline);
+      if (localScript && localScript.logline !== logline) {
+        setLocalScript(prev => prev ? { ...prev, logline } : null);
+        updateFirestore('logline', logline);
+      }
   }
   
   const value = { 
