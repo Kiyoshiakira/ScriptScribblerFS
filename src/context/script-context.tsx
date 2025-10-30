@@ -38,7 +38,7 @@ export const ScriptContext = createContext<ScriptContextType>({
   isScriptLoading: true,
 });
 
-// Function to parse the raw script content into lines
+// A more robust function to parse the raw script content into lines
 const parseContentToLines = (content: string): ScriptLine[] => {
     if (typeof content !== 'string') return [];
     
@@ -50,23 +50,23 @@ const parseContentToLines = (content: string): ScriptLine[] => {
         const trimmedText = text.trim();
         let type: ScriptElement = 'action'; // Default to action
 
-        const prevLineType = parsedLines[i - 1]?.type;
+        const isAllUpperCase = trimmedText === trimmedText.toUpperCase() && trimmedText !== '';
+        const prevLine = parsedLines[i - 1];
+        const prevLineIsEmpty = prevLine ? prevLine.text.trim() === '' : true;
 
-        // Rule-based parsing
         if (trimmedText.startsWith('INT.') || trimmedText.startsWith('EXT.')) {
             type = 'scene-heading';
         } else if (trimmedText.endsWith('TO:')) {
             type = 'transition';
         } else if (trimmedText.startsWith('(') && trimmedText.endsWith(')')) {
             type = 'parenthetical';
-        } else if (trimmedText === trimmedText.toUpperCase() && trimmedText !== '' && !trimmedText.includes('(') && !trimmedText.includes(')')) {
-            // Potential Character or Scene Heading continuation
-            if (prevLineType === 'action' || prevLineType === 'transition' || prevLineType === undefined || (parsedLines[i-1] && parsedLines[i-1].text.trim() === '')) {
-                 // It's likely a character name if it's all caps and follows an action, transition, or blank line.
-                 // This is a heuristic and might need refinement.
-                 type = 'character';
-            }
-        } else if (prevLineType === 'character' || prevLineType === 'parenthetical') {
+        } else if (isAllUpperCase && (prevLineIsEmpty || prevLine?.type === 'action' || prevLine?.type === 'transition' || prevLine?.type === 'scene-heading')) {
+             // Heuristic: A line in all caps on its own is likely a character name.
+             // We check that it doesn't contain lowercase letters to be more certain.
+             if (!/[a-z]/.test(trimmedText)) {
+                type = 'character';
+             }
+        } else if (prevLine?.type === 'character' || prevLine?.type === 'parenthetical') {
             type = 'dialogue';
         }
         
@@ -106,26 +106,27 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   }, [scriptDocRef]);
   
   useEffect(() => {
-    // This effect's job is to sync the firestoreScript data to our local state.
-    // It is the single source of truth from the database.
+    // Syncs firestore data to local state. This is the source of truth from the DB.
     if (firestoreScript) {
-      if (localScript?.id !== firestoreScript.id || localScript?.content !== firestoreScript.content) {
+        // Update local script if it's different
         setLocalScript(firestoreScript);
-        const parsed = parseContentToLines(firestoreScript.content || '');
-        setLocalLines(parsed);
-      }
+
+        // Only update lines if the content is truly different to avoid re-parsing and losing cursor position.
+        const currentContent = lines.map(line => line.text.replace(/<br>/g, '')).join('\n');
+        if (firestoreScript.content !== currentContent) {
+           const parsed = parseContentToLines(firestoreScript.content || '');
+           setLocalLines(parsed);
+        }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firestoreScript]);
 
 
   useEffect(() => {
-    // This effect's job is to save the user's edits back to Firestore.
-    // It only runs when the user-edited `debouncedLines` change.
+    // Saves user edits back to Firestore.
     const newContent = debouncedLines.map(line => line.text.replace(/<br>/g, '')).join('\n');
     
-    // Only update if there are lines to save and the content is different
-    // from what we know is in the database.
+    // Only update if there's content to save and it's different from what's in our local truth (the script object).
     if (debouncedLines.length > 0 && localScript && newContent !== localScript.content) {
       updateFirestore('content', newContent);
     }
