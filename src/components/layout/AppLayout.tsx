@@ -26,23 +26,10 @@ function AppLayoutInternal() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const [view, setView] = React.useState<View>('profile');
+  // The view state now correctly defaults based on script presence, only on initial render.
+  const [view, setView] = React.useState<View>(() => currentScriptId ? 'dashboard' : 'profile');
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
-
-  // This effect synchronizes the view state based on script loading status.
-  // It only runs when the loading states or script ID change.
-  React.useEffect(() => {
-    if (!isCurrentScriptLoading) {
-      if (currentScriptId) {
-        // A script is loaded, default to dashboard.
-        setView('dashboard');
-      } else {
-        // No script is loaded, default to profile.
-        setView('profile');
-      }
-    }
-  }, [isCurrentScriptLoading, currentScriptId]);
   
   const userProfileRef = useMemoFirebase(() => {
     if (user && firestore) {
@@ -68,6 +55,7 @@ function AppLayoutInternal() {
   };
 
   const renderView = () => {
+    // This is a much simpler and more robust guard.
     // If a script-based view is selected but no script is loaded, show the profile.
     if (!currentScriptId && view !== 'profile') {
       return <ProfileView setView={handleSetView} />;
@@ -135,6 +123,8 @@ export default function AppLayout() {
             <AppLayoutInternal />
         </ScriptProvider>
       ) : (
+        // Render without the provider if no script is loaded.
+        // AppLayoutInternal will correctly handle showing only the profile view.
         <AppLayoutInternal />
       )}
     </SidebarProvider>
