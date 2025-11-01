@@ -26,7 +26,6 @@ function AppLayoutInternal() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  // The view state now correctly defaults based on script presence, only on initial render.
   const [view, setView] = React.useState<View>(() => currentScriptId ? 'dashboard' : 'profile');
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
@@ -39,13 +38,18 @@ function AppLayoutInternal() {
   }, [user, firestore]);
   const { data: userProfile } = useDoc(userProfileRef);
 
+  React.useEffect(() => {
+    if (!isCurrentScriptLoading && !currentScriptId) {
+      setView('profile');
+    }
+  }, [isCurrentScriptLoading, currentScriptId]);
+
   const handleSetView = (newView: View | 'settings' | 'profile-edit') => {
     if (newView === 'settings') {
       setSettingsOpen(true);
     } else if (newView === 'profile-edit') {
       setProfileOpen(true);
     } else {
-       // If no script is loaded, only allow navigating to the profile view.
       if (!currentScriptId && newView !== 'profile') {
           setView('profile');
           return;
@@ -55,8 +59,6 @@ function AppLayoutInternal() {
   };
 
   const renderView = () => {
-    // This is a much simpler and more robust guard.
-    // If a script-based view is selected but no script is loaded, show the profile.
     if (!currentScriptId && view !== 'profile') {
       return <ProfileView setView={handleSetView} />;
     }
@@ -123,8 +125,6 @@ export default function AppLayout() {
             <AppLayoutInternal />
         </ScriptProvider>
       ) : (
-        // Render without the provider if no script is loaded.
-        // AppLayoutInternal will correctly handle showing only the profile view.
         <AppLayoutInternal />
       )}
     </SidebarProvider>
