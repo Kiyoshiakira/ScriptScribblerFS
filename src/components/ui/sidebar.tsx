@@ -547,29 +547,12 @@ const SidebarMenuButton = React.forwardRef<
       tooltip,
       className,
       children,
-      onClick, // Capture onClick
       ...props
     },
     ref
   ) => {
     const Comp = asChild ? Slot : 'button';
     const { isMobile, state } = useSidebar();
-
-    const buttonContent = React.Children.map(children, (child, index) => {
-      if (index === 0 && React.isValidElement(child)) {
-        return React.cloneElement(child, {
-          className: cn('shrink-0 size-4', child.props.className),
-        });
-      }
-      if (index === 1) {
-        return (
-          <span className={cn('truncate transition-opacity duration-200', state === 'collapsed' && 'opacity-0 hidden')}>
-            {child}
-          </span>
-        );
-      }
-      return child;
-    });
 
     const button = (
       <Comp
@@ -582,10 +565,23 @@ const SidebarMenuButton = React.forwardRef<
           state === 'collapsed' && 'justify-center w-9',
           className
         )}
-        onClick={onClick} // Apply onClick here
         {...props}
       >
-        {buttonContent}
+        {React.Children.map(children, (child, index) => {
+          if (index === 0 && React.isValidElement(child)) {
+            return React.cloneElement(child, {
+              className: cn('shrink-0 size-4', child.props.className),
+            });
+          }
+          if (index === 1) {
+            return (
+              <span className={cn('truncate transition-opacity duration-200', state === 'collapsed' && 'opacity-0 hidden')}>
+                {child}
+              </span>
+            );
+          }
+          return child;
+        })}
       </Comp>
     );
 
