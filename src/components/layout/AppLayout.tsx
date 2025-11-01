@@ -26,10 +26,10 @@ function AppLayoutInternal() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const [view, setView] = React.useState<View>(() => currentScriptId ? 'dashboard' : 'profile');
+  const [view, setView] = React.useState<View>('profile');
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
-  
+
   const userProfileRef = useMemoFirebase(() => {
     if (user && firestore) {
       return doc(firestore, 'users', user.uid);
@@ -39,10 +39,16 @@ function AppLayoutInternal() {
   const { data: userProfile } = useDoc(userProfileRef);
 
   React.useEffect(() => {
-    if (!isCurrentScriptLoading && !currentScriptId) {
-      setView('profile');
+    if (!isCurrentScriptLoading) {
+      if (currentScriptId && view === 'profile') {
+        setView('dashboard');
+      } else if (!currentScriptId) {
+        setView('profile');
+      }
     }
-  }, [isCurrentScriptLoading, currentScriptId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentScriptId, isCurrentScriptLoading]);
+
 
   const handleSetView = (newView: View | 'settings' | 'profile-edit') => {
     if (newView === 'settings') {

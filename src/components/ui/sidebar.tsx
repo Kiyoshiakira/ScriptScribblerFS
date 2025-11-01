@@ -547,6 +547,7 @@ const SidebarMenuButton = React.forwardRef<
       tooltip,
       className,
       children,
+      onClick, // Capture onClick
       ...props
     },
     ref
@@ -554,33 +555,37 @@ const SidebarMenuButton = React.forwardRef<
     const Comp = asChild ? Slot : 'button';
     const { isMobile, state } = useSidebar();
 
-     const button = (
+    const buttonContent = React.Children.map(children, (child, index) => {
+      if (index === 0 && React.isValidElement(child)) {
+        return React.cloneElement(child, {
+          className: cn('shrink-0 size-4', child.props.className),
+        });
+      }
+      if (index === 1) {
+        return (
+          <span className={cn('truncate transition-opacity duration-200', state === 'collapsed' && 'opacity-0 hidden')}>
+            {child}
+          </span>
+        );
+      }
+      return child;
+    });
+
+    const button = (
       <Comp
         ref={ref}
         data-sidebar="menu-button"
         data-size={size}
         data-active={isActive}
         className={cn(
-            sidebarMenuButtonVariants({ variant, size }),
-            state === 'collapsed' && 'justify-center w-9',
-            className
+          sidebarMenuButtonVariants({ variant, size }),
+          state === 'collapsed' && 'justify-center w-9',
+          className
         )}
+        onClick={onClick} // Apply onClick here
         {...props}
       >
-        {React.Children.map(children, (child, index) => {
-          if (index === 0 && React.isValidElement(child) && typeof child.type !== 'string') {
-            return React.cloneElement(child, {
-              className: cn(child.props.className, 'shrink-0 size-4'),
-            });
-          }
-          if (index === 1) {
-            return <span className={cn('truncate transition-opacity duration-200', 
-                                        state === 'collapsed' && 'opacity-0 hidden')}>
-              {child}
-            </span>;
-          }
-          return child;
-        })}
+        {buttonContent}
       </Comp>
     );
 
@@ -608,6 +613,7 @@ const SidebarMenuButton = React.forwardRef<
   }
 );
 SidebarMenuButton.displayName = 'SidebarMenuButton';
+
 
 const SidebarMenuAction = React.forwardRef<
   HTMLButtonElement,
