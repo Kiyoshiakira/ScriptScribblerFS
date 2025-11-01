@@ -26,7 +26,7 @@ function AppLayoutInternal() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const [view, setView] = React.useState<View>(() => currentScriptId ? 'dashboard' : 'profile');
+  const [view, setView] = React.useState<View>('profile');
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
 
@@ -61,7 +61,6 @@ function AppLayoutInternal() {
   };
 
   const renderView = () => {
-    // If there's no script, always show the profile view.
     if (!currentScriptId) {
       return <ProfileView setView={handleSetView} />;
     }
@@ -110,7 +109,6 @@ function AppLayoutInternal() {
 export default function AppLayout() {
   const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
 
-  // Show a top-level loader while we determine if there's a script
   if (isCurrentScriptLoading) {
       return (
         <div className="flex h-screen w-screen items-center justify-center bg-background">
@@ -122,8 +120,6 @@ export default function AppLayout() {
       );
   }
   
-  // Conditionally wrap with ScriptProvider ONLY if a script is active.
-  // This prevents errors in views that don't need script data.
   return (
     <SidebarProvider>
       {currentScriptId ? (
