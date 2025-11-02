@@ -45,8 +45,17 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   const [localScript, setLocalScript] = useState<Script | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
+  console.log(`[ScriptContext] Provider mounted for scriptId: ${scriptId}`);
+
   const scriptDocRef = useMemoFirebase(
-    () => (user && firestore && scriptId ? doc(firestore, 'users', user.uid, 'scripts', scriptId) : null),
+    () => {
+        if (user && firestore && scriptId) {
+            console.log(`[ScriptContext] Creating doc reference for scriptId: ${scriptId}`);
+            return doc(firestore, 'users', user.uid, 'scripts', scriptId);
+        }
+        console.log('[ScriptContext] Cannot create doc reference. Missing user, firestore, or scriptId.');
+        return null;
+    },
     [user, firestore, scriptId]
   );
   
@@ -78,6 +87,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
 
   const updateFirestore = useCallback((dataToUpdate: Partial<Script>) => {
     if (scriptDocRef) {
+        console.log('[ScriptContext] Saving changes to Firestore:', dataToUpdate);
         const payload = { 
             ...dataToUpdate,
             lastModified: serverTimestamp()
@@ -96,6 +106,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   useEffect(() => {
     if (firestoreScript) {
         if (isInitialLoad) {
+            console.log('[ScriptContext] Initial load complete. Setting local script from Firestore.');
             setLocalScript(firestoreScript);
             setIsInitialLoad(false);
         } else {
@@ -104,9 +115,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
             // local changes by only updating if the content is truly different
             // and the local state hasn't been modified recently.
             if (localScript && firestoreScript.content !== localScript.content) {
-                // A more advanced implementation might use OT or CRDTs,
-                // but for now, we'll just log that a remote change occurred.
-                // console.log("Remote change detected.");
+                console.log("[ScriptContext] Remote change detected, but local state is preserved to avoid overriding user input.");
             }
         }
     }
@@ -149,12 +158,15 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     setLocalScript(prev => prev ? { ...prev, logline } : null);
   }, []);
   
+  const isScriptLoading = isInitialLoad || isDocLoading;
+  console.log('[ScriptContext] State:', { isScriptLoading, hasLocalScript: !!localScript });
+
   const value = { 
     script: localScript,
     setLines,
     setScriptTitle,
     setScriptLogline,
-    isScriptLoading: isInitialLoad || isDocLoading,
+    isScriptLoading,
     characters,
     scenes,
     notes,

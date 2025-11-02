@@ -49,17 +49,22 @@ function AppLayoutInternal() {
 
   // This effect handles the initial view logic once all data is loaded.
   React.useEffect(() => {
+    console.log('[AppLayout] Effect running. Dependencies:', { isUserLoading, isCurrentScriptLoading, user: !!user, currentScriptId });
     if (isUserLoading || isCurrentScriptLoading) {
+      console.log('[AppLayout] Waiting for user or script to load...');
       return; // Wait for all loading to complete
     }
 
     if (!user) {
+      console.log('[AppLayout] No user found. Redirecting to /login.');
       router.push('/login');
       return;
     }
     
     // If there is no script, force profile view. Otherwise, default to dashboard.
-    setView(currentScriptId ? 'dashboard' : 'profile');
+    const initialView = currentScriptId ? 'dashboard' : 'profile';
+    console.log(`[AppLayout] Setting initial view to: ${initialView}. (Has script: ${!!currentScriptId})`);
+    setView(initialView);
 
   }, [user, isUserLoading, currentScriptId, isCurrentScriptLoading, router]);
 
@@ -72,9 +77,11 @@ function AppLayoutInternal() {
     } else {
       // Prevent navigating away from profile view if no script is loaded.
       if (!currentScriptId && newView !== 'profile') {
+          console.log(`[AppLayout] Blocked navigation to "${newView}" because no script is loaded.`);
           setView('profile');
           return;
       }
+      console.log(`[AppLayout] View changed to: ${newView}`);
       setView(newView);
     }
   };
@@ -96,8 +103,12 @@ function AppLayoutInternal() {
     }
   };
 
+  const centralLoading = isUserLoading || isCurrentScriptLoading || (user && isProfileLoading);
+  console.log('[AppLayout] Central loading state:', { centralLoading, isUserLoading, isCurrentScriptLoading, isProfileLoading: !!(user && isProfileLoading) });
+
+
   // Show a single, centralized loading screen.
-  if (isUserLoading || isCurrentScriptLoading || (user && isProfileLoading)) {
+  if (centralLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -110,6 +121,7 @@ function AppLayoutInternal() {
   
   if (!user) {
       // This is a fallback while the redirect to /login is happening.
+      console.log('[AppLayout] Render blocked, no user object.');
       return null;
   }
 
