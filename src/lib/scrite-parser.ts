@@ -50,8 +50,19 @@ const getAsArray = (obj: any) => {
 const parseQuillDelta = (delta: any): string => {
     if (!delta) return '';
     if (typeof delta === 'string') return delta; // Already plain text
-    if (delta.ops) {
-        return delta.ops.map((op: any) => op.insert || '').join('').trim();
+    try {
+        if (delta.ops) {
+            return delta.ops.map((op: any) => op.insert || '').join('').trim();
+        }
+        // Attempt to parse if it's a stringified JSON
+        if (typeof delta === 'string') {
+            const parsed = JSON.parse(delta);
+            if (parsed.ops) {
+                 return parsed.ops.map((op: any) => op.insert || '').join('').trim();
+            }
+        }
+    } catch(e) {
+        // ignore parse error, return empty
     }
     return '';
 };
@@ -199,4 +210,3 @@ export const parseScriteFile = async (fileData: ArrayBuffer): Promise<ParsedScri
     scenes,
   };
 };
-

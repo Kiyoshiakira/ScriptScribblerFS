@@ -71,9 +71,13 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
 
     const processImportedContent = async (title: string, content: string) => {
         if (!firestore || !user) return;
+        const { dismiss, update } = toast({
+            title: 'Importing Script...',
+            description: 'Starting the import process.',
+        });
         
         try {
-             toast({ title: 'Reformatting Script...', description: 'AI is cleaning up the script format.' });
+             update({ id: 'import-toast', title: 'Reformatting Script...', description: 'AI is cleaning up the script format.' });
              const reformatResult = await runAiReformatScript({ rawScript: content });
 
              if (reformatResult.error || !reformatResult.data) {
@@ -88,6 +92,8 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
                 createdAt: serverTimestamp(),
                 lastModified: serverTimestamp(),
             };
+
+            update({ id: 'import-toast', title: 'Saving Script...', description: 'Adding the new script to your collection.' });
             await setDoc(newScriptRef, scriptData).catch((serverError) => {
                 const permissionError = new FirestorePermissionError({
                     path: newScriptRef.path,
@@ -98,13 +104,15 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
                 throw permissionError;
             });
 
-             toast({
+            dismiss();
+            toast({
                 title: 'Import Successful',
                 description: `"${title}" has been added to your scripts.`,
             });
             setView('profile');
         } catch (error: any) {
              console.error("Error processing imported content:", error);
+             dismiss();
              toast({
                 variant: 'destructive',
                 title: 'Import Failed',
@@ -144,13 +152,18 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
 
   const handleScribblerImport = async (file: File) => {
     if (!firestore || !user) return;
+    const { dismiss, update } = toast({
+      title: 'Importing Scribbler File...',
+      description: 'Reading the project archive.',
+    });
     
     try {
         const zip = await JSZip.loadAsync(await file.arrayBuffer());
         
         const projectFile = zip.file('project.json');
         if (!projectFile) throw new Error('Invalid .scribbler file: project.json not found.');
-
+        
+        update({ id: 'scribbler-import-toast', description: 'Parsing project data...' });
         const projectData = JSON.parse(await projectFile.async('string'));
         
         const importedCharacters = zip.file('characters.json') ? JSON.parse(await zip.file('characters.json')!.async('string')) : [];
@@ -178,8 +191,10 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
         const notesCol = collection(newScriptRef, 'notes');
         importedNotes.forEach((note: any) => batch.set(doc(notesCol), { ...note, id: undefined }));
 
+        update({ id: 'scribbler-import-toast', title: 'Saving to Database...', description: 'Writing new script and sub-collections.' });
         await batch.commit();
 
+        dismiss();
         toast({
           title: 'Import Successful',
           description: `"${projectData.title}" has been added to your scripts.`,
@@ -188,6 +203,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
 
     } catch (error) {
         console.error('Scribbler import failed:', error);
+        dismiss();
         toast({
             variant: 'destructive',
             title: 'Import Failed',
@@ -203,12 +219,13 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
     const reader = new FileReader();
     reader.onload = async (e) => {
       const arrayBuffer = e.target?.result as ArrayBuffer;
+      const { dismiss, update } = toast({ title: 'Importing Scrite File...', description: 'Reading file content.' });
 
       try {
-        toast({ title: 'Importing Scrite File...', description: 'Parsing and analyzing the file.' });
+        update({ id: 'scrite-import-toast', description: 'Parsing and analyzing the file structure.' });
         const parsedData = await parseScriteFile(arrayBuffer);
         
-        toast({ title: 'Reformatting Script...', description: 'AI is cleaning up the script format.' });
+        update({ id: 'scrite-import-toast', title: 'Reformatting Script...', description: 'AI is cleaning up the script format.' });
         const reformatResult = await runAiReformatScript({ rawScript: parsedData.script });
         
         if (reformatResult.error || !reformatResult.data) {
@@ -248,6 +265,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
             batch.set(newSceneRef, scene);
         });
         
+        update({ id: 'scrite-import-toast', title: 'Saving to Database...', description: 'Writing new script and sub-collections.' });
         await batch.commit().catch(serverError => {
             const permissionError = new FirestorePermissionError({
               path: `users/${user.uid}/scripts`,
@@ -262,7 +280,8 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
             errorEmitter.emit('permission-error', permissionError);
             throw permissionError;
         });
-
+        
+        dismiss();
         toast({
           title: 'Import Successful',
           description: `"${scriptTitle}" has been added to your scripts.`,
@@ -271,6 +290,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
 
       } catch (error) {
          console.error('--- DEBUG: Import Parsing Failed ---', error);
+         dismiss();
          toast({
             variant: 'destructive',
             title: 'Import Failed',
