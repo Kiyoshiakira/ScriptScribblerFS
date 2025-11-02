@@ -32,6 +32,10 @@ import {
     aiReformatScript,
     type AiReformatScriptInput,
 } from '@/ai/flows/ai-reformat-script';
+import {
+    aiDiagnoseAppHealth,
+    type AiDiagnoseAppHealthInput,
+} from '@/ai/flows/ai-diagnose-app-health';
 import { SCRIPT_TOKEN_LIMIT } from '@/constants';
 
 
@@ -180,3 +184,22 @@ export async function runGetAiProofreadSuggestions(input: AiProofreadScriptInput
         };
     }
 }
+
+export async function runAiDiagnoseAppHealth(input: AiDiagnoseAppHealthInput) {
+    if (!process.env.GEMINI_API_KEY) {
+        return { data: { diagnosis: "AI Health Check disabled: GEMINI_API_KEY is not set." }, error: null };
+    }
+    try {
+        const result = await aiDiagnoseAppHealth(input);
+        return { data: result, error: null };
+    } catch (error) {
+        console.error(error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return {
+            data: null,
+            error: `An error occurred during AI health diagnosis: ${errorMessage}`,
+        };
+    }
+}
+
+    
