@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import {
@@ -89,7 +90,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
                 createdAt: serverTimestamp(),
                 lastModified: serverTimestamp(),
             };
-            setDoc(newScriptRef, scriptData).catch((serverError) => {
+            await setDoc(newScriptRef, scriptData).catch((serverError) => {
                 const permissionError = new FirestorePermissionError({
                     path: newScriptRef.path,
                     operation: 'create',
