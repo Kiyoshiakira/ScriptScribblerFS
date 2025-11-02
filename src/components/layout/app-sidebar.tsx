@@ -26,9 +26,6 @@ import { useScript } from '@/context/script-context';
 import { Skeleton } from '../ui/skeleton';
 import type { View } from './AppLayout';
 import { useCurrentScript } from '@/context/current-script-context';
-import { useUser, useDoc, useMemoFirebase, useFirestore } from '@/firebase';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { doc } from 'firebase/firestore';
 
 export const Logo = () => (
   <svg
@@ -88,8 +85,6 @@ interface AppSidebarProps {
 
 export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
   const { currentScriptId } = useCurrentScript();
-  const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
   const { isMobile, setOpenMobile } = useSidebar();
   const noScriptLoaded = !currentScriptId;
 
@@ -99,15 +94,6 @@ export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
       setOpenMobile(false);
     }
   };
-
-
-  const userProfileRef = useMemoFirebase(() => {
-    if (user && firestore) {
-      return doc(firestore, 'users', user.uid);
-    }
-    return null;
-  }, [user, firestore]);
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
   const scriptMenuItems = [
     { view: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -129,6 +115,16 @@ export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu className="flex-1 overflow-y-auto p-2">
+           <SidebarMenuItem>
+              <SidebarMenuButton
+                  onClick={() => handleViewChange('profile')}
+                  isActive={activeView === 'profile'}
+                  tooltip="Profile"
+              >
+                  <User />
+                  <span>My Profile</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             {scriptMenuItems.map(item => (
                 <SidebarMenuItem key={item.view}>
                     <SidebarMenuButton
@@ -147,22 +143,6 @@ export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
       </SidebarContent>
       <SidebarFooter className="p-2">
           {currentScriptId && !noScriptLoaded && <ScriptStatsPanel />}
-          <div className="flex items-center gap-2 p-2 mt-2 border-t border-sidebar-border cursor-pointer hover:bg-sidebar-accent rounded-md" onClick={() => handleViewChange('profile')}>
-            {isUserLoading || isProfileLoading ? (
-              <>
-                <Skeleton className="w-8 h-8 rounded-full" />
-                <Skeleton className="h-5 w-24" />
-              </>
-            ) : user ? (
-              <>
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={userProfile?.photoURL || user.photoURL || undefined} />
-                  <AvatarFallback>{user.displayName?.charAt(0) || <User />}</AvatarFallback>
-                </Avatar>
-                <span className="font-semibold truncate">{user.displayName}</span>
-              </>
-            ) : null}
-          </div>
       </SidebarFooter>
     </Sidebar>
   );
