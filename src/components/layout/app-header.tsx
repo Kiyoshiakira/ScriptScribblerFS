@@ -8,6 +8,8 @@ import {
   Settings,
   Upload,
   User as UserIcon,
+  Loader2,
+  CheckCircle,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -36,6 +38,7 @@ import { useCurrentScript } from '@/context/current-script-context';
 import type { View } from './AppLayout';
 import { runAiReformatScript } from '@/app/actions';
 import { useGooglePicker } from '@/hooks/use-google-picker';
+import { cn } from '@/lib/utils';
 
 
 interface AppHeaderProps {
@@ -48,7 +51,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
   const { user } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
-  const { script, characters, scenes, notes, setScriptTitle, isScriptLoading } = useScript();
+  const { script, characters, scenes, notes, setScriptTitle, isScriptLoading, saveStatus } = useScript();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { currentScriptId, setCurrentScriptId } = useCurrentScript();
@@ -400,6 +403,36 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
       </DropdownMenu>
     );
   };
+  
+  const SaveStatusIndicator = () => {
+    if (isProfileView || !saveStatus || saveStatus === 'idle') return null;
+
+    let content;
+    if (saveStatus === 'saving') {
+      content = (
+        <>
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <span>Saving...</span>
+        </>
+      );
+    } else { // 'saved'
+      content = (
+        <>
+          <CheckCircle className="h-3 w-3" />
+          <span>Saved</span>
+        </>
+      );
+    }
+    
+    return (
+      <div className={cn(
+        "flex items-center gap-1.5 text-xs text-muted-foreground transition-opacity duration-300",
+        saveStatus === 'saving' && 'animate-pulse'
+      )}>
+        {content}
+      </div>
+    );
+  }
 
   const isProfileView = activeView === 'profile';
 
@@ -423,6 +456,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
                   className="text-lg md:text-xl font-semibold border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 font-headline min-w-0"
                 />
             )}
+            <SaveStatusIndicator />
           </>
         )}
       </div>

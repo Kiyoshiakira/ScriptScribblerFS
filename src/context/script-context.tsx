@@ -29,6 +29,7 @@ export interface Comment {
     updatedAt: any;
 }
 
+type SaveStatus = 'idle' | 'saving' | 'saved';
 
 interface ScriptContextType {
   script: Script | null;
@@ -43,6 +44,7 @@ interface ScriptContextType {
   scenes: Scene[] | null;
   notes: Note[] | null;
   comments: Comment[] | null;
+  saveStatus: SaveStatus;
 }
 
 export const ScriptContext = createContext<ScriptContextType>({
@@ -58,6 +60,7 @@ export const ScriptContext = createContext<ScriptContextType>({
   scenes: null,
   notes: null,
   comments: null,
+  saveStatus: 'idle',
 });
 
 export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, scriptId: string }) => {
@@ -67,6 +70,8 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   const [localScript, setLocalScript] = useState<Script | null>(null);
   const [localDocument, setLocalDocument] = useState<ScriptDocument | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+
 
   const scriptDocRef = useMemoFirebase(
     () => {
@@ -119,17 +124,24 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
 
   const updateFirestore = useCallback((dataToUpdate: Partial<Script>) => {
     if (scriptDocRef && Object.keys(dataToUpdate).length > 0) {
+        setSaveStatus('saving');
         const payload = { 
             ...dataToUpdate,
             lastModified: serverTimestamp()
         };
-        setDoc(scriptDocRef, payload, { merge: true }).catch(serverError => {
+        setDoc(scriptDocRef, payload, { merge: true })
+            .then(() => {
+                setSaveStatus('saved');
+                setTimeout(() => setSaveStatus('idle'), 2000);
+            })
+            .catch(serverError => {
              const permissionError = new FirestorePermissionError({
                 path: scriptDocRef.path,
                 operation: 'update',
                 requestResourceData: payload,
             });
             errorEmitter.emit('permission-error', permissionError);
+            setSaveStatus('idle'); // Or an 'error' state
         });
     }
   }, [scriptDocRef]);
@@ -240,6 +252,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     scenes,
     notes,
     comments,
+    saveStatus,
   };
 
   return (
