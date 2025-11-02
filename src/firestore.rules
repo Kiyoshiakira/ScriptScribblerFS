@@ -10,7 +10,7 @@
  * Data Structure:
  * - /users/{userId}: Public-readable user profile information.
  * - /users/{userId}/scripts/{scriptId}: Core script documents.
- * - /users/{userId}/scripts/{scriptId}/[characters|notes|scenes|comments]/{docId}: Subcollections for script data.
+ * - /users/{userId}/scripts/{scriptId}/[characters|notes|scenes|comments|versions]/{docId}: Subcollections for script data.
  * - /error-reports/{reportId}: Collection for users to submit error logs.
  *
  * Key Security Decisions:
@@ -65,6 +65,19 @@ service cloud.firestore {
 
         // Only the script owner can read/write comments for now.
         // This can be expanded for collaborators later.
+        allow read, write: if isOwner();
+    }
+    
+    /**
+     * @description Controls access to versions within a script.
+     * @path /users/{userId}/scripts/{scriptId}/versions/{versionId}
+     */
+    match /users/{userId}/scripts/{scriptId}/versions/{versionId} {
+        function isOwner() {
+          return request.auth != null && request.auth.uid == userId;
+        }
+
+        // Only the script owner can read/write versions.
         allow read, write: if isOwner();
     }
 

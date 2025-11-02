@@ -3,7 +3,7 @@
 
 import React, { createContext, useState, useEffect, ReactNode, useContext, useCallback } from 'react';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { doc, collection, setDoc, serverTimestamp, query, orderBy, addDoc } from 'firebase/firestore';
+import { doc, collection, setDoc, serverTimestamp, query, orderBy, addDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { useDebounce } from 'use-debounce';
 import type { Character } from '@/components/views/characters-view';
 import type { Scene } from '@/components/views/scenes-view';
@@ -89,7 +89,6 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   const [debouncedTitle] = useDebounce(localScript?.title, 1000);
   const [debouncedLogline] = useDebounce(localScript?.logline, 1000);
 
-
   const charactersCollectionRef = useMemoFirebase(
     () => (user && firestore && scriptId ? collection(firestore, 'users', user.uid, 'scripts', scriptId, 'characters') : null),
     [firestore, user, scriptId]
@@ -122,29 +121,57 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   );
   const { data: comments, isLoading: areCommentsLoading } = useCollection<Comment>(commentsQuery);
 
-  const updateFirestore = useCallback((dataToUpdate: Partial<Script>) => {
-    if (scriptDocRef && Object.keys(dataToUpdate).length > 0) {
-        setSaveStatus('saving');
-        const payload = { 
-            ...dataToUpdate,
-            lastModified: serverTimestamp()
-        };
-        setDoc(scriptDocRef, payload, { merge: true })
-            .then(() => {
-                setSaveStatus('saved');
-                setTimeout(() => setSaveStatus('idle'), 2000);
-            })
-            .catch(serverError => {
-             const permissionError = new FirestorePermissionError({
-                path: scriptDocRef.path,
-                operation: 'update',
-                requestResourceData: payload,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            setSaveStatus('idle'); // Or an 'error' state
-        });
+ const updateFirestore = useCallback(async () => {
+    if (isInitialLoad || !scriptDocRef || !localScript) return;
+
+    const newContent = localDocument ? serializeScript(localDocument) : localScript.content;
+    const somethingHasChanged =
+      newContent.trim() !== firestoreScript?.content?.trim() ||
+      localScript.title !== firestoreScript?.title ||
+      localScript.logline !== firestoreScript?.logline;
+
+    if (!somethingHasChanged) {
+      return;
     }
-  }, [scriptDocRef]);
+    
+    setSaveStatus('saving');
+
+    const versionsCollectionRef = collection(scriptDocRef, 'versions');
+    const versionData = {
+        title: localScript.title,
+        logline: localScript.logline || '',
+        content: newContent,
+        timestamp: serverTimestamp()
+    };
+    const mainScriptUpdateData = {
+        lastModified: serverTimestamp()
+    }
+
+    try {
+        const batch = writeBatch(firestore);
+        
+        // Add a new document to the versions subcollection
+        const newVersionRef = doc(versionsCollectionRef);
+        batch.set(newVersionRef, versionData);
+
+        // Update the lastModified timestamp on the main script document
+        batch.update(scriptDocRef, mainScriptUpdateData);
+
+        await batch.commit();
+
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (error) {
+        console.error("Error saving script version:", error);
+        const permissionError = new FirestorePermissionError({
+            path: scriptDocRef.path,
+            operation: 'write',
+            requestResourceData: { version: versionData, mainUpdate: mainScriptUpdateData }
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        setSaveStatus('idle');
+    }
+  }, [scriptDocRef, localScript, localDocument, firestoreScript, isInitialLoad, firestore]);
   
   // Effect for initial data load
   useEffect(() => {
@@ -155,32 +182,12 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     }
   }, [firestoreScript, isInitialLoad]);
 
-  // Debounced effect for saving content changes
+  // Debounced effect for saving ALL changes
   useEffect(() => {
-    if (isInitialLoad || !debouncedDocument) return;
-
-    const newContent = serializeScript(debouncedDocument);
-    // Only save if content has actually changed from what's in Firestore
-    if (newContent.trim() !== firestoreScript?.content.trim()) {
-      updateFirestore({ content: newContent });
+    if (!isInitialLoad) {
+      updateFirestore();
     }
-  }, [debouncedDocument, firestoreScript, isInitialLoad, updateFirestore]);
-
-  // Debounced effect for saving title changes
-  useEffect(() => {
-    if (isInitialLoad || debouncedTitle === undefined) return;
-    if (debouncedTitle !== firestoreScript?.title) {
-        updateFirestore({ title: debouncedTitle });
-    }
-  }, [debouncedTitle, firestoreScript, isInitialLoad, updateFirestore]);
-
-  // Debounced effect for saving logline changes
-  useEffect(() => {
-    if (isInitialLoad || debouncedLogline === undefined) return;
-    if (debouncedLogline !== firestoreScript?.logline) {
-        updateFirestore({ logline: debouncedLogline });
-    }
-  }, [debouncedLogline, firestoreScript, isInitialLoad, updateFirestore]);
+  }, [debouncedDocument, debouncedTitle, debouncedLogline, isInitialLoad, updateFirestore]);
 
 
   const setBlocks = useCallback((blocks: ScriptBlock[]) => {

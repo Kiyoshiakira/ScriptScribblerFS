@@ -93,6 +93,31 @@
         "lastModified"
       ]
     },
+    "ScriptVersion": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ScriptVersion",
+      "type": "object",
+      "description": "Represents a snapshot of a screenplay script at a specific point in time.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "logline": {
+            "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "title", "content", "timestamp"]
+    },
     "Note": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Note",
@@ -209,6 +234,16 @@
             "entityName": "Script",
             "schema": { "$ref": "#/entities/Script" },
             "description": "Stores screenplay documents owned by a user."
+        }
+      },
+      {
+        "path": "/users/{userId}/scripts/{scriptId}/versions/{versionId}",
+        "definition": {
+          "entityName": "ScriptVersion",
+          "schema": {
+            "$ref": "#/entities/ScriptVersion"
+          },
+          "description": "Stores historical snapshots of a script."
         }
       },
       {
