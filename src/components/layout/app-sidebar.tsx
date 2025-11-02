@@ -19,6 +19,7 @@ import {
   FileText,
   Clock,
   User,
+  LayoutGrid,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useScript } from '@/context/script-context';
@@ -111,6 +112,7 @@ export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
   const scriptMenuItems = [
     { view: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { view: 'editor', label: 'Editor', icon: BookText },
+    { view: 'beatboard', label: 'Beatboard', icon: LayoutGrid },
     { view: 'logline', label: 'Logline', icon: NotebookPen },
     { view: 'scenes', label: 'Scenes', icon: Clapperboard },
     { view: 'characters', label: 'Characters', icon: Users },
