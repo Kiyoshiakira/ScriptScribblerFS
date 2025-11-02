@@ -88,7 +88,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         }
     };
     
-    const diagnosisResult = await runAiDiagnoseAppHealth({ appState: JSON.stringify(debugState, null, 2) });
+    const diagnosisResult = await runAiDiagnoseAppHealth({ appState: JSON.stringify(debugState, null, 2), model: settings.aiModel });
     
     let logContent = `============ ScriptScribbler Debug Log ============\n`;
     logContent += `Generated at: ${debugState.timestamp}\n\n`;
@@ -186,5 +186,3 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     </Dialog>
   );
 }
-
-    
