@@ -32,6 +32,7 @@ import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
 import AiFab from '../ai-fab';
 import { runAiGenerateNote } from '@/app/actions';
+import { useSettings } from '@/context/settings-context';
 
 
 const NOTE_CATEGORIES = {
@@ -171,6 +172,7 @@ export default function NotesView() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { settings } = useSettings();
 
   const notesCollection = useMemoFirebase(
     () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'notes') : null),
@@ -215,7 +217,7 @@ export default function NotesView() {
     setIsGenerating(true);
     setEditingNote(null);
     
-    const result = await runAiGenerateNote({ prompt: 'A surprising plot twist idea.' });
+    const result = await runAiGenerateNote({ prompt: 'A surprising plot twist idea.', model: settings.aiModel });
     
     if(result.error || !result.data) {
         toast({ variant: 'destructive', title: 'Error', description: result.error || 'Could not generate a note.' });

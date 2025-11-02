@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { CurrentScriptProvider } from '@/context/current-script-context';
+import { SettingsProvider } from '@/context/settings-context';
 
 export const metadata: Metadata = {
   title: 'ScriptScribbler',
@@ -27,10 +28,12 @@ export default function RootLayout({
       </head>
       <body className={cn('font-body antialiased')}>
         <FirebaseClientProvider>
-          <CurrentScriptProvider>
-            {children}
-            <Toaster />
-          </CurrentScriptProvider>
+          <SettingsProvider>
+            <CurrentScriptProvider>
+              {children}
+              <Toaster />
+            </CurrentScriptProvider>
+          </SettingsProvider>
         </FirebaseClientProvider>
       </body>
     </html>

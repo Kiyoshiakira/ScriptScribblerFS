@@ -9,18 +9,22 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'genkit';
 import {
   aiGenerateCharacterProfile,
   type AiGenerateCharacterProfileOutput,
+  type AiGenerateCharacterProfileInput,
 } from './ai-generate-character-profile';
 import {
   aiProofreadScript,
   type AiProofreadScriptOutput,
+  type AiProofreadScriptInput,
 } from './ai-proofread-script';
 import {
   aiReformatScript,
   type AiReformatScriptOutput,
+  type AiReformatScriptInput,
 } from './ai-reformat-script';
 
 const AiGenerateCharacterProfileOutputSchema = z.object({
@@ -49,6 +53,7 @@ const AiReformatScriptOutputSchema = z.object({
 const AiAgentOrchestratorInputSchema = z.object({
   request: z.string().describe("The user's natural language request."),
   script: z.string().describe('The current state of the screenplay.'),
+  model: z.string().optional().describe('The AI model to use for the operation.'),
 });
 export type AiAgentOrchestratorInput = z.infer<
   typeof AiAgentOrchestratorInputSchema
@@ -97,7 +102,7 @@ const generateCharacterTool = ai.defineTool(
   async (toolInput): Promise<AiGenerateCharacterProfileOutput> => {
     return await aiGenerateCharacterProfile({
       characterDescription: toolInput.description,
-    });
+    } as AiGenerateCharacterProfileInput);
   }
 );
 
@@ -112,7 +117,7 @@ const proofreadScriptTool = ai.defineTool(
     outputSchema: AiProofreadScriptOutputSchema,
   },
   async ({ script }): Promise<AiProofreadScriptOutput> => {
-    return await aiProofreadScript({ script });
+    return await aiProofreadScript({ script } as AiProofreadScriptInput);
   }
 );
 
@@ -127,7 +132,7 @@ const reformatScriptTool = ai.defineTool(
     outputSchema: AiReformatScriptOutputSchema,
   },
   async ({ script }): Promise<AiReformatScriptOutput> => {
-    return await aiReformatScript({ rawScript: script });
+    return await aiReformatScript({ rawScript: script } as AiReformatScriptInput);
   }
 );
 
@@ -164,8 +169,10 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
     outputSchema: AiAgentOrchestratorOutputSchema,
   },
   async (input) => {
+    const model = googleAI(input.model || 'gemini-1.5-flash-latest');
     // STEP 1: Let the model decide whether to call a tool OR modify the script directly.
     let decision = await ai.generate({
+      model,
       prompt: orchestratorPrompt,
       input,
       tools: [generateCharacterTool, proofreadScriptTool, reformatScriptTool],
@@ -208,6 +215,7 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
     // STEP 3: Generate the final conversational response based on the action taken.
     if (modifiedScript || toolResult) {
       const finalResponse = await ai.generate({
+        model,
         prompt: `You are an expert AI assistant. Based on the user's request, an action was just performed.
             - If a script was modified, state that you've made the requested changes to the script.
             - If a character was generated, present the character.
@@ -243,6 +251,7 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
 
     // STEP 4: If no tool was called and no script was modified, it's a general question.
     const generalResponse = await ai.generate({
+      model,
       prompt: `You are an expert AI assistant. The user asked: "${input.request}". The script content is: ---{{{script}}}---. Provide a helpful, conversational answer to their question.`,
       input,
     });

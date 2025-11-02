@@ -29,7 +29,7 @@ import {
     type AiGenerateLoglineInput,
 } from '@/ai/flows/ai-generate-logline';
 import {
-    aiReformatScript as aiReformatScriptFlow,
+    aiReformatScript,
     type AiReformatScriptInput,
 } from '@/ai/flows/ai-reformat-script';
 import { SCRIPT_TOKEN_LIMIT } from '@/constants';
@@ -40,7 +40,7 @@ export async function runAiReformatScript(input: AiReformatScriptInput) {
         return { data: null, error: 'GEMINI_API_KEY is not set. Please create a .env.local file and add your key.' };
     }
     try {
-        const result = await aiReformatScriptFlow(input);
+        const result = await aiReformatScript(input);
         return { data: result, error: null };
     } catch (error) {
         console.error(error);

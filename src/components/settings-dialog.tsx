@@ -1,64 +1,90 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ScrollArea } from './ui/scroll-area';
-import { Loader2 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from './ui/button';
+import { Label } from './ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useSettings, type AiModel } from '@/context/settings-context';
+import { Skeleton } from './ui/skeleton';
 
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const [markdown, setMarkdown] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+const AVAILABLE_MODELS: { value: AiModel; label: string; description: string }[] = [
+  {
+    value: 'gemini-1.5-flash-latest',
+    label: 'Gemini 1.5 Flash',
+    description: 'Fast and cost-effective for most tasks.',
+  },
+  {
+    value: 'gemini-1.5-pro-latest',
+    label: 'Gemini 1.5 Pro',
+    description: 'Highest-quality model for complex reasoning.',
+  },
+];
 
-  useEffect(() => {
-    if (open) {
-      setIsLoading(true);
-      // Fetch the content from the static markdown file in the public folder
-      fetch('/APP_FEATURES.md')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.text();
-        })
-        .then(text => {
-          setMarkdown(text);
-          setIsLoading(false);
-        })
-        .catch(error => {
-          console.error("Failed to fetch app features:", error);
-          setMarkdown("Failed to load app features. Please check the console for more details.");
-          setIsLoading(false);
-        });
-    }
-  }, [open]);
+export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+  const { settings, setAiModel, isSettingsLoading } = useSettings();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-headline">About ScriptScribbler</DialogTitle>
+          <DialogTitle className="font-headline">Settings</DialogTitle>
           <DialogDescription>
-            Learn more about the features and capabilities of the app.
+            Customize your ScriptScribbler experience.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="flex-1 -mx-6 px-6">
-          <div className="py-4 prose dark:prose-invert max-w-none">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <Loader2 className="w-8 h-8 animate-spin" />
-              </div>
+        <div className="py-4 space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="ai-model-select">AI Model</Label>
+            {isSettingsLoading ? (
+              <Skeleton className="h-10 w-full" />
             ) : (
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+              <Select
+                value={settings.aiModel}
+                onValueChange={(value: AiModel) => setAiModel(value)}
+              >
+                <SelectTrigger id="ai-model-select">
+                  <SelectValue placeholder="Select a model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AVAILABLE_MODELS.map(model => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{model.label}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {model.description}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
+            <p className="text-xs text-muted-foreground">
+              The AI model used for generation, analysis, and other AI features.
+            </p>
           </div>
-        </ScrollArea>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)}>Close</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

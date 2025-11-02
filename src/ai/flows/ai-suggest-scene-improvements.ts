@@ -9,10 +9,12 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 import {z} from 'genkit';
 
 const AiSuggestSceneImprovementsInputSchema = z.object({
   screenplay: z.string().describe('The screenplay text to analyze.'),
+  model: z.string().optional().describe('The AI model to use for the operation.'),
 });
 export type AiSuggestSceneImprovementsInput = z.infer<typeof AiSuggestSceneImprovementsInputSchema>;
 
@@ -52,7 +54,13 @@ const aiSuggestSceneImprovementsFlow = ai.defineFlow(
     outputSchema: AiSuggestSceneImprovementsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const model = googleAI(input.model || 'gemini-1.5-flash-latest');
+    const {output} = await ai.generate({
+      model,
+      prompt: prompt.prompt,
+      input: input,
+      output: { schema: AiSuggestSceneImprovementsOutputSchema },
+    });
     if (!output) {
       throw new Error('AI failed to return valid suggestions. The output did not match the expected format.');
     }

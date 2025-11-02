@@ -8,10 +8,12 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 import {z} from 'genkit';
 
 const AiDeepAnalysisInputSchema = z.object({
   screenplay: z.string().describe('The screenplay text to analyze.'),
+  model: z.string().optional().describe('The AI model to use for the operation.'),
 });
 export type AiDeepAnalysisInput = z.infer<typeof AiDeepAnalysisInputSchema>;
 
@@ -56,7 +58,13 @@ const aiDeepAnalysisFlow = ai.defineFlow(
     outputSchema: AiDeepAnalysisOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const model = googleAI(input.model || 'gemini-1.5-flash-latest');
+    const {output} = await ai.generate({
+      model,
+      prompt: prompt.prompt,
+      input: input,
+      output: { schema: AiDeepAnalysisOutputSchema },
+    });
     if (!output) {
       throw new Error('AI failed to return a valid analysis. The output did not match the expected format.');
     }

@@ -23,6 +23,7 @@ import { useUser, useFirestore, useCollection, useMemoFirebase, errorEmitter, Fi
 import { collection, doc, addDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useCurrentScript } from '@/context/current-script-context';
 import AiFab from '../ai-fab';
+import { useSettings } from '@/context/settings-context';
 
 export interface Character {
   id?: string;
@@ -210,6 +211,7 @@ export default function CharactersView() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+  const { settings } = useSettings();
 
   const charactersCollection = useMemoFirebase(
     () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'characters') : null),
@@ -284,7 +286,7 @@ export default function CharactersView() {
       }
       setIsGenerating(true);
       
-      const result = await runGetAiCharacterProfile({ characterDescription: description });
+      const result = await runGetAiCharacterProfile({ characterDescription: description, model: settings.aiModel });
       
       setIsGenerating(false);
 

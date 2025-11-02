@@ -1,6 +1,6 @@
 'use client';
 import 'regenerator-runtime/runtime'; // Direct import to fix speech recognition error
-import { useState, useEffect, useRef, useContext } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import SpeechRecognition, {
   useSpeechRecognition,
 } from 'react-speech-recognition';
@@ -17,6 +17,7 @@ import { useScript } from '@/context/script-context';
 import { useUser, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useCurrentScript } from '@/context/current-script-context';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { useSettings } from '@/context/settings-context';
 
 
 interface ChatMessage {
@@ -43,6 +44,7 @@ export default function AiAssistant({ openProofreadDialog }: AiAssistantProps) {
   const { script, setLines } = useScript();
   const scriptContent = script?.content || '';
   const { toast } = useToast();
+  const { settings } = useSettings();
 
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -85,6 +87,7 @@ export default function AiAssistant({ openProofreadDialog }: AiAssistantProps) {
     const result = await runAiAgent({
       request: currentInput,
       script: scriptContent,
+      model: settings.aiModel,
     });
 
     setIsChatLoading(false);
