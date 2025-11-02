@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@/firebase';
 import { useToast } from './use-toast';
-import { getAuth, signInWithPopup, GoogleAuthProvider, onIdTokenChanged } from 'firebase/auth';
+import { getAuth, onIdTokenChanged } from 'firebase/auth';
 
 const DEVELOPER_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
 const APP_ID = process.env.NEXT_PUBLIC_GOOGLE_APP_ID;
@@ -43,10 +43,6 @@ export function useGooglePicker({ onFilePicked }: GooglePickerOptions) {
     const auth = getAuth();
     const unsubscribe = onIdTokenChanged(auth, async (currentUser) => {
         if (currentUser) {
-            const tokenResult = await currentUser.getIdTokenResult();
-            // This is the ID token, not the access token. 
-            // We need a proper OAuth flow for a long-lived access token.
-            // For now, we'll try to use the ID token, but this might have scope issues.
             const idToken = await currentUser.getIdToken();
             setOauthToken(idToken);
         } else {
@@ -77,7 +73,6 @@ export function useGooglePicker({ onFilePicked }: GooglePickerOptions) {
             return;
         }
 
-
         const docsView = new window.google.picker.View(window.google.picker.ViewId.DOCS)
             .setMimeTypes("application/vnd.google-apps.document");
             
@@ -88,13 +83,13 @@ export function useGooglePicker({ onFilePicked }: GooglePickerOptions) {
         .addView(docsView)
         .setCallback(async (data: google.picker.ResponseObject) => {
             if (data.action === window.google.picker.Action.PICKED) {
-            const doc = data.docs[0];
-            if (doc) {
-                toast({ title: "Importing Document", description: `Fetching '${doc.name}' from Google Drive...`})
+                const doc = data.docs[0];
+                if (!doc) return;
+
+                toast({ title: "Importing Document", description: `Fetching '${doc.name}' from Google Drive...`});
                 
                 try {
                     await window.gapi.client.load('https://docs.googleapis.com/$discovery/rest?version=v1');
-                    
                     const response = await window.gapi.client.docs.documents.get({
                         documentId: doc.id
                     });
@@ -112,17 +107,16 @@ export function useGooglePicker({ onFilePicked }: GooglePickerOptions) {
                             }
                         })
                     }
-
                     onFilePicked(doc.name, text);
                 } catch (error: any) {
-                    console.error("Error fetching document:", error);
+                    console.error("Error fetching document content:", error);
+                    const errorMessage = error.result?.error?.message || 'Could not fetch document content. This may be due to incorrect API permissions in your Google Cloud project.';
                     toast({
                         variant: 'destructive',
                         title: 'Import Failed',
-                        description: error.result?.error?.message || 'Could not fetch the document content from Google Drive.',
+                        description: errorMessage,
                     });
                 }
-            }
             }
         })
         .build();
