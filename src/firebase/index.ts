@@ -3,7 +3,7 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, Firestore, initializeFirestore, persistentLocalCache } from 'firebase/firestore';
 
 // Store the initialized services in a module-level variable to act as a singleton.
 let firebaseServices: { firebaseApp: FirebaseApp; auth: Auth; firestore: Firestore; } | null = null;
@@ -24,31 +24,40 @@ export function initializeFirebase(): { firebaseApp: FirebaseApp; auth: Auth; fi
   // On the client, we use the singleton pattern.
   if (!firebaseServices) {
     const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    const firestore = getFirestore(app);
-
+    
+    // Use the new initializeFirestore API for persistence
     try {
-        enableIndexedDbPersistence(firestore);
-    } catch (error: any) {
-        if (error.code == 'failed-precondition') {
-            // Multiple tabs open, persistence can only be enabled in one tab at a time.
-            console.warn('Firestore persistence failed to enable. This is expected if you have multiple tabs open.');
-        } else if (error.code == 'unimplemented') {
-            // The current browser does not support all of the features required to enable persistence
-            console.warn('Firestore persistence is not supported in this browser.');
-        }
-    }
+        const firestore = initializeFirestore(app, {
+            localCache: persistentLocalCache({})
+        });
+        
+        firebaseServices = {
+            firebaseApp: app,
+            auth: getAuth(app),
+            firestore: firestore,
+        };
 
-    firebaseServices = {
-        firebaseApp: app,
-        auth: getAuth(app),
-        firestore: firestore,
-    };
+    } catch (error: any) {
+        // This catch block handles initialization errors, which are rare but possible.
+        // Fallback to non-persistent Firestore if initialization fails.
+        console.error("Firebase persistence initialization failed, falling back to in-memory cache:", error);
+        
+        const firestore = getFirestore(app);
+
+        firebaseServices = {
+            firebaseApp: app,
+            auth: getAuth(app),
+            firestore: firestore,
+        };
+    }
   }
 
   return firebaseServices;
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
+  // On subsequent calls after initialization, we can just get the instance.
+  // This part is more relevant for server environments or complex client scenarios.
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
