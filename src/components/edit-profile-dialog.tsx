@@ -102,13 +102,15 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
         updatedAt: serverTimestamp() 
       };
 
-      setDoc(userDocRef, profileData, { merge: true }).catch((serverError) => {
+      await setDoc(userDocRef, profileData, { merge: true }).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
           path: userDocRef.path,
           operation: 'update',
           requestResourceData: profileData,
         });
         errorEmitter.emit('permission-error', permissionError);
+        // Re-throw to be caught by the outer try-catch
+        throw permissionError;
       });
 
       toast({
@@ -118,24 +120,23 @@ export function EditProfileDialog({ open, onOpenChange, user, profile }: EditPro
       onOpenChange(false);
       
     } catch (error: any) {
-        const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
-        if (error.code?.startsWith('auth/')) {
+        if (error instanceof FirestorePermissionError) {
+             toast({
+                variant: "destructive",
+                title: "Permission Denied",
+                description: "You may not have permission to update your profile.",
+            });
+        } else if (error.code?.startsWith('auth/')) {
              toast({
                 variant: "destructive",
                 title: "Update Failed",
                 description: error.message,
             });
         } else {
-             const permissionError = new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'update',
-                requestResourceData: { displayName, bio, photoURL, coverImageUrl },
-             });
-             errorEmitter.emit('permission-error', permissionError);
              toast({
                 variant: "destructive",
                 title: "Update Failed",
-                description: "You may not have permission to update your profile.",
+                description: "An unexpected error occurred while saving your profile.",
             });
         }
         console.error("Error saving profile:", error);

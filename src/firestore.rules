@@ -1,0 +1,55 @@
+/**
+ * @fileOverview Firestore Security Rules for ScriptScribbler.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model. All user-generated content
+ * (scripts, characters, notes, scenes) is stored in subcollections under the user's
+ * unique ID, ensuring data isolation and simplifying security rules.
+ *
+ * Data Structure:
+ * - /users/{userId}: Public-readable user profile information.
+ * - /users/{userId}/scripts/{scriptId}: Core script documents.
+ * - /users/{userId}/scripts/{scriptId}/[characters|notes|scenes]/{docId}: Subcollections for script data.
+ *
+ * Key Security Decisions:
+ * - User profiles (`/users/{userId}`) are world-readable to facilitate future social features,
+ *   but only the owner can write to their own profile.
+ * - All script-related data is nested under the user path, making ownership checks straightforward.
+ *   A user can only access data under their own `/users/{userId}` path.
+ * - Users cannot list all other users in the system.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Controls access to user profiles. Profiles are world-readable
+     * but only writable by the owner.
+     * @path /users/{userId}
+     */
+    match /users/{userId} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      allow get: if true; // Publicly readable profiles
+      allow list: if false; // Prevent listing all users
+
+      allow create, update, delete: if isOwner();
+    }
+
+    /**
+     * @description Controls access to all script-related data. A user can only
+     * access scripts and their subcollections if the {userId} in the path
+     * matches their authenticated UID.
+     * @path /users/{userId}/scripts/{scriptId} and its subcollections.
+     */
+    match /users/{userId}/{path=**} {
+       function isOwner() {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      
+      allow read, write: if isOwner();
+    }
+  }
+}

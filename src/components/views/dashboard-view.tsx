@@ -47,13 +47,22 @@ export default function DashboardView({ setView }: { setView: (view: View) => vo
         if (!firestore || !user) return;
         try {
             const scriptsCollectionRef = collection(firestore, 'users', user.uid, 'scripts');
-            const newScriptDoc = await addDoc(scriptsCollectionRef, {
+            const scriptData = {
                 title: 'Untitled Script',
                 content: 'SCENE 1\n\nINT. ROOM - DAY\n\nA new story begins.',
                 logline: '',
                 authorId: user.uid,
                 createdAt: serverTimestamp(),
                 lastModified: serverTimestamp(),
+            };
+            const newScriptDoc = await addDoc(scriptsCollectionRef, scriptData).catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: scriptsCollectionRef.path,
+                    operation: 'create',
+                    requestResourceData: scriptData
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                throw permissionError;
             });
             toast({
                 title: 'Script Created',
@@ -63,17 +72,13 @@ export default function DashboardView({ setView }: { setView: (view: View) => vo
             setView('editor');
         } catch (error) {
             console.error('Error creating new script:', error);
-            const permissionError = new FirestorePermissionError({
-                path: `users/${user.uid}/scripts`,
-                operation: 'create',
-                requestResourceData: { title: 'Untitled Script' }
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'Could not create a new script.',
-            });
+            if (!(error instanceof FirestorePermissionError)) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: 'Could not create a new script.',
+                });
+            }
         }
     };
 

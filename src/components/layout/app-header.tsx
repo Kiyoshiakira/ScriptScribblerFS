@@ -95,6 +95,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
                     requestResourceData: scriptData,
                 });
                 errorEmitter.emit('permission-error', permissionError);
+                throw permissionError;
             });
 
              toast({

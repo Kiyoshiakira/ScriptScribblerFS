@@ -246,33 +246,28 @@ export default function CharactersView() {
       scenes: charToSave.scenes,
     };
   
-    if (isNew) {
-      const docData = { ...plainCharData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      addDoc(charactersCollection, docData).catch(serverError => {
+    try {
+        if (isNew) {
+            const docData = { ...plainCharData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+            await addDoc(charactersCollection, docData);
+        } else {
+            const charDocRef = doc(charactersCollection, charToSave.id);
+            const updateData = { ...plainCharData, updatedAt: serverTimestamp() };
+            await setDoc(charDocRef, updateData, { merge: true });
+        }
+        toast({
+            title: isNew ? 'Character Created' : 'Character Updated',
+            description: `${charToSave.name} has been saved.`,
+        });
+    } catch (serverError) {
+        const path = isNew ? charactersCollection.path : doc(charactersCollection, charToSave.id).path;
         const permissionError = new FirestorePermissionError({
-          path: charactersCollection.path,
-          operation: 'create',
-          requestResourceData: docData,
+            path: path,
+            operation: isNew ? 'create' : 'update',
+            requestResourceData: plainCharData,
         });
         errorEmitter.emit('permission-error', permissionError);
-      });
-    } else {
-      const charDocRef = doc(charactersCollection, charToSave.id);
-      const updateData = { ...plainCharData, updatedAt: serverTimestamp() };
-      setDoc(charDocRef, updateData, { merge: true }).catch(serverError => {
-        const permissionError = new FirestorePermissionError({
-          path: charDocRef.path,
-          operation: 'update',
-          requestResourceData: updateData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
     }
-    
-    toast({
-      title: isNew ? 'Character Created' : 'Character Updated',
-      description: `${charToSave.name} has been saved.`,
-    });
   };
   
   const handleGenerateCharacter = async (description: string): Promise<Character | null> => {
