@@ -166,6 +166,22 @@
         "time": { "type": "number", "description": "Estimated time in minutes." }
       },
       "required": ["id", "sceneNumber", "setting", "description", "time"]
+    },
+    "Comment": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Comment",
+        "type": "object",
+        "description": "Represents a comment or annotation on a script.",
+        "properties": {
+            "id": { "type": "string" },
+            "blockId": { "type": "string", "description": "The ID of the ScriptBlock this comment is attached to." },
+            "authorId": { "type": "string", "description": "The ID of the user who wrote the comment." },
+            "content": { "type": "string" },
+            "parentId": { "type": "string", "description": "The ID of the parent comment if this is a reply." },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "blockId", "authorId", "content"]
     }
   },
   "auth": {
@@ -223,6 +239,16 @@
             "$ref": "#/entities/Scene"
           },
           "description": "Stores scenes for a specific script."
+        }
+      },
+      {
+        "path": "/users/{userId}/scripts/{scriptId}/comments/{commentId}",
+        "definition": {
+          "entityName": "Comment",
+          "schema": {
+            "$ref": "#/entities/Comment"
+          },
+          "description": "Stores comments for a specific script."
         }
       }
     ],

@@ -3,7 +3,7 @@
 
 import React, { createContext, useState, useEffect, ReactNode, useContext, useCallback } from 'react';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { doc, collection, setDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { doc, collection, setDoc, serverTimestamp, query, orderBy, addDoc } from 'firebase/firestore';
 import { useDebounce } from 'use-debounce';
 import type { Character } from '@/components/views/characters-view';
 import type { Scene } from '@/components/views/scenes-view';
@@ -20,6 +20,16 @@ interface Script {
     [key: string]: any; 
 }
 
+export interface Comment {
+    id: string;
+    blockId: string;
+    authorId: string;
+    content: string;
+    createdAt: any;
+    updatedAt: any;
+}
+
+
 interface ScriptContextType {
   script: Script | null;
   document: ScriptDocument | null; // The structured document
@@ -27,10 +37,12 @@ interface ScriptContextType {
   setScriptTitle: (title: string) => void;
   setScriptLogline: (logline: string) => void;
   splitScene: (blockId: string) => void;
+  addComment: (blockId: string, content: string) => void;
   isScriptLoading: boolean;
   characters: Character[] | null;
   scenes: Scene[] | null;
   notes: Note[] | null;
+  comments: Comment[] | null;
 }
 
 export const ScriptContext = createContext<ScriptContextType>({
@@ -40,10 +52,12 @@ export const ScriptContext = createContext<ScriptContextType>({
   setScriptTitle: () => {},
   setScriptLogline: () => {},
   splitScene: () => {},
+  addComment: () => {},
   isScriptLoading: true,
   characters: null,
   scenes: null,
   notes: null,
+  comments: null,
 });
 
 export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, scriptId: string }) => {
@@ -92,6 +106,16 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     [firestore, user, scriptId]
   );
   const { data: notes, isLoading: areNotesLoading } = useCollection<Note>(notesCollection);
+
+  const commentsCollectionRef = useMemoFirebase(
+    () => (user && firestore && scriptId ? collection(firestore, 'users', user.uid, 'scripts', scriptId, 'comments') : null),
+    [firestore, user, scriptId]
+  );
+  const commentsQuery = useMemoFirebase(
+    () => (commentsCollectionRef ? query(commentsCollectionRef, orderBy('createdAt', 'asc')) : null),
+    [commentsCollectionRef]
+  );
+  const { data: comments, isLoading: areCommentsLoading } = useCollection<Comment>(commentsQuery);
 
   const updateFirestore = useCallback((dataToUpdate: Partial<Script>) => {
     if (scriptDocRef && Object.keys(dataToUpdate).length > 0) {
@@ -178,6 +202,28 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
         return { ...prevDoc, blocks: newBlocks };
     });
   }, []);
+
+  const addComment = useCallback((blockId: string, content: string) => {
+      if (!commentsCollectionRef || !user) return;
+      
+      const newComment = {
+          blockId,
+          content,
+          authorId: user.uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+      };
+
+      addDoc(commentsCollectionRef, newComment).catch(serverError => {
+          const permissionError = new FirestorePermissionError({
+              path: commentsCollectionRef.path,
+              operation: 'create',
+              requestResourceData: newComment,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+      });
+
+  }, [commentsCollectionRef, user]);
   
   const isScriptLoading = isInitialLoad || isDocLoading;
 
@@ -188,10 +234,12 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     setScriptTitle,
     setScriptLogline,
     splitScene,
+    addComment,
     isScriptLoading,
     characters,
     scenes,
     notes,
+    comments,
   };
 
   return (
