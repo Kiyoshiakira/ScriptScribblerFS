@@ -30,7 +30,7 @@ import { useScript } from '@/context/script-context';
 import { useToast } from '@/hooks/use-toast';
 import { useRef } from 'react';
 import { parseScriteFile } from '@/lib/scrite-parser';
-import { collection, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, writeBatch, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import JSZip from 'jszip';
 import { useCurrentScript } from '@/context/current-script-context';
@@ -82,12 +82,20 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
             }
 
             const newScriptRef = doc(collection(firestore, 'users', user.uid, 'scripts'));
-            await setDoc(newScriptRef, {
+            const scriptData = {
                 title: title,
                 content: reformatResult.data.formattedScript,
                 authorId: user.uid,
                 createdAt: serverTimestamp(),
                 lastModified: serverTimestamp(),
+            };
+            setDoc(newScriptRef, scriptData).catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: newScriptRef.path,
+                    operation: 'create',
+                    requestResourceData: scriptData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
             });
 
              toast({

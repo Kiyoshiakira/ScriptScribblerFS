@@ -132,11 +132,6 @@ export default function AiAssistant({ openProofreadDialog }: AiAssistantProps) {
               requestResourceData: characterToSave,
             });
             errorEmitter.emit('permission-error', permissionError);
-            toast({
-              variant: 'destructive',
-              title: 'Failed to Save Character',
-              description: 'You may not have permission to create characters.',
-            });
           });
       }
       
