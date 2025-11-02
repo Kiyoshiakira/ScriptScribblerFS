@@ -168,7 +168,7 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
     outputSchema: AiAgentOrchestratorOutputSchema,
   },
   async (input) => {
-    const model = googleAI('gemini-2.5-flash-latest');
+    const model = googleAI('gemini-2.5-flash');
     
     // STEP 1: Let the model decide whether to call a tool OR modify the script directly.
     let decision = await ai.generate({

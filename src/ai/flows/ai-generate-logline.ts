@@ -63,7 +63,7 @@ const aiGenerateLoglineFlow = ai.defineFlow(
     outputSchema: AiGenerateLoglineOutputSchema,
   },
   async input => {
-    const model = googleAI('gemini-2.5-flash-latest');
+    const model = googleAI('gemini-2.5-flash');
     const { output } = await ai.generate({
       model,
       prompt: prompt.prompt,

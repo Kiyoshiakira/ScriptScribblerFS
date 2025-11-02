@@ -85,7 +85,7 @@ const aiProofreadScriptFlow = ai.defineFlow(
     if (input.script.length > SCRIPT_TOKEN_LIMIT) {
         return { suggestions: [] };
     }
-    const model = googleAI('gemini-2.5-flash-latest');
+    const model = googleAI('gemini-2.5-flash');
     const { output } = await ai.generate({
       model,
       prompt: prompt.prompt,
