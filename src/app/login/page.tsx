@@ -72,6 +72,8 @@ function LoginCard() {
     try {
       const auth = getAuth(app);
       const provider = new GoogleAuthProvider();
+      // Add the scope to request access to Google Drive files
+      provider.addScope('https://www.googleapis.com/auth/drive.readonly');
       await signInWithPopup(auth, provider);
       toast({
           title: 'Signed In with Google',
