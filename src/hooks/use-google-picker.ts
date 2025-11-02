@@ -66,71 +66,75 @@ export function useGooglePicker({ onFilePicked }: GooglePickerOptions) {
 
   // The main function to open the picker
   const openPicker = useCallback(() => {
-    if (!pickerApiLoaded || isUserLoading) {
-      toast({ variant: 'destructive', title: 'Picker Not Ready', description: 'The Google Drive picker is still loading or user not signed in. Please try again in a moment.' });
-      return;
-    }
-    
-    // This is a workaround. The picker API requires an OAuth access token, not an ID token.
-    // A full OAuth2 flow is complex to implement here. As a placeholder, we'll try with the ID token.
-    // This will likely fail without a proper OAuth setup where an access token is retrieved and managed.
-    if (!oauthToken) {
-         toast({ variant: 'destructive', title: 'Authentication Error', description: 'Could not get authentication token for Google Drive. Please sign in again.' });
-         return;
-    }
-
-
-    const docsView = new window.google.picker.View(window.google.picker.ViewId.DOCS)
-        .setMimeTypes("application/vnd.google-apps.document");
-        
-    const picker = new window.google.picker.PickerBuilder()
-      .setAppId(APP_ID!)
-      .setDeveloperKey(DEVELOPER_KEY!)
-      .setOAuthToken(oauthToken)
-      .addView(docsView)
-      .setCallback(async (data: google.picker.ResponseObject) => {
-        if (data.action === window.google.picker.Action.PICKED) {
-          const doc = data.docs[0];
-          if (doc) {
-            toast({ title: "Importing Document", description: `Fetching '${doc.name}' from Google Drive...`})
-            
-            // Use gapi.client to fetch the file content
-            try {
-                // Initialize the Google Docs API client
-                await window.gapi.client.load('https://docs.googleapis.com/$discovery/rest?version=v1');
-                
-                const response = await window.gapi.client.docs.documents.get({
-                    documentId: doc.id
-                });
-                
-                const content = response.result.body.content;
-                let text = '';
-                if(content){
-                    content.forEach(p => {
-                        if (p.paragraph && p.paragraph.elements) {
-                            p.paragraph.elements.forEach(elem => {
-                                if(elem.textRun && elem.textRun.content){
-                                    text += elem.textRun.content;
-                                }
-                            })
-                        }
-                    })
-                }
-
-                onFilePicked(doc.name, text);
-            } catch (error: any) {
-                console.error("Error fetching document:", error);
-                 toast({
-                    variant: 'destructive',
-                    title: 'Import Failed',
-                    description: error.result?.error?.message || 'Could not fetch the document content from Google Drive.',
-                });
-            }
-          }
+    try {
+        if (!pickerApiLoaded || isUserLoading) {
+            toast({ variant: 'destructive', title: 'Picker Not Ready', description: 'The Google Drive picker is still loading or user not signed in. Please try again in a moment.' });
+            return;
         }
-      })
-      .build();
-    picker.setVisible(true);
+        
+        if (!oauthToken) {
+            toast({ variant: 'destructive', title: 'Authentication Error', description: 'Could not get authentication token for Google Drive. Please sign in again.' });
+            return;
+        }
+
+
+        const docsView = new window.google.picker.View(window.google.picker.ViewId.DOCS)
+            .setMimeTypes("application/vnd.google-apps.document");
+            
+        const picker = new window.google.picker.PickerBuilder()
+        .setAppId(APP_ID!)
+        .setDeveloperKey(DEVELOPER_KEY!)
+        .setOAuthToken(oauthToken)
+        .addView(docsView)
+        .setCallback(async (data: google.picker.ResponseObject) => {
+            if (data.action === window.google.picker.Action.PICKED) {
+            const doc = data.docs[0];
+            if (doc) {
+                toast({ title: "Importing Document", description: `Fetching '${doc.name}' from Google Drive...`})
+                
+                try {
+                    await window.gapi.client.load('https://docs.googleapis.com/$discovery/rest?version=v1');
+                    
+                    const response = await window.gapi.client.docs.documents.get({
+                        documentId: doc.id
+                    });
+                    
+                    const content = response.result.body.content;
+                    let text = '';
+                    if(content){
+                        content.forEach(p => {
+                            if (p.paragraph && p.paragraph.elements) {
+                                p.paragraph.elements.forEach(elem => {
+                                    if(elem.textRun && elem.textRun.content){
+                                        text += elem.textRun.content;
+                                    }
+                                })
+                            }
+                        })
+                    }
+
+                    onFilePicked(doc.name, text);
+                } catch (error: any) {
+                    console.error("Error fetching document:", error);
+                    toast({
+                        variant: 'destructive',
+                        title: 'Import Failed',
+                        description: error.result?.error?.message || 'Could not fetch the document content from Google Drive.',
+                    });
+                }
+            }
+            }
+        })
+        .build();
+        picker.setVisible(true);
+    } catch (error: any) {
+        console.error("Error creating or showing Google Picker:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Google Drive Error',
+            description: "Could not open the Google Drive picker. This may be due to a configuration issue (e.g., popup blockers, invalid API key, or incorrect permissions in your Google Cloud project).",
+        });
+    }
 
   }, [pickerApiLoaded, isUserLoading, oauthToken, onFilePicked, toast]);
 
