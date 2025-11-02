@@ -238,35 +238,47 @@ export default function CharactersView() {
     }
   
     const isNew = !charToSave.id;
-    const plainCharData = {
-      name: charToSave.name,
-      description: charToSave.description,
-      profile: charToSave.profile,
-      imageUrl: charToSave.imageUrl,
-      scenes: charToSave.scenes,
-    };
+    const { id, createdAt, updatedAt, ...plainCharData } = charToSave;
+
   
     try {
         if (isNew) {
             const docData = { ...plainCharData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-            await addDoc(charactersCollection, docData);
+            const docRef = await addDoc(charactersCollection, docData).catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: charactersCollection.path,
+                    operation: 'create',
+                    requestResourceData: docData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                throw permissionError;
+            });
         } else {
             const charDocRef = doc(charactersCollection, charToSave.id);
             const updateData = { ...plainCharData, updatedAt: serverTimestamp() };
-            await setDoc(charDocRef, updateData, { merge: true });
+            await setDoc(charDocRef, updateData, { merge: true }).catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: charDocRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                throw permissionError;
+            });
         }
         toast({
             title: isNew ? 'Character Created' : 'Character Updated',
             description: `${charToSave.name} has been saved.`,
         });
-    } catch (serverError) {
-        const path = isNew ? charactersCollection.path : doc(charactersCollection, charToSave.id).path;
-        const permissionError = new FirestorePermissionError({
-            path: path,
-            operation: isNew ? 'create' : 'update',
-            requestResourceData: plainCharData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
+    } catch (error) {
+         if (!(error instanceof FirestorePermissionError)) {
+            console.error("Error saving character: ", error);
+            toast({
+                variant: 'destructive',
+                title: 'Save Error',
+                description: 'An unexpected error occurred while saving the character.',
+            });
+        }
     }
   };
   

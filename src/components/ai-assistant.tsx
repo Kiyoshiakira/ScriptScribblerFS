@@ -41,8 +41,8 @@ const isAiEnabled = process.env.NEXT_PUBLIC_AI_ENABLED === 'true';
 
 
 export default function AiAssistant({ openProofreadDialog }: AiAssistantProps) {
-  const { script, setLines } = useScript();
-  const scriptContent = script?.content || '';
+  const { document, setBlocks } = useScript();
+  const scriptContent = document?.blocks.map(b => b.text).join('\n\n') || '';
   const { toast } = useToast();
   const { settings } = useSettings();
 
@@ -103,7 +103,12 @@ export default function AiAssistant({ openProofreadDialog }: AiAssistantProps) {
       setChatHistory(prev => [...prev, aiMessage]);
 
       if (result.data.modifiedScript) {
-        setLines(result.data.modifiedScript);
+        // This is a significant change. We need to re-parse the script.
+        // In a real app, we'd use the structured output from the parser.
+        // For now, we'll just split by lines.
+        const newBlocks = result.data.modifiedScript.split('\n\n').map((line, index) => ({ id: `block-${index}-${Date.now()}`, text: line, type: 'action' as const }));
+        setBlocks(newBlocks);
+
         toast({
           title: 'Script Updated',
           description: 'The AI has updated the script content.',

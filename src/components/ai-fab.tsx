@@ -136,8 +136,8 @@ export default function AiFab({
   const [proofreadSuggestions, setProofreadSuggestions] = useState<ProofreadSuggestion[]>([]);
 
   const { toast } = useToast();
-  const { script, setLines: setScriptContent } = useScript();
-  const scriptContent = script?.content || '';
+  const { document, setBlocks } = useScript();
+  const scriptContent = document?.blocks.map(b => b.text).join('\n\n') || '';
   const { settings } = useSettings();
 
   const [proofreadStatus, setProofreadStatus] = useState(PROOFREAD_STATUS_MESSAGES[0]);
@@ -262,8 +262,21 @@ export default function AiFab({
   };
 
   const applySuggestion = (suggestion: ProofreadSuggestion) => {
-    const newContent = scriptContent.replace(suggestion.originalText, suggestion.correctedText);
-    setScriptContent(newContent);
+    if (!document) return;
+    
+    // This is a simple implementation. A more robust solution would find the exact block
+    // and character offset to replace the text.
+    const newBlocks = document.blocks.map(block => {
+      if (block.text.includes(suggestion.originalText)) {
+        return {
+          ...block,
+          text: block.text.replace(suggestion.originalText, suggestion.correctedText),
+        };
+      }
+      return block;
+    });
+
+    setBlocks(newBlocks);
     toast({
       title: 'Suggestion Applied',
       description: 'The script has been updated with the correction.',
