@@ -33,6 +33,8 @@ The application uses environment variables to handle API keys and other configur
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
+**Note on `.env.local` vs `.env`:** This project follows the standard Next.js convention. You must place your secret keys in a file named `.env.local`. This file is ignored by version control, keeping your keys safe. The empty `.env` file in the project is just a placeholder and is not used for local development.
+
 **Note:** AI features will be gracefully disabled if the `GEMINI_API_KEY` is not provided.
 
 ### 3. Run the Development Server
