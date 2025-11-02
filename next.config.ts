@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  env: {
+    NEXT_PUBLIC_GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+    NEXT_PUBLIC_GOOGLE_APP_ID: process.env.GOOGLE_APP_ID,
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },

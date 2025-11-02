@@ -36,6 +36,7 @@ import JSZip from 'jszip';
 import { useCurrentScript } from '@/context/current-script-context';
 import type { View } from './AppLayout';
 import { aiReformatScript } from '@/app/actions';
+import { useGooglePicker } from '@/hooks/use-google-picker';
 
 
 interface AppHeaderProps {
@@ -68,6 +69,47 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
         router.push('/login');
     }
   };
+
+    const processImportedContent = async (title: string, content: string) => {
+        if (!firestore || !user) return;
+        
+        try {
+             toast({ title: 'Reformatting Script...', description: 'AI is cleaning up the script format.' });
+             const reformatResult = await aiReformatScript({ rawScript: content });
+
+             if (reformatResult.error || !reformatResult.data) {
+                throw new Error(reformatResult.error || 'AI reformatting failed.');
+            }
+
+            const newScriptRef = doc(collection(firestore, 'users', user.uid, 'scripts'));
+            await setDoc(newScriptRef, {
+                title: title,
+                content: reformatResult.data.formattedScript,
+                authorId: user.uid,
+                createdAt: serverTimestamp(),
+                lastModified: serverTimestamp(),
+            });
+
+             toast({
+                title: 'Import Successful',
+                description: `"${title}" has been added to your scripts.`,
+            });
+            setView('profile');
+        } catch (error: any) {
+             console.error("Error processing imported content:", error);
+             toast({
+                variant: 'destructive',
+                title: 'Import Failed',
+                description: error.message || 'An unknown error occurred during import.',
+            });
+        }
+    }
+
+
+    const { openPicker } = useGooglePicker({
+        onFilePicked: processImportedContent,
+    });
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -375,7 +417,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
                     Import from file...
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem disabled>
+                <DropdownMenuItem onClick={openPicker}>
                     <GoogleDocIcon className="h-4 w-4 mr-2" />
                     Import from Google Docs
                 </DropdownMenuItem>
