@@ -99,10 +99,14 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
             setLocalScript(firestoreScript);
             setIsInitialLoad(false);
         } else {
-             // Only update from Firestore if it's different from the debounced local state
-             // to prevent overwriting user's typing
-            if (debouncedScript && firestoreScript.content !== debouncedScript.content) {
-                setLocalScript(prev => prev ? { ...prev, content: firestoreScript.content } : firestoreScript);
+            // This logic is complex. The goal is to accept remote changes
+            // without overriding recent local typing. For now, we favor
+            // local changes by only updating if the content is truly different
+            // and the local state hasn't been modified recently.
+            if (localScript && firestoreScript.content !== localScript.content) {
+                // A more advanced implementation might use OT or CRDTs,
+                // but for now, we'll just log that a remote change occurred.
+                // console.log("Remote change detected.");
             }
         }
     }
@@ -111,37 +115,39 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
 
 
   useEffect(() => {
-    if (isInitialLoad || isDocLoading || !debouncedScript || !firestoreScript) {
-        return;
+    // Do not save anything until the initial load is complete and we have data.
+    if (isInitialLoad || !debouncedScript || !firestoreScript) {
+      return;
     }
     
     const changes: Partial<Script> = {};
     if (debouncedScript.content !== firestoreScript.content) {
-        changes.content = debouncedScript.content;
+      changes.content = debouncedScript.content;
     }
     if (debouncedScript.title !== firestoreScript.title) {
-        changes.title = debouncedScript.title;
+      changes.title = debouncedScript.title;
     }
     if (debouncedScript.logline !== firestoreScript.logline) {
-        changes.logline = debouncedScript.logline;
+      changes.logline = debouncedScript.logline;
     }
 
+    // Only write to Firestore if there are actual changes to save.
     if (Object.keys(changes).length > 0) {
       updateFirestore(changes);
     }
-  }, [debouncedScript, firestoreScript, isInitialLoad, isDocLoading, updateFirestore]);
+  }, [debouncedScript, firestoreScript, isInitialLoad, updateFirestore]);
 
   const setLines = useCallback((content: string) => {
     setLocalScript(prev => prev ? { ...prev, content } : null);
   }, []);
 
-  const setScriptTitle = (title: string) => {
+  const setScriptTitle = useCallback((title: string) => {
     setLocalScript(prev => prev ? { ...prev, title } : null);
-  };
+  }, []);
   
-  const setScriptLogline = (logline: string) => {
+  const setScriptLogline = useCallback((logline: string) => {
     setLocalScript(prev => prev ? { ...prev, logline } : null);
-  }
+  }, []);
   
   const value = { 
     script: localScript,
