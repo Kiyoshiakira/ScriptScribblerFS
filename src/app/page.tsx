@@ -16,16 +16,19 @@ export default function Home() {
     }
   }, [user, isUserLoading, router]);
 
+  // While the initial user check is happening, show a simplified loading screen.
+  // AppLayout will handle its own more detailed loading once the user is confirmed.
   if (isUserLoading || !user) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center">
+      <div className="h-screen w-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <Skeleton className="h-16 w-16 rounded-full" />
-          <p className="text-muted-foreground">Loading user...</p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
   }
 
+  // Once the user is verified, render the full application layout.
   return <AppLayout />;
 }

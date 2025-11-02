@@ -18,18 +18,26 @@ import NotesView from '../views/notes-view';
 import { useUser, useDoc, useMemoFirebase, useFirestore } from '@/firebase';
 import { EditProfileDialog } from '../edit-profile-dialog';
 import { doc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+
 
 export type View = 'dashboard' | 'editor' | 'scenes' | 'characters' | 'notes' | 'logline' | 'profile';
 
+/**
+ * This is the internal component that renders the main app layout.
+ * It's wrapped by providers and handles all the core logic for views and data.
+ */
 function AppLayoutInternal() {
   const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
 
   const [view, setView] = React.useState<View>('profile');
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
 
+  // Fetch user profile data from Firestore
   const userProfileRef = useMemoFirebase(() => {
     if (user && firestore) {
       return doc(firestore, 'users', user.uid);
@@ -39,11 +47,21 @@ function AppLayoutInternal() {
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
+  // This effect handles the initial view logic once all data is loaded.
   React.useEffect(() => {
-    if (!isCurrentScriptLoading) {
-      setView(currentScriptId ? 'dashboard' : 'profile');
+    if (isUserLoading || isCurrentScriptLoading) {
+      return; // Wait for all loading to complete
     }
-  }, [currentScriptId, isCurrentScriptLoading]);
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    
+    // If there is no script, force profile view. Otherwise, default to dashboard.
+    setView(currentScriptId ? 'dashboard' : 'profile');
+
+  }, [user, isUserLoading, currentScriptId, isCurrentScriptLoading, router]);
 
 
   const handleSetView = (newView: View | 'settings' | 'profile-edit') => {
@@ -52,6 +70,7 @@ function AppLayoutInternal() {
     } else if (newView === 'profile-edit') {
       setProfileOpen(true);
     } else {
+      // Prevent navigating away from profile view if no script is loaded.
       if (!currentScriptId && newView !== 'profile') {
           setView('profile');
           return;
@@ -61,11 +80,11 @@ function AppLayoutInternal() {
   };
 
   const renderView = () => {
-    if (!currentScriptId) {
-      return <ProfileView setView={handleSetView} />;
-    }
+    // Determine the correct view to render.
+    // If no script is loaded, always show the profile view.
+    const viewToRender = currentScriptId ? view : 'profile';
 
-    switch(view) {
+    switch(viewToRender) {
       case 'dashboard': return <DashboardView setView={handleSetView} />;
       case 'editor': return <EditorView />;
       case 'logline': return <LoglineView />;
@@ -77,6 +96,7 @@ function AppLayoutInternal() {
     }
   };
 
+  // Show a single, centralized loading screen.
   if (isUserLoading || isCurrentScriptLoading || (user && isProfileLoading)) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
@@ -87,6 +107,12 @@ function AppLayoutInternal() {
       </div>
     );
   }
+  
+  if (!user) {
+      // This is a fallback while the redirect to /login is happening.
+      return null;
+  }
+
 
   return (
     <>
@@ -106,15 +132,20 @@ function AppLayoutInternal() {
 }
 
 
+/**
+ * The main AppLayout component. It wraps the internal layout with necessary providers.
+ */
 export default function AppLayout() {
   const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
 
+  // The loading screen is handled inside AppLayoutInternal, but we can show a minimal one here
+  // to avoid a flash of content.
   if (isCurrentScriptLoading) {
       return (
         <div className="flex h-screen w-screen items-center justify-center bg-background">
           <div className="flex flex-col items-center gap-4">
             <Skeleton className="h-16 w-16 rounded-full" />
-            <p className="text-muted-foreground">Loading workspace...</p>
+            <p className="text-muted-foreground">Loading...</p>
           </div>
         </div>
       );
@@ -122,11 +153,13 @@ export default function AppLayout() {
   
   return (
     <SidebarProvider>
+      {/* Conditionally wrap with ScriptProvider only when a script is loaded */}
       {currentScriptId ? (
         <ScriptProvider key={currentScriptId} scriptId={currentScriptId}>
             <AppLayoutInternal />
         </ScriptProvider>
       ) : (
+        // Render without ScriptProvider if no script is selected
         <AppLayoutInternal />
       )}
     </SidebarProvider>
