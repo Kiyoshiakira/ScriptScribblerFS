@@ -32,9 +32,8 @@ import {
     aiReformatScript as aiReformatScriptFlow,
     type AiReformatScriptInput,
 } from '@/ai/flows/ai-reformat-script';
+import { SCRIPT_TOKEN_LIMIT } from '@/constants';
 
-
-const SCRIPT_TOKEN_LIMIT = 1000000; // 1 million characters
 
 export async function aiReformatScript(input: AiReformatScriptInput) {
     if (!process.env.GEMINI_API_KEY) {
