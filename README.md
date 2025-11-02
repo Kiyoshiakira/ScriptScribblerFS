@@ -24,8 +24,7 @@ npm install
 The application uses environment variables to handle API keys and other configuration.
 
 1.  Create a new file named `.env.local` in the root of the project.
-2.  Copy the contents of `.env.example` into your new `.env.local` file.
-3.  Fill in the required environment variables.
+2.  Fill in the required environment variables as shown below.
 
 ```env
 # .env.local
