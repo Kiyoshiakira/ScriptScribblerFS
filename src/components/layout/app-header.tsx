@@ -133,7 +133,8 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
               path: `users/${user.uid}/scripts`,
               operation: 'write', 
               requestResourceData: {
-                  script: "Batch write for Scribbler import",
+                  scriptTitle: projectData.title || 'Untitled Scribbler Import',
+                  importType: 'scribbler',
                   characterCount: importedCharacters.length,
                   sceneCount: importedScenes.length,
                   noteCount: importedNotes.length
@@ -216,7 +217,8 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
               path: `users/${user.uid}/scripts`,
               operation: 'write', 
               requestResourceData: {
-                  script: "Batch write for Scrite import",
+                  scriptTitle: scriptTitle,
+                  importType: 'scrite',
                   characterCount: parsedData.characters.length,
                   noteCount: parsedData.notes.length,
                   sceneCount: parsedData.scenes.length
