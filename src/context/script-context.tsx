@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useState, useEffect, ReactNode, useContext, useCallback } from 'react';
@@ -7,7 +8,7 @@ import { useDebounce } from 'use-debounce';
 import type { Character } from '@/components/views/characters-view';
 import type { Scene } from '@/components/views/scenes-view';
 import type { Note } from '@/components/views/notes-view';
-import { ScriptDocument, ScriptBlock } from '@/lib/editor-types';
+import { ScriptDocument, ScriptBlock, ScriptBlockType } from '@/lib/editor-types';
 import { parseScreenplay, serializeScript } from '@/lib/screenplay-parser';
 
 
@@ -25,6 +26,7 @@ interface ScriptContextType {
   setBlocks: (blocks: ScriptBlock[]) => void;
   setScriptTitle: (title: string) => void;
   setScriptLogline: (logline: string) => void;
+  splitScene: (blockId: string) => void;
   isScriptLoading: boolean;
   characters: Character[] | null;
   scenes: Scene[] | null;
@@ -37,6 +39,7 @@ export const ScriptContext = createContext<ScriptContextType>({
   setBlocks: () => {},
   setScriptTitle: () => {},
   setScriptLogline: () => {},
+  splitScene: () => {},
   isScriptLoading: true,
   characters: null,
   scenes: null,
@@ -155,6 +158,26 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   const setScriptLogline = useCallback((logline: string) => {
     setLocalScript(prev => prev ? { ...prev, logline } : null);
   }, []);
+
+  const splitScene = useCallback((blockId: string) => {
+    setLocalDocument(prevDoc => {
+        if (!prevDoc) return null;
+
+        const blockIndex = prevDoc.blocks.findIndex(b => b.id === blockId);
+        if (blockIndex === -1) return prevDoc;
+
+        const newSceneHeading: ScriptBlock = {
+            id: `block_${Date.now()}`,
+            type: ScriptBlockType.SCENE_HEADING,
+            text: 'INT. NEW SCENE - DAY',
+        };
+
+        const newBlocks = [...prevDoc.blocks];
+        newBlocks.splice(blockIndex + 1, 0, newSceneHeading);
+
+        return { ...prevDoc, blocks: newBlocks };
+    });
+  }, []);
   
   const isScriptLoading = isInitialLoad || isDocLoading;
 
@@ -164,6 +187,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     setBlocks,
     setScriptTitle,
     setScriptLogline,
+    splitScene,
     isScriptLoading,
     characters,
     scenes,
