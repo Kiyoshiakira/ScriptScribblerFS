@@ -51,15 +51,11 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   const [localDocument, setLocalDocument] = useState<ScriptDocument | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  console.log(`[ScriptContext] Provider mounted for scriptId: ${scriptId}`);
-
   const scriptDocRef = useMemoFirebase(
     () => {
         if (user && firestore && scriptId) {
-            console.log(`[ScriptContext] Creating doc reference for scriptId: ${scriptId}`);
             return doc(firestore, 'users', user.uid, 'scripts', scriptId);
         }
-        console.log('[ScriptContext] Cannot create doc reference. Missing user, firestore, or scriptId.');
         return null;
     },
     [user, firestore, scriptId]
@@ -96,7 +92,6 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
 
   const updateFirestore = useCallback((dataToUpdate: Partial<Script>) => {
     if (scriptDocRef && Object.keys(dataToUpdate).length > 0) {
-        console.log('[ScriptContext] Saving changes to Firestore:', dataToUpdate);
         const payload = { 
             ...dataToUpdate,
             lastModified: serverTimestamp()
@@ -115,7 +110,6 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   // Effect for initial data load
   useEffect(() => {
     if (firestoreScript && isInitialLoad) {
-        console.log('[ScriptContext] Initial load complete. Setting local script from Firestore.');
         setLocalScript(firestoreScript);
         setLocalDocument(parseScreenplay(firestoreScript.content));
         setIsInitialLoad(false);
@@ -163,7 +157,6 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   }, []);
   
   const isScriptLoading = isInitialLoad || isDocLoading;
-  console.log('[ScriptContext] State:', { isScriptLoading, hasLocalScript: !!localScript });
 
   const value = { 
     script: localScript,

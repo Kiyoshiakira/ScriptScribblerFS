@@ -20,25 +20,21 @@ export const CurrentScriptContext = createContext<CurrentScriptContextType>({
 
 export const CurrentScriptProvider = ({ children }: { children: ReactNode }) => {
   const [currentScriptId, setCurrentScriptIdState] = useState<string | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoadedFromStorage, setIsLoadedFromStorage] = useState(false);
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
   // 1. Load from localStorage on initial mount
   useEffect(() => {
-    console.log('[CurrentScriptContext] Initializing: trying to load from localStorage.');
     try {
       const item = window.localStorage.getItem(SCRIPT_STORAGE_KEY);
       if (item) {
-        console.log(`[CurrentScriptContext] Found script ID in localStorage: ${item}`);
         setCurrentScriptIdState(item);
-      } else {
-        console.log('[CurrentScriptContext] No script ID found in localStorage.');
       }
     } catch (error) {
       console.warn(`[CurrentScriptContext] Error reading localStorage key “${SCRIPT_STORAGE_KEY}”:`, error);
     } finally {
-      setIsLoaded(true);
+      setIsLoadedFromStorage(true);
     }
   }, []);
 
@@ -56,20 +52,16 @@ export const CurrentScriptProvider = ({ children }: { children: ReactNode }) => 
 
   // 2. If no script is set, default to the most recent one from Firestore
   useEffect(() => {
-    console.log('[CurrentScriptContext] Defaulting effect running. Dependencies:', { isLoaded, currentScriptId, isUserLoading, areScriptsLoading, latestScripts: latestScripts?.length });
-    if (isLoaded && !currentScriptId && !isUserLoading && !areScriptsLoading) {
+    if (isLoadedFromStorage && !currentScriptId && !isUserLoading && !areScriptsLoading) {
       if (latestScripts && latestScripts.length > 0) {
-        console.log(`[CurrentScriptContext] No current script set. Defaulting to latest script: ${latestScripts[0].id}`);
         setCurrentScriptIdState(latestScripts[0].id);
       } else {
-        console.log('[CurrentScriptContext] No current script set and no scripts found for user. Setting to null.');
-        setCurrentScriptIdState(null);
+        setCurrentScriptIdState(null); // Explicitly set to null if no scripts exist
       }
     }
-  }, [isLoaded, currentScriptId, isUserLoading, areScriptsLoading, latestScripts]);
+  }, [isLoadedFromStorage, currentScriptId, isUserLoading, areScriptsLoading, latestScripts]);
 
   const setCurrentScriptId = useCallback((id: string | null) => {
-    console.log(`[CurrentScriptContext] Setting current script ID to: ${id}`);
     try {
       if (id) {
         window.localStorage.setItem(SCRIPT_STORAGE_KEY, id);
@@ -82,9 +74,8 @@ export const CurrentScriptProvider = ({ children }: { children: ReactNode }) => 
     }
   }, []);
   
-  const isCurrentScriptLoading = !isLoaded || isUserLoading || areScriptsLoading;
-  console.log('[CurrentScriptContext] State:', { currentScriptId, isCurrentScriptLoading });
-
+  const isCurrentScriptLoading = !isLoadedFromStorage || isUserLoading || areScriptsLoading;
+  
   const value = { 
       currentScriptId,
       setCurrentScriptId,

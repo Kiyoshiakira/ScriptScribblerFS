@@ -19,7 +19,6 @@ import BeatboardView from '../views/beatboard-view';
 import { useUser, useDoc, useMemoFirebase, useFirestore } from '@/firebase';
 import { EditProfileDialog } from '../edit-profile-dialog';
 import { doc } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
 
 
 export type View = 'dashboard' | 'editor' | 'scenes' | 'characters' | 'notes' | 'logline' | 'profile' | 'beatboard';
@@ -32,7 +31,6 @@ function AppLayoutInternal() {
   const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const router = useRouter();
 
   const [view, setView] = React.useState<View>('profile');
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -50,24 +48,15 @@ function AppLayoutInternal() {
 
   // This effect handles the initial view logic once all data is loaded.
   React.useEffect(() => {
-    console.log('[AppLayout] Effect running. Dependencies:', { isUserLoading, isCurrentScriptLoading, user: !!user, currentScriptId });
     if (isUserLoading || isCurrentScriptLoading) {
-      console.log('[AppLayout] Waiting for user or script to load...');
       return; // Wait for all loading to complete
     }
 
-    if (!user) {
-      console.log('[AppLayout] No user found. Redirecting to /login.');
-      router.push('/login');
-      return;
-    }
-    
     // If there is no script, force profile view. Otherwise, default to dashboard.
     const initialView = currentScriptId ? 'dashboard' : 'profile';
-    console.log(`[AppLayout] Setting initial view to: ${initialView}. (Has script: ${!!currentScriptId})`);
     setView(initialView);
 
-  }, [user, isUserLoading, currentScriptId, isCurrentScriptLoading, router]);
+  }, [isUserLoading, currentScriptId, isCurrentScriptLoading]);
 
 
   const handleSetView = (newView: View | 'settings' | 'profile-edit') => {
@@ -78,10 +67,11 @@ function AppLayoutInternal() {
     } else {
        // Allow navigation only if a script is loaded, or if navigating to the profile
       if (currentScriptId || newView === 'profile') {
-        console.log(`[AppLayout] View changed to: ${newView}`);
         setView(newView);
       } else {
-        console.log(`[AppLayout] View change to ${newView} blocked. No script loaded.`);
+        // If no script is loaded, you should be on the profile page anyway.
+        // This can act as a failsafe.
+        setView('profile');
       }
     }
   };
@@ -103,12 +93,9 @@ function AppLayoutInternal() {
       default: return <ProfileView setView={handleSetView} />;
     }
   };
+  
+  const centralLoading = isUserLoading || isCurrentScriptLoading || isProfileLoading;
 
-  const centralLoading = isUserLoading || isCurrentScriptLoading || (user && isProfileLoading);
-  console.log('[AppLayout] Central loading state:', { centralLoading, isUserLoading, isCurrentScriptLoading, isProfileLoading: !!(user && isProfileLoading) });
-
-
-  // Show a single, centralized loading screen.
   if (centralLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
@@ -122,10 +109,8 @@ function AppLayoutInternal() {
   
   if (!user) {
       // This is a fallback while the redirect to /login is happening.
-      console.log('[AppLayout] Render blocked, no user object.');
       return null;
   }
-
 
   return (
     <>
@@ -169,6 +154,7 @@ export default function AppLayout() {
           <AppLayoutInternal />
         </ScriptProvider>
       ) : (
+        // Render without ScriptProvider if no script is selected
         <AppLayoutInternal />
       )}
     </SidebarProvider>
