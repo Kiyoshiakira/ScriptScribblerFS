@@ -11,15 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useSettings } from '@/context/settings-context';
-import { Skeleton } from './ui/skeleton';
 import { Separator } from './ui/separator';
 import { useUser } from '@/firebase';
 import { useCurrentScript } from '@/context/current-script-context';
@@ -120,7 +112,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
            <div className="space-y-2">
             <Label>AI Model</Label>
              <div className='p-3 border rounded-md bg-muted/50 text-sm text-muted-foreground'>
-                The application is configured to use the <strong>gemini-2.5-flash-latest</strong> model for all AI operations.
+                The application is configured to use the <strong>gemini-2.5-flash</strong> model for all AI operations.
              </div>
           </div>
 
