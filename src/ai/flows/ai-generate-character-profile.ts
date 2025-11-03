@@ -40,6 +40,10 @@ export async function aiGenerateCharacterProfile(
 
 const prompt = ai.definePrompt({
     name: 'generateCharacterProfilePrompt',
+    model: googleAI.model('gemini-2.5-flash'),
+    config: {
+      temperature: 0.7,
+    },
     input: { schema: AiGenerateCharacterProfileInputSchema },
     output: { schema: AiGenerateCharacterProfileOutputSchema },
     prompt: `You are an expert screenwriter and character creator.
@@ -69,16 +73,7 @@ const aiGenerateCharacterProfileFlow = ai.defineFlow(
     outputSchema: AiGenerateCharacterProfileOutputSchema,
   },
   async input => {
-    const model = googleAI('gemini-2.5-flash');
-    const { output } = await ai.generate({
-      model,
-      prompt: prompt,
-      input: input,
-      output: { schema: AiGenerateCharacterProfileOutputSchema },
-      config: {
-        temperature: 0.7,
-      },
-    });
+    const { output } = await prompt(input);
     if (!output) {
       throw new Error('AI failed to return a valid character profile. The output did not match the expected format.');
     }

@@ -32,6 +32,10 @@ export async function aiSuggestSceneImprovements(
 
 const prompt = ai.definePrompt({
     name: 'suggestSceneImprovementsPrompt',
+    model: googleAI.model('gemini-2.5-flash'),
+    config: {
+      temperature: 0.7,
+    },
     input: { schema: AiSuggestSceneImprovementsInputSchema },
     output: { schema: AiSuggestSceneImprovementsOutputSchema },
     prompt: `You are a screenplay expert providing constructive feedback on a given screenplay.
@@ -53,16 +57,7 @@ const aiSuggestSceneImprovementsFlow = ai.defineFlow(
     outputSchema: AiSuggestSceneImprovementsOutputSchema,
   },
   async input => {
-    const model = googleAI('gemini-2.5-flash');
-    const {output} = await ai.generate({
-      model,
-      prompt: prompt,
-      input: input,
-      output: { schema: AiSuggestSceneImprovementsOutputSchema },
-      config: {
-        temperature: 0.7,
-      },
-    });
+    const {output} = await prompt(input);
     if (!output) {
       throw new Error('AI failed to return valid suggestions. The output did not match the expected format.');
     }

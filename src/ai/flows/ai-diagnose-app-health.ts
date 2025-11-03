@@ -41,6 +41,10 @@ export async function aiDiagnoseAppHealth(
 
 const prompt = ai.definePrompt({
     name: 'diagnoseAppHealthPrompt',
+    model: googleAI.model('gemini-2.5-flash'),
+    config: {
+      temperature: 0.1,
+    },
     input: { schema: AiDiagnoseAppHealthInputSchema },
     output: { schema: AiDiagnoseAppHealthOutputSchema },
     prompt: `You are an expert software quality assurance engineer specializing in React and Firebase applications.
@@ -72,16 +76,7 @@ const aiDiagnoseAppHealthFlow = ai.defineFlow(
     outputSchema: AiDiagnoseAppHealthOutputSchema,
   },
   async input => {
-    const model = googleAI('gemini-2.5-flash');
-    const { output } = await ai.generate({
-      model,
-      prompt: prompt,
-      input: input,
-      output: { schema: AiDiagnoseAppHealthOutputSchema },
-      config: {
-        temperature: 0.1,
-      },
-    });
+    const { output } = await prompt(input);
     if (!output) {
       throw new Error(
         'AI failed to return a valid diagnosis. The output did not match the expected format.'

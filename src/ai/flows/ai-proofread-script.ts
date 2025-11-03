@@ -47,6 +47,10 @@ export async function aiProofreadScript(
 
 const prompt = ai.definePrompt({
     name: 'proofreadScriptPrompt',
+    model: googleAI.model('gemini-2.5-flash'),
+    config: {
+      temperature: 0.1,
+    },
     input: { schema: AiProofreadScriptInputSchema },
     output: { schema: AiProofreadScriptOutputSchema },
     prompt: `You are an expert proofreader and script supervisor for screenplays.
@@ -80,16 +84,7 @@ const aiProofreadScriptFlow = ai.defineFlow(
     if (input.script.length < 50) {
       return { suggestions: [] };
     }
-    const model = googleAI('gemini-2.5-flash');
-    const { output } = await ai.generate({
-      model,
-      prompt: prompt,
-      input: input,
-      output: { schema: AiProofreadScriptOutputSchema },
-      config: {
-        temperature: 0.1,
-      },
-    });
+    const { output } = await prompt(input);
     if (!output) {
       throw new Error('AI failed to return valid proofreading suggestions. The output did not match the expected format.');
     }

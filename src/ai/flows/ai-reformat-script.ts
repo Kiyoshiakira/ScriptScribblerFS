@@ -40,6 +40,7 @@ export async function aiReformatScript(
 const prompt = ai.definePrompt(
     {
         name: 'reformatScriptPrompt',
+        model: googleAI.model('gemini-2.5-flash'),
         input: { schema: AiReformatScriptInputSchema },
         output: { schema: AiReformatScriptOutputSchema },
         prompt: `You are an expert script formatter.
@@ -69,12 +70,7 @@ const aiReformatScriptFlow = ai.defineFlow(
     outputSchema: AiReformatScriptOutputSchema,
   },
   async input => {
-    const { output } = await ai.generate({
-      model: googleAI('gemini-2.5-flash'),
-      prompt: prompt,
-      input: input,
-      output: { schema: AiReformatScriptOutputSchema },
-    });
+    const { output } = await prompt(input);
     if (!output) {
       throw new Error(
         'AI failed to return a valid formatted script. The output did not match the expected format.'
