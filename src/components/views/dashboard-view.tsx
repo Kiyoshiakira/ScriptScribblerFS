@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useScript } from "@/context/script-context";

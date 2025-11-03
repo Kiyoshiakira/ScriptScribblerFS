@@ -119,11 +119,13 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
         } catch (error: any) {
              console.error("Error processing imported content:", error);
              dismiss();
-             toast({
-                variant: 'destructive',
-                title: 'Import Failed',
-                description: error.message || 'An unknown error occurred during import.',
-            });
+             if (!(error instanceof FirestorePermissionError)) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Import Failed',
+                    description: error.message || 'An unknown error occurred during import.',
+                });
+             }
         }
     }
 
@@ -212,11 +214,13 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
     } catch (error) {
         console.error('Scribbler import failed:', error);
         dismiss();
-        toast({
-            variant: 'destructive',
-            title: 'Import Failed',
-            description: error instanceof Error ? error.message : 'An unknown error occurred during import.',
-        });
+        if (!(error instanceof FirestorePermissionError)) {
+            toast({
+                variant: 'destructive',
+                title: 'Import Failed',
+                description: error instanceof Error ? error.message : 'An unknown error occurred during import.',
+            });
+        }
     }
   }
 
@@ -300,11 +304,13 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
       } catch (error) {
          console.error("--- DEBUG: Import Parsing Failed ---", error);
          dismiss();
-         toast({
-            variant: 'destructive',
-            title: 'Import Failed',
-            description: error instanceof Error ? error.message : 'An unknown error occurred during import.',
-        });
+         if (!(error instanceof FirestorePermissionError)) {
+            toast({
+                variant: 'destructive',
+                title: 'Import Failed',
+                description: error instanceof Error ? error.message : 'An unknown error occurred during import.',
+            });
+         }
       }
     };
     reader.onerror = () => {
