@@ -1,173 +1,128 @@
 /**
- * @fileOverview Firestore Security Rules for ScriptSync.
+ * @fileOverview Firestore Security Rules for ScriptScribbler.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for personal data and utilizes a role-based access control for collaboration features.
+ * This ruleset enforces a strict user-ownership model. All user-generated content
+ * (scripts, characters, notes, scenes) is stored in subcollections under the user's
+ * unique ID, ensuring data isolation and simplifying security rules. It also includes
+ * a rule for a public-write error reporting collection.
  *
  * Data Structure:
- * - Users: /users/{userId} - Each user can only access their own profile.
- * - Scripts, Scenes, Characters, SceneCharacters: /users/{userId}/scripts/{scriptId}/... - All nested under the user's ID, ensuring only the owner has access.
- * - Collaborations: /collaborations/{collaborationId} - Collaboration sessions are managed independently, with access controlled via membership and role.
+ * - /users/{userId}: Public-readable user profile information.
+ * - /users/{userId}/scripts/{scriptId}: Core script documents.
+ * - /users/{userId}/scripts/{scriptId}/[characters|notes|scenes|comments|versions]/{docId}: Subcollections for script data.
+ * - /error-reports/{reportId}: Collection for users to submit error logs.
  *
  * Key Security Decisions:
- * - Users cannot list all users.
- * - Collaboration access is role-based, with roles defined within the Collaboration document.
- * - Data validation is limited to ownership checks and relationship integrity to allow for rapid prototyping.
- *
- * Denormalization for Authorization:
- * - The `authorId` field is denormalized into the Script document to enforce script ownership.
- * - The `userId` and `role` fields within the Collaboration document enable role-based access control without additional reads.
- *
- * Structural Segregation:
- * - User-owned scripts are stored under `/users/{userId}`, separate from collaboration data, ensuring clear ownership and security boundaries.
+ * - User profiles (`/users/{userId}`) are world-readable to facilitate future social features,
+ *   but only the owner can write to their own profile.
+ * - All script-related data is nested under the user path, making ownership checks straightforward.
+ * - Users can write to the `error-reports` collection but cannot read from it, protecting privacy.
+ * - Users cannot list all other users in the system.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profiles.
+     * @description Controls access to user profiles. Profiles are world-readable
+     * but only writable by the owner.
      * @path /users/{userId}
-     * @allow (create) User with ID 'user123' can create their own profile.
-     *    - request.auth.uid: 'user123'
-     *    - resource.data.id: 'user123'
-     * @allow (get, update, delete) User with ID 'user123' can read, update, or delete their own profile.
-     *    - request.auth.uid: 'user123'
-     * @deny (get) User with ID 'user456' cannot read user profile 'user123'.
-     *    - request.auth.uid: 'user456'
-     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
-      function isOwner(userId) {
+      function isOwner() {
         return request.auth != null && request.auth.uid == userId;
       }
 
-      allow get: if isOwner(userId);
+      allow get: if true; // Publicly readable profiles
       allow list: if false; // Prevent listing all users
 
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId) && resource.data.id == userId;
-      allow delete: if isOwner(userId) && resource != null;
+      allow create, update, delete: if isOwner();
     }
 
     /**
-     * @description Controls access to scripts owned by a specific user.
+     * @description Controls access to script documents. A user can read or write
+     * their own scripts.
      * @path /users/{userId}/scripts/{scriptId}
-     * @allow (create) User with ID 'user123' can create a script.
-     *    - request.auth.uid: 'user123'
-     *    - resource.data.authorId: 'user123'
-     * @allow (get, update, delete) User with ID 'user123' can read, update, or delete their own script.
-     *    - request.auth.uid: 'user123'
-     *    - resource.data.authorId: 'user123'
-     * @deny (get) User with ID 'user456' cannot read script 'script1' of user 'user123'.
-     *    - request.auth.uid: 'user456'
-     * @principle Enforces document ownership for all write operations and restricts read access to the owner.
      */
     match /users/{userId}/scripts/{scriptId} {
-      function isOwner(userId) {
+      function isOwner() {
         return request.auth != null && request.auth.uid == userId;
       }
-
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
-      allow create: if isOwner(userId) && request.resource.data.authorId == userId;
-      allow update: if isOwner(userId) && resource.data.authorId == userId;
-      allow delete: if isOwner(userId) && resource != null;
+      allow read, write: if isOwner();
     }
 
     /**
-     * @description Controls access to scenes within a specific script owned by a user.
-     * @path /users/{userId}/scripts/{scriptId}/scenes/{sceneId}
-     * @allow (create) User with ID 'user123' can create a scene within their script.
-     *    - request.auth.uid: 'user123'
-     * @allow (get, update, delete) User with ID 'user123' can read, update, or delete a scene within their own script.
-     *    - request.auth.uid: 'user123'
-     * @deny (get) User with ID 'user456' cannot read scene 'scene1' within script 'script1' of user 'user123'.
-     *    - request.auth.uid: 'user456'
-     * @principle Restricts access to scenes to the script owner.
+     * @description Controls access to script versions.
+     * @path /users/{userId}/scripts/{scriptId}/versions/{versionId}
      */
-    match /users/{userId}/scripts/{scriptId}/scenes/{sceneId} {
-      function isOwner(userId) {
+    match /users/{userId}/scripts/{scriptId}/versions/{versionId} {
+      function isOwner() {
         return request.auth != null && request.auth.uid == userId;
       }
-
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null;
-      allow delete: if isOwner(userId) && resource != null;
+      allow read, write: if isOwner();
     }
 
     /**
-     * @description Controls access to characters within a specific script owned by a user.
+     * @description Controls access to characters within a script.
      * @path /users/{userId}/scripts/{scriptId}/characters/{characterId}
-     * @allow (create) User with ID 'user123' can create a character within their script.
-     *    - request.auth.uid: 'user123'
-     * @allow (get, update, delete) User with ID 'user123' can read, update, or delete a character within their own script.
-     *    - request.auth.uid: 'user123'
-     * @deny (get) User with ID 'user456' cannot read character 'character1' within script 'script1' of user 'user123'.
-     *    - request.auth.uid: 'user456'
-     * @principle Restricts access to characters to the script owner.
      */
     match /users/{userId}/scripts/{scriptId}/characters/{characterId} {
-      function isOwner(userId) {
+      function isOwner() {
         return request.auth != null && request.auth.uid == userId;
       }
-
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null;
-      allow delete: if isOwner(userId) && resource != null;
+      allow read, write: if isOwner();
     }
 
     /**
-     * @description Controls access to scene-character relationships within a specific script owned by a user.
-     * @path /users/{userId}/scripts/{scriptId}/sceneCharacters/{sceneCharacterId}
-     * @allow (create) User with ID 'user123' can create a scene-character relationship within their script.
-     *    - request.auth.uid: 'user123'
-     * @allow (get, update, delete) User with ID 'user123' can read, update, or delete a scene-character relationship within their own script.
-     *    - request.auth.uid: 'user123'
-     * @deny (get) User with ID 'user456' cannot read scene-character 'sceneCharacter1' within script 'script1' of user 'user123'.
-     *    - request.auth.uid: 'user456'
-     * @principle Restricts access to scene-character relationships to the script owner.
+     * @description Controls access to notes within a script.
+     * @path /users/{userId}/scripts/{scriptId}/notes/{noteId}
      */
-    match /users/{userId}/scripts/{scriptId}/sceneCharacters/{sceneCharacterId} {
-      function isOwner(userId) {
+    match /users/{userId}/scripts/{scriptId}/notes/{noteId} {
+      function isOwner() {
         return request.auth != null && request.auth.uid == userId;
       }
-
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null;
-      allow delete: if isOwner(userId) && resource != null;
+      allow read, write: if isOwner();
     }
 
     /**
-     * @description Controls access to collaboration sessions.
-     * @path /collaborations/{collaborationId}
-     * @allow (get, list) Any authenticated user can read all collaboration sessions for now.
-     *    - request.auth.uid: 'user123'
-     * @allow (create) Any authenticated user can create a collaboration session.
-     *    - request.auth.uid: 'user123'
-     * @deny (update, delete) Only specific users can update or delete a collaboration session.
-     *    - request.auth.uid: 'user456'
-     * @principle Enforces role-based access control for collaboration data.
+     * @description Controls access to scenes within a script.
+     * @path /users/{userId}/scripts/{scriptId}/scenes/{sceneId}
      */
-    match /collaborations/{collaborationId} {
-      function isSignedIn() {
-        return request.auth != null;
+    match /users/{userId}/scripts/{scriptId}/scenes/{sceneId} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == userId;
       }
-      // TODO: Implement more robust access control based on the `role` and `permissions` fields within the Collaboration document.
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if false; // TODO: Add role-based validation once the schema is refined.
-      allow delete: if false; // TODO: Add role-based validation once the schema is refined.
+      allow read, write: if isOwner();
+    }
+    
+    /**
+     * @description Controls access to comments within a script.
+     * @path /users/{userId}/scripts/{scriptId}/comments/{commentId}
+     */
+    match /users/{userId}/scripts/{scriptId}/comments/{commentId} {
+        function isOwner() {
+          return request.auth != null && request.auth.uid == userId;
+        }
+
+        // Only the script owner can read/write comments for now.
+        // This can be expanded for collaborators later.
+        allow read, write: if isOwner();
+    }
+
+    /**
+     * @description Controls access to the error reporting collection. Allows any
+     * authenticated user to create a report, but allows no one to read or list them
+     * to protect user data.
+     * @path /error-reports/{reportId}
+     */
+    match /error-reports/{reportId} {
+        function isSignedIn() {
+            return request.auth != null;
+        }
+
+        allow create: if isSignedIn();
+        allow read, list, update, delete: if false;
     }
   }
 }
