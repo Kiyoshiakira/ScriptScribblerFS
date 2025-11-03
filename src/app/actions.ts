@@ -36,7 +36,6 @@ import {
     aiDiagnoseAppHealth,
     type AiDiagnoseAppHealthInput,
 } from '@/ai/flows/ai-diagnose-app-health';
-import { SCRIPT_TOKEN_LIMIT } from '@/constants';
 
 
 export async function runAiReformatScript(input: AiReformatScriptInput) {
@@ -164,13 +163,6 @@ export async function runAiAgent(input: AiAgentOrchestratorInput) {
 export async function runGetAiProofreadSuggestions(input: AiProofreadScriptInput) {
     if (!process.env.GEMINI_API_KEY) {
         return { data: null, error: 'GEMINI_API_KEY is not set. Please create a .env.local file and add your key.' };
-    }
-    // Prevent calling the flow if the script is too long.
-    if (input.script.length > SCRIPT_TOKEN_LIMIT) {
-        return {
-          data: null,
-          error: `The script is too long for the proofreader. Please reduce its length and try again. (Limit: ${SCRIPT_TOKEN_LIMIT} characters)`,
-        };
     }
     try {
         const result = await aiProofreadScript(input);

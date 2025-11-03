@@ -38,7 +38,11 @@ export async function aiGenerateCharacterProfile(
   return aiGenerateCharacterProfileFlow(input);
 }
 
-const prompt = `You are an expert screenwriter and character creator.
+const prompt = ai.definePrompt({
+    name: 'generateCharacterProfilePrompt',
+    input: { schema: AiGenerateCharacterProfileInputSchema },
+    output: { schema: AiGenerateCharacterProfileOutputSchema },
+    prompt: `You are an expert screenwriter and character creator.
 
   Your task is to generate a detailed character profile based on a simple description.
 
@@ -55,7 +59,8 @@ const prompt = `You are an expert screenwriter and character creator.
   \`\`\`
   {{{characterDescription}}}
   \`\`\`
-  `;
+  `,
+});
 
 const aiGenerateCharacterProfileFlow = ai.defineFlow(
   {

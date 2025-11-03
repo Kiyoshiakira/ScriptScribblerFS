@@ -30,7 +30,11 @@ export async function aiSuggestSceneImprovements(
   return aiSuggestSceneImprovementsFlow(input);
 }
 
-const prompt = `You are a screenplay expert providing constructive feedback on a given screenplay.
+const prompt = ai.definePrompt({
+    name: 'suggestSceneImprovementsPrompt',
+    input: { schema: AiSuggestSceneImprovementsInputSchema },
+    output: { schema: AiSuggestSceneImprovementsOutputSchema },
+    prompt: `You are a screenplay expert providing constructive feedback on a given screenplay.
 
 Analyze the screenplay and provide a list of suggestions for improvements.
 Consider aspects such as scene descriptions, character development, and plot progression.
@@ -39,7 +43,8 @@ Screenplay:
 {{screenplay}}
 
 Suggestions:
-`;
+`,
+});
 
 const aiSuggestSceneImprovementsFlow = ai.defineFlow(
   {

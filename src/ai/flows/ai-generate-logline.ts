@@ -35,7 +35,11 @@ export async function aiGenerateLogline(
   return aiGenerateLoglineFlow(input);
 }
 
-const prompt = `You are an expert Hollywood script reader.
+const prompt = ai.definePrompt({
+    name: 'generateLoglinePrompt',
+    input: { schema: AiGenerateLoglineInputSchema },
+    output: { schema: AiGenerateLoglineOutputSchema },
+    prompt: `You are an expert Hollywood script reader.
 
   Your task is to read the provided screenplay and write a powerful, industry-standard logline.
 
@@ -49,7 +53,8 @@ const prompt = `You are an expert Hollywood script reader.
   \`\`\`
   {{{screenplay}}}
   \`\`\`
-  `;
+  `,
+});
 
 const aiGenerateLoglineFlow = ai.defineFlow(
   {

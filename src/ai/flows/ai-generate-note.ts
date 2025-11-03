@@ -43,7 +43,11 @@ export async function aiGenerateNote(
   return aiGenerateNoteFlow(input);
 }
 
-const prompt = `You are an expert screenwriting assistant.
+const prompt = ai.definePrompt({
+    name: 'generateNotePrompt',
+    input: { schema: AiGenerateNoteInputSchema },
+    output: { schema: AiGenerateNoteOutputSchema },
+    prompt: `You are an expert screenwriting assistant.
 
   Your task is to generate a structured note based on a user's prompt.
 
@@ -56,7 +60,8 @@ const prompt = `You are an expert screenwriting assistant.
   \`\`\`
   {{{prompt}}}
   \`\`\`
-  `;
+  `,
+});
 
 const aiGenerateNoteFlow = ai.defineFlow(
   {

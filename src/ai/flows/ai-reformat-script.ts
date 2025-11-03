@@ -37,7 +37,11 @@ export async function aiReformatScript(
   return aiReformatScriptFlow(input);
 }
 
-const prompt = `You are an expert script formatter.
+const prompt = ai.definePrompt({
+    name: 'reformatScriptPrompt',
+    input: { schema: AiReformatScriptInputSchema },
+    output: { schema: AiReformatScriptOutputSchema },
+    prompt: `You are an expert script formatter.
 
   Your task is to take the provided raw text and reformat it into a clean, readable, industry-standard screenplay format.
 
@@ -53,7 +57,8 @@ const prompt = `You are an expert script formatter.
   \`\`\`
   {{{rawScript}}}
   \`\`\`
-  `;
+  `,
+});
 
 const aiReformatScriptFlow = ai.defineFlow(
   {

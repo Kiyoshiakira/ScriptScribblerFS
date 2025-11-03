@@ -46,7 +46,11 @@ export async function aiProofreadScript(
   return aiProofreadScriptFlow(input);
 }
 
-const prompt = `You are an expert proofreader and script supervisor for screenplays.
+const prompt = ai.definePrompt({
+    name: 'proofreadScriptPrompt',
+    input: { schema: AiProofreadScriptInputSchema },
+    output: { schema: AiProofreadScriptOutputSchema },
+    prompt: `You are an expert proofreader and script supervisor for screenplays.
 
   Your task is to analyze the provided screenplay and identify errors. You MUST NOT make creative changes to the story, characters, or dialogue. Your focus is exclusively on correctness.
 
@@ -63,7 +67,8 @@ const prompt = `You are an expert proofreader and script supervisor for screenpl
   \`\`\`
   {{{script}}}
   \`\`\`
-  `;
+  `,
+});
 
 const aiProofreadScriptFlow = ai.defineFlow(
   {

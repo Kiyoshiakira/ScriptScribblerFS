@@ -39,7 +39,11 @@ export async function aiDiagnoseAppHealth(
   return aiDiagnoseAppHealthFlow(input);
 }
 
-const prompt = `You are an expert software quality assurance engineer specializing in React and Firebase applications.
+const prompt = ai.definePrompt({
+    name: 'diagnoseAppHealthPrompt',
+    input: { schema: AiDiagnoseAppHealthInputSchema },
+    output: { schema: AiDiagnoseAppHealthOutputSchema },
+    prompt: `You are an expert software quality assurance engineer specializing in React and Firebase applications.
 
   Your task is to analyze a snapshot of the application's state and provide a health diagnosis.
 
@@ -58,7 +62,8 @@ const prompt = `You are an expert software quality assurance engineer specializi
   \`\`\`json
   {{{appState}}}
   \`\`\`
-  `;
+  `,
+});
 
 const aiDiagnoseAppHealthFlow = ai.defineFlow(
   {
