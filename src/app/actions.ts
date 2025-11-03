@@ -33,24 +33,35 @@ import {
     type AiReformatScriptInput,
 } from '@/ai/flows/ai-reformat-script';
 import {
-    aiDiagnoseAppHealth,
-    type AiDiagnoseAppHealthInput,
+  aiDiagnoseAppHealth,
+  type AiDiagnoseAppHealthInput,
 } from '@/ai/flows/ai-diagnose-app-health';
+import { isAiAvailable } from '@/ai/genkit';
 
 
 export async function runAiReformatScript(input: AiReformatScriptInput) {
-    if (!process.env.GEMINI_API_KEY) {
-        return { data: null, error: 'GEMINI_API_KEY is not set. Please create a .env.local file and add your key.' };
+    // Short-circuit if AI unavailable (missing API key / plugin). Allow import to continue
+    // by returning the raw script as the formattedScript with a debug fallback indicator.
+    if (!isAiAvailable) {
+        return {
+            data: { formattedScript: input.rawScript, __debug: { fallback: true, reason: 'GEMINI_API_KEY not set' } },
+            error: null,
+        };
     }
+
     try {
         const result = await aiReformatScript(input);
+        // Validate shape defensively
+        if (!result || typeof result.formattedScript !== 'string') {
+            return { data: null, error: 'AI returned an unexpected output shape (formattedScript missing or invalid).' };
+        }
         return { data: result, error: null };
     } catch (error) {
-        console.error(error);
+        console.error('[runAiReformatScript] Error invoking AI flow:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return {
-        data: null,
-        error: `An error occurred while reformatting the script: ${errorMessage}`,
+            data: null,
+            error: `An error occurred while reformatting the script: ${errorMessage}`,
         };
     }
 }

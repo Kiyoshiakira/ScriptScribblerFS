@@ -1,3 +1,4 @@
+```typescript
 'use server';
 /**
  * @fileOverview An AI flow for reformatting script text into standard screenplay format.
@@ -7,7 +8,7 @@
  * - AiReformatScriptOutput - The return type for the function.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, isAiAvailable } from '@/ai/genkit';
 import { z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 
@@ -26,6 +27,14 @@ const AiReformatScriptOutputSchema = z.object({
     .describe(
       'The script text, reformatted to meet standard screenplay conventions.'
     ),
+  // optional diagnostic flag to indicate the output is a fallback
+  __debug?: z
+    .object({
+      fallback: z.boolean().optional(),
+      model: z.string().optional(),
+      rawResponse: z.any().optional(),
+    })
+    .optional(),
 });
 export type AiReformatScriptOutput = z.infer<
   typeof AiReformatScriptOutputSchema
@@ -67,21 +76,122 @@ const aiReformatScriptFlow = ai.defineFlow(
     outputSchema: AiReformatScriptOutputSchema,
   },
   async input => {
-    const model = googleAI('gemini-2.5-flash');
-    const { output } = await ai.generate({
-      model,
-      prompt: prompt,
-      input: input,
-      output: { schema: AiReformatScriptOutputSchema },
-      config: {
-        temperature: 0,
-      },
-    });
-    if (!output) {
-      throw new Error(
-        'AI failed to reformat the script. The output did not match the expected format.'
-      );
+    // If AI not available (missing API key), gracefully return the raw script as formatted
+    if (!isAiAvailable) {
+      return { formattedScript: input.rawScript, __debug: { fallback: true, model: 'none', rawResponse: 'GEMINI_API_KEY missing' } };
     }
-    return output;
+
+    // Helper to attempt a generation with a specified model and config
+    async function attemptGeneration(modelId: string, temperature = 0) {
+      const model = googleAI(modelId);
+      try {
+        const { output, raw } = await ai.generate({
+          model,
+          prompt: prompt,
+          input: input,
+          output: { schema: AiReformatScriptOutputSchema },
+          config: {
+            temperature,
+          },
+        });
+        return { output, raw };
+      } catch (err) {
+        // rethrow so caller knows the attempt failed
+        throw err;
+      }
+    }
+
+    // First try primary model
+    let primaryResponse;
+    try {
+      primaryResponse = await attemptGeneration('gemini-2.5-flash', 0);
+    } catch (errPrimary) {
+      console.error('[aiReformatScriptFlow] Primary generation error:', errPrimary);
+      // Try a fallback model once
+      try {
+        const fallbackResponse = await attemptGeneration('gemini-1.5', 0);
+        // Validate fallback output
+        if (fallbackResponse?.output?.formattedScript && typeof fallbackResponse.output.formattedScript === 'string') {
+          return {
+            formattedScript: fallbackResponse.output.formattedScript,
+            __debug: {
+              fallback: true,
+              model: 'gemini-1.5',
+              rawResponse: fallbackResponse.raw ?? null,
+            },
+          };
+        } else {
+          // If even fallback returned invalid shape, log the raw response
+          console.error('[aiReformatScriptFlow] Fallback response invalid shape:', fallbackResponse?.raw ?? fallbackResponse);
+          // Final fallback: return original script so import can proceed
+          return {
+            formattedScript: input.rawScript,
+            __debug: {
+              fallback: true,
+              model: 'gemini-1.5',
+              rawResponse: fallbackResponse?.raw ?? null,
+            },
+          };
+        }
+      } catch (errFallback) {
+        console.error('[aiReformatScriptFlow] Fallback generation error:', errFallback);
+        // Final fallback: return original script so import can proceed
+        return {
+          formattedScript: input.rawScript,
+          __debug: {
+            fallback: true,
+            model: 'none',
+            rawResponse: String(errFallback),
+          },
+        };
+      }
+    }
+
+    // If primary succeeded, validate the output shape
+    if (!primaryResponse || !primaryResponse.output) {
+      console.error('[aiReformatScriptFlow] Primary generation returned no output', primaryResponse?.raw ?? primaryResponse);
+      // Try fallback model once
+      try {
+        const fallbackResponse = await attemptGeneration('gemini-1.5', 0);
+        if (fallbackResponse?.output?.formattedScript && typeof fallbackResponse.output.formattedScript === 'string') {
+          return {
+            formattedScript: fallbackResponse.output.formattedScript,
+            __debug: {
+              fallback: true,
+              model: 'gemini-1.5',
+              rawResponse: fallbackResponse.raw ?? null,
+            },
+          };
+        } else {
+          console.error('[aiReformatScriptFlow] Fallback response invalid shape:', fallbackResponse?.raw ?? fallbackResponse);
+          return { formattedScript: input.rawScript, __debug: { fallback: true, model: 'gemini-1.5', rawResponse: fallbackResponse?.raw ?? null } };
+        }
+      } catch (errFallback2) {
+        console.error('[aiReformatScriptFlow] Fallback attempt after empty output failed:', errFallback2);
+        return { formattedScript: input.rawScript, __debug: { fallback: true, model: 'none', rawResponse: String(errFallback2) } };
+      }
+    }
+
+    // primaryResponse has output: validate it
+    const out = primaryResponse.output;
+    if (out.formattedScript && typeof out.formattedScript === 'string') {
+      return { formattedScript: out.formattedScript, __debug: { fallback: false, model: 'gemini-2.5-flash', rawResponse: primaryResponse.raw ?? null } };
+    }
+
+    // If we reach here, output is malformed — attempt one retry with same model but a slightly different config
+    console.warn('[aiReformatScriptFlow] Primary output malformed, attempting retry with temperature 0.1');
+    try {
+      const retryResponse = await attemptGeneration('gemini-2.5-flash', 0.1);
+      if (retryResponse?.output?.formattedScript && typeof retryResponse.output.formattedScript === 'string') {
+        return { formattedScript: retryResponse.output.formattedScript, __debug: { fallback: false, model: 'gemini-2.5-flash-retry', rawResponse: retryResponse.raw ?? null } };
+      } else {
+        console.error('[aiReformatScriptFlow] Retry response invalid shape:', retryResponse?.raw ?? retryResponse);
+        return { formattedScript: input.rawScript, __debug: { fallback: true, model: 'gemini-2.5-flash-retry', rawResponse: retryResponse?.raw ?? null } };
+      }
+    } catch (errRetry) {
+      console.error('[aiReformatScriptFlow] Retry failed:', errRetry);
+      return { formattedScript: input.rawScript, __debug: { fallback: true, model: 'gemini-2.5-flash-retry', rawResponse: String(errRetry) } };
+    }
   }
 );
+```
