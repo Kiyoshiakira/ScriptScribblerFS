@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Book,
@@ -297,7 +298,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
         setView('dashboard');
 
       } catch (error) {
-         console.error('--- DEBUG: Import Parsing Failed ---', error);
+         console.error("--- DEBUG: Import Parsing Failed ---", error);
          dismiss();
          toast({
             variant: 'destructive',
@@ -320,7 +321,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
     fileInputRef.current?.click();
   };
   
-    const handleExport = async () => {
+  const handleExport = async () => {
     if (!script) {
       toast({ variant: 'destructive', title: 'Export Failed', description: 'No active script to export.' });
       return;
@@ -330,7 +331,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
 
     const meta = {
       exportedAt: new Date().toISOString(),
-      appVersion: '1.0.0',
+      appVersion: '1.0.0', // This could come from package.json
       scriptTitle: script.title,
     };
     zip.file('meta.json', JSON.stringify(meta, null, 2));
@@ -342,7 +343,9 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
     };
     zip.file('project.json', JSON.stringify(projectData, null, 2));
 
+    // Now include characters, scenes, and notes
     if (characters) {
+      // We remove the ID because it will be reassigned on import
       zip.file('characters.json', JSON.stringify(characters.map(({ id, ...rest }) => rest), null, 2));
     }
     if (scenes) {
