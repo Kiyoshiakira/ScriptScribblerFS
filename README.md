@@ -75,6 +75,6 @@ This is often caused by an issue with Firebase authentication or data fetching. 
     *   Click **Add domain**.
     *   Enter `localhost` and click **Add**. This is essential for local development.
 
-3.  **Check Firestore Rules:** Ensure your `firestore.rules` are deployed and allow the signed-in user to read and write the necessary documents. An incorrect rule can cause data fetches to fail silently. You can check for `FirebaseError: Missing or insufficient permissions` in the browser console.
+3.  **Check Firestore Rules:** Ensure your `firestore.rules` are deploed and allow the signed-in user to read and write the necessary documents. An incorrect rule can cause data fetches to fail silently. You can check for `FirebaseError: Missing or insufficient permissions` in the browser console.
 
 4.  **Check API Keys:** Ensure your `GEMINI_API_KEY` in `.env.local` is correct. While the app should disable AI features gracefully, a misconfiguration could potentially cause issues.
