@@ -35,7 +35,7 @@ const getBlockStyles = (type: ScriptBlockType): string => {
 
 const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isHighlighted }) => {
   const elementRef = useRef<HTMLDivElement>(null);
-  const { splitScene } = useScript();
+  const { splitScene, insertBlockAfter } = useScript();
 
   // This effect ensures that if the block's text is updated from an external
   // source (like a find-and-replace), the DOM is updated to match.
@@ -63,11 +63,9 @@ const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isH
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    // For now, we only prevent the default 'Enter' behavior to avoid creating new divs.
-    // In a more advanced editor, this would handle creating new blocks.
-    if (e.key === 'Enter' && !e.shiftKey) { // Allow shift+enter for newlines within a block
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      // Future logic: create and focus a new block below this one.
+      insertBlockAfter(block.id);
     }
   };
 

@@ -39,7 +39,7 @@ export default function ScriptEditor({ isStandalone = false }: ScriptEditorProps
     <div
       className={cn(
         'relative h-full w-full font-code max-w-3xl mx-auto',
-        isStandalone ? 'p-4' : 'p-8 md:p-16' // Add more padding for a doc-like feel
+        isStandalone ? 'p-4' : 'p-8 md:p-16 bg-card shadow-sm rounded-lg border' // Add styles for a doc-like feel
       )}
     >
       {document.blocks.map((block, index) => (

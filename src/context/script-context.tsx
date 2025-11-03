@@ -39,6 +39,7 @@ interface ScriptContextType {
   setScriptTitle: (title: string) => void;
   setScriptLogline: (logline: string) => void;
   splitScene: (blockId: string) => void;
+  insertBlockAfter: (blockId: string) => void;
   addComment: (blockId: string, content: string) => void;
   isScriptLoading: boolean;
   characters: Character[] | null;
@@ -57,6 +58,7 @@ export const ScriptContext = createContext<ScriptContextType>({
   setScriptTitle: () => {},
   setScriptLogline: () => {},
   splitScene: () => {},
+  insertBlockAfter: () => {},
   addComment: () => {},
   isScriptLoading: true,
   characters: null,
@@ -236,6 +238,35 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     });
   }, []);
 
+  const insertBlockAfter = useCallback((currentBlockId: string) => {
+    setLocalDocument(prevDoc => {
+      if (!prevDoc) return null;
+      const index = prevDoc.blocks.findIndex(b => b.id === currentBlockId);
+      if (index === -1) return prevDoc;
+
+      const newBlock: ScriptBlock = {
+        id: `block_${Date.now()}`,
+        type: ScriptBlockType.ACTION, // Default to action, can be smarter later
+        text: '',
+      };
+
+      const newBlocks = [...prevDoc.blocks];
+      newBlocks.splice(index + 1, 0, newBlock);
+      
+      // We need to focus the new block after the state updates and DOM renders.
+      // A simple way is to use a timeout, but a more robust way would involve effects.
+      setTimeout(() => {
+        const newElement = document.querySelector(`[data-block-id="${newBlock.id}"]`) as HTMLElement;
+        if (newElement) {
+          newElement.focus();
+        }
+      }, 0);
+
+      return { ...prevDoc, blocks: newBlocks };
+    });
+  }, []);
+
+
   const addComment = useCallback((blockId: string, content: string) => {
       if (!commentsCollectionRef || !user) return;
       
@@ -267,6 +298,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     setScriptTitle,
     setScriptLogline,
     splitScene,
+    insertBlockAfter,
     addComment,
     isScriptLoading,
     characters,
