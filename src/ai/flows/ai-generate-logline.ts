@@ -37,6 +37,10 @@ export async function aiGenerateLogline(
 
 const prompt = ai.definePrompt({
     name: 'generateLoglinePrompt',
+    model: googleAI.model('gemini-2.5-flash'),
+    config: {
+        temperature: 0.5,
+    },
     input: { schema: AiGenerateLoglineInputSchema },
     output: { schema: AiGenerateLoglineOutputSchema },
     prompt: `You are an expert Hollywood script reader.
@@ -63,16 +67,7 @@ const aiGenerateLoglineFlow = ai.defineFlow(
     outputSchema: AiGenerateLoglineOutputSchema,
   },
   async input => {
-    const model = googleAI('gemini-2.5-flash');
-    const { output } = await ai.generate({
-      model,
-      prompt: prompt,
-      input: input,
-      output: { schema: AiGenerateLoglineOutputSchema },
-      config: {
-        temperature: 0.5,
-      },
-    });
+    const { output } = await prompt(input);
     if (!output) {
       throw new Error('AI failed to return a valid logline. The output did not match the expected format.');
     }

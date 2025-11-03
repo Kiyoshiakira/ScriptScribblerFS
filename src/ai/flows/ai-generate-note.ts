@@ -45,6 +45,10 @@ export async function aiGenerateNote(
 
 const prompt = ai.definePrompt({
     name: 'generateNotePrompt',
+    model: googleAI.model('gemini-2.5-flash'),
+    config: {
+        temperature: 0.5,
+    },
     input: { schema: AiGenerateNoteInputSchema },
     output: { schema: AiGenerateNoteOutputSchema },
     prompt: `You are an expert screenwriting assistant.
@@ -70,16 +74,7 @@ const aiGenerateNoteFlow = ai.defineFlow(
     outputSchema: AiGenerateNoteOutputSchema,
   },
   async input => {
-    const model = googleAI('gemini-2.5-flash');
-    const { output } = await ai.generate({
-      model,
-      prompt: prompt,
-      input: input,
-      output: { schema: AiGenerateNoteOutputSchema },
-      config: {
-        temperature: 0.5,
-      },
-    });
+    const { output } = await prompt(input);
     if (!output) {
       throw new Error('AI failed to return a valid note. The output did not match the expected format.');
     }

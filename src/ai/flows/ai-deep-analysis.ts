@@ -36,6 +36,10 @@ export async function aiDeepAnalysis(
 
 const prompt = ai.definePrompt({
     name: 'deepAnalysisPrompt',
+    model: googleAI.model('gemini-2.5-flash'),
+    config: {
+        temperature: 0.5,
+    },
     input: { schema: AiDeepAnalysisInputSchema },
     output: { schema: AiDeepAnalysisOutputSchema },
     prompt: `You are an expert script doctor and story analyst.
@@ -57,16 +61,7 @@ const aiDeepAnalysisFlow = ai.defineFlow(
     outputSchema: AiDeepAnalysisOutputSchema,
   },
   async input => {
-    const model = googleAI('gemini-2.5-flash');
-    const {output} = await ai.generate({
-      model,
-      prompt: prompt,
-      input: input,
-      output: { schema: AiDeepAnalysisOutputSchema },
-      config: {
-        temperature: 0.5,
-      },
-    });
+    const {output} = await prompt(input);
     if (!output) {
       throw new Error('AI failed to return a valid analysis. The output did not match the expected format.');
     }
