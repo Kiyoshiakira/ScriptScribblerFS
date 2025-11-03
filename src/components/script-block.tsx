@@ -13,6 +13,7 @@ interface ScriptBlockProps {
   isHighlighted: boolean;
 }
 
+// These styles are inspired by standard screenplay formatting.
 const getBlockStyles = (type: ScriptBlockType): string => {
   switch (type) {
     case ScriptBlockType.SCENE_HEADING:
@@ -22,13 +23,13 @@ const getBlockStyles = (type: ScriptBlockType): string => {
     case ScriptBlockType.CHARACTER:
       return 'text-center uppercase my-4 w-full';
     case ScriptBlockType.PARENTHETICAL:
-      return 'text-center text-sm text-muted-foreground my-2 w-1/2 mx-auto';
+      return 'text-center text-sm my-2 w-7/12 mx-auto';
     case ScriptBlockType.DIALOGUE:
-      return 'my-4 w-10/12 md:w-8/12 mx-auto';
+      return 'my-4 w-9/12 md:w-7/12 mx-auto';
     case ScriptBlockType.TRANSITION:
       return 'text-right uppercase my-4 w-full';
     default:
-      return '';
+      return 'my-4'; // Default to action style
   }
 };
 
@@ -36,6 +37,8 @@ const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isH
   const elementRef = useRef<HTMLDivElement>(null);
   const { splitScene } = useScript();
 
+  // This effect ensures that if the block's text is updated from an external
+  // source (like a find-and-replace), the DOM is updated to match.
   useEffect(() => {
     const element = elementRef.current;
     if (element && element.innerText !== block.text) {
@@ -43,6 +46,7 @@ const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isH
     }
   }, [block.text]);
 
+  // This effect scrolls the highlighted block into view.
   useEffect(() => {
     const element = elementRef.current;
     if (element && isHighlighted) {
@@ -60,10 +64,10 @@ const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isH
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // For now, we only prevent the default 'Enter' behavior to avoid creating new divs.
-    // More complex logic for creating new blocks will be added later.
-    if (e.key === 'Enter') {
+    // In a more advanced editor, this would handle creating new blocks.
+    if (e.key === 'Enter' && !e.shiftKey) { // Allow shift+enter for newlines within a block
       e.preventDefault();
-      // Future logic: create a new block below
+      // Future logic: create and focus a new block below this one.
     }
   };
 
@@ -78,7 +82,7 @@ const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isH
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             className={cn(
-                'w-full outline-none focus:bg-muted/50 p-1 rounded-sm transition-colors',
+                'w-full outline-none focus:bg-muted/50 p-1 rounded-sm transition-colors whitespace-pre-wrap',
                 isHighlighted && 'bg-yellow-200 dark:bg-yellow-800'
             )}
             data-block-id={block.id}

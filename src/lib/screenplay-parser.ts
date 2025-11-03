@@ -5,13 +5,15 @@
 import { ScriptBlock, ScriptBlockType, ScriptDocument } from './editor-types';
 
 // Regular expressions to identify different screenplay elements.
+// These are inspired by the Fountain syntax and common screenplay formats.
 const Patterns = {
   // Scene headings: INT. or EXT., followed by a location and time of day.
-  // Handles variations like I/E. and INT./EXT.
-  sceneHeading: /^(INT|EXT|I\/E|INT\.\/EXT)\. .*/i,
-  // Transitions: e.g., FADE IN:, CUT TO:, DISSOLVE TO.
-  transition: /(FADE (IN|OUT):|CUT TO:|DISSOLVE TO:|SMASH CUT TO:)$/i,
+  // Handles variations like I/E. and INT./EXT. Also detects forced scene headings starting with a period.
+  sceneHeading: /^(INT|EXT|I\/E|INT\.\/EXT)\..*|^\..+/i,
+  // Transitions: e.g., FADE IN:, CUT TO:, DISSOLVE TO. Must be on its own line and often at the end.
+  transition: /(FADE (IN|OUT):|CUT TO:|DISSOLVE TO:|SMASH CUT TO:|>.*)$/i,
   // Character names: Typically all caps, not followed by dialogue on the same line.
+  // Must not be a scene heading. Should be on a line by itself.
   character: /^[A-Z][A-Z0-9 \t]+(?:\(V\.O\.\)|\(O\.S\.\))?$/,
   // Parentheticals: Enclosed in parentheses on their own line.
   parenthetical: /^\(.*\)$/,
@@ -20,7 +22,52 @@ const Patterns = {
 /**
  * A simple unique ID generator for blocks. In a real app, a library like nanoid would be better.
  */
-const generateId = () => `block_${Math.random().toString(36).substr(2, 9)}`;
+const generateId = () => `block_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+/**
+ * Analyzes a line of text and determines its script block type.
+ * @param line The line of text to analyze.
+ * @param previousBlockType The type of the block that came before this line, for context.
+ * @returns The determined ScriptBlockType.
+ */
+const getBlockType = (line: string, previousBlockType: ScriptBlockType | null): ScriptBlockType => {
+  const trimmedLine = line.trim();
+
+  // Forced scene headings take top priority
+  if (trimmedLine.startsWith('.')) {
+      return ScriptBlockType.SCENE_HEADING;
+  }
+  
+  // Transitions are often uppercase and on their own.
+  if (Patterns.transition.test(trimmedLine) && trimmedLine.toUpperCase() === trimmedLine) {
+    return ScriptBlockType.TRANSITION;
+  }
+
+  // Scene headings are usually uppercase.
+  if (Patterns.sceneHeading.test(trimmedLine)) {
+    return ScriptBlockType.SCENE_HEADING;
+  }
+  
+  // A parenthetical must follow a character or another parenthetical.
+  if (Patterns.parenthetical.test(trimmedLine) && (previousBlockType === ScriptBlockType.CHARACTER || previousBlockType === ScriptBlockType.PARENTHETICAL)) {
+    return ScriptBlockType.PARENTHETICAL;
+  }
+  
+  // Character names are uppercase and are not scene headings.
+  if (Patterns.character.test(trimmedLine) && !Patterns.sceneHeading.test(trimmedLine)) {
+    // Check if the next line is not empty, which suggests dialogue will follow.
+    return ScriptBlockType.CHARACTER;
+  }
+  
+  // Dialogue naturally follows a character or a parenthetical.
+  if (previousBlockType === ScriptBlockType.CHARACTER || previousBlockType === ScriptBlockType.PARENTHETICAL) {
+    return ScriptBlockType.DIALOGUE;
+  }
+
+  // If none of the above, it's an action/description line.
+  return ScriptBlockType.ACTION;
+};
+
 
 /**
  * Parses a raw screenplay string into a structured ScriptDocument.
@@ -37,54 +84,32 @@ export function parseScreenplay(rawScript: string): ScriptDocument {
   const blocks: ScriptBlock[] = [];
   let previousBlockType: ScriptBlockType | null = null;
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const trimmedLine = line.trim();
-
-    // Empty lines are ignored for classification but can influence context (e.g., separating action lines).
+    
+    // Skip empty lines, but let them act as separators
     if (trimmedLine === '') {
-      // Reset context so the next line is likely action unless it matches a specific pattern.
-      if (previousBlockType !== ScriptBlockType.ACTION) {
-        previousBlockType = null;
-      }
-      continue;
-    }
-
-    let currentBlockType: ScriptBlockType | null = null;
-
-    if (Patterns.sceneHeading.test(trimmedLine)) {
-      currentBlockType = ScriptBlockType.SCENE_HEADING;
-    } else if (Patterns.transition.test(trimmedLine)) {
-      currentBlockType = ScriptBlockType.TRANSITION;
-    } else if (Patterns.parenthetical.test(trimmedLine) && previousBlockType === ScriptBlockType.CHARACTER) {
-      // A parenthetical must follow a character.
-      currentBlockType = ScriptBlockType.PARENTHETICAL;
-    } else if (Patterns.character.test(trimmedLine)) {
-      currentBlockType = ScriptBlockType.CHARACTER;
-    } else if (previousBlockType === ScriptBlockType.CHARACTER || previousBlockType === ScriptBlockType.PARENTHETICAL) {
-      // Anything after a character or parenthetical is dialogue.
-      currentBlockType = ScriptBlockType.DIALOGUE;
-    } else {
-      // If no other pattern matches, it's an action line.
-      currentBlockType = ScriptBlockType.ACTION;
-    }
-
-    // Merge consecutive action lines into a single block.
-    if (currentBlockType === ScriptBlockType.ACTION && previousBlockType === ScriptBlockType.ACTION) {
-        const lastBlock = blocks[blocks.length - 1];
-        if (lastBlock) {
-            lastBlock.text += '\n' + trimmedLine;
-            continue; // Skip creating a new block
+        if (previousBlockType === ScriptBlockType.DIALOGUE) {
+             // An empty line after dialogue often signifies the start of a new action.
+             previousBlockType = ScriptBlockType.ACTION;
         }
+        continue;
     }
 
+    const currentBlockType = getBlockType(line, previousBlockType);
 
-    blocks.push({
-      id: generateId(),
-      type: currentBlockType,
-      text: trimmedLine,
-    });
-
-    previousBlockType = currentBlockType;
+    // Merge consecutive action lines into a single block for better editing.
+    if (currentBlockType === ScriptBlockType.ACTION && previousBlockType === ScriptBlockType.ACTION && blocks.length > 0) {
+      blocks[blocks.length - 1].text += '\n' + line;
+    } else {
+      blocks.push({
+        id: generateId(),
+        type: currentBlockType,
+        text: line,
+      });
+      previousBlockType = currentBlockType;
+    }
   }
 
   return { blocks };
@@ -92,6 +117,7 @@ export function parseScreenplay(rawScript: string): ScriptDocument {
 
 /**
  * Serializes a ScriptDocument back into a raw screenplay string.
+ * This should produce a clean, readable text file.
  *
  * @param scriptDoc The structured ScriptDocument.
  * @returns A raw string representation of the screenplay.
@@ -101,7 +127,34 @@ export function serializeScript(scriptDoc: ScriptDocument): string {
         return '';
     }
 
-    // Simple serialization for now, just joining text with appropriate newlines.
-    // A more advanced serializer would handle margins and formatting.
-    return scriptDoc.blocks.map(block => block.text).join('\n\n');
+    let output = '';
+    for (let i = 0; i < scriptDoc.blocks.length; i++) {
+        const block = scriptDoc.blocks[i];
+        const nextBlock = scriptDoc.blocks[i + 1];
+
+        output += block.text;
+
+        // Determine the appropriate newline spacing based on block types
+        if (nextBlock) {
+            const isTransitioningToNewMajorBlock = 
+                block.type === ScriptBlockType.ACTION ||
+                block.type === ScriptBlockType.DIALOGUE ||
+                block.type === ScriptBlockType.TRANSITION;
+
+            if (nextBlock.type === ScriptBlockType.SCENE_HEADING) {
+                output += '\n\n\n'; // More space before a new scene
+            } else if (nextBlock.type === ScriptBlockType.CHARACTER && isTransitioningToNewMajorBlock) {
+                output += '\n\n';
+            } else if (nextBlock.type === ScriptBlockType.ACTION && (block.type === ScriptBlockType.DIALOGUE || block.type === ScriptBlockType.CHARACTER)) {
+                output += '\n\n';
+            }
+             else {
+                output += '\n'; // Single newline for tight groups like CHARACTER -> DIALOGUE
+            }
+        }
+    }
+
+    // A more sophisticated serializer might adjust spacing based on screenplay rules.
+    // For now, join with double newlines as a solid default.
+    return scriptDoc.blocks.map(b => b.text).join('\n\n');
 }

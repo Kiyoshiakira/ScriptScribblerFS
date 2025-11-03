@@ -164,7 +164,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
         batch.set(newVersionRef, versionData);
 
         // Update the main script document with all changes
-        batch.update(scriptDocRef, mainScriptUpdateData);
+        batch.set(scriptDocRef, mainScriptUpdateData, { merge: true });
 
         await batch.commit();
 
