@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useRef, useEffect } from 'react';
@@ -17,25 +18,25 @@ interface ScriptBlockProps {
 const getBlockStyles = (type: ScriptBlockType): string => {
   switch (type) {
     case ScriptBlockType.SCENE_HEADING:
-      return 'font-bold uppercase my-6';
+      return 'font-bold uppercase mt-6 mb-2';
     case ScriptBlockType.ACTION:
-      return 'my-4';
+      return 'my-2';
     case ScriptBlockType.CHARACTER:
-      return 'text-center uppercase my-4 w-full';
+      return 'text-center uppercase mt-4 mb-1 w-full';
     case ScriptBlockType.PARENTHETICAL:
-      return 'text-center text-sm my-2 w-7/12 mx-auto';
+      return 'text-center text-sm my-1 w-7/12 mx-auto';
     case ScriptBlockType.DIALOGUE:
-      return 'my-4 w-9/12 md:w-7/12 mx-auto';
+      return 'my-1 w-9/12 md:w-7/12 mx-auto';
     case ScriptBlockType.TRANSITION:
-      return 'text-right uppercase my-4 w-full';
+      return 'text-right uppercase mt-4 mb-2 w-full';
     default:
-      return 'my-4'; // Default to action style
+      return 'my-2';
   }
 };
 
 const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isHighlighted }) => {
   const elementRef = useRef<HTMLDivElement>(null);
-  const { splitScene, insertBlockAfter } = useScript();
+  const { splitScene, insertBlockAfter, cycleBlockType } = useScript();
 
   // This effect ensures that if the block's text is updated from an external
   // source (like a find-and-replace), the DOM is updated to match.
@@ -65,7 +66,26 @@ const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isH
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      insertBlockAfter(block.id);
+      
+      const selection = window.getSelection();
+      const range = selection?.getRangeAt(0);
+      const currentElement = e.currentTarget;
+
+      if(range && currentElement.innerText.length === range.endOffset) {
+        // Cursor is at the end of the line, normal behavior
+        insertBlockAfter(block.id);
+      } else if (range) {
+        // Cursor is in the middle, split the block
+        const textBeforeCursor = currentElement.innerText.substring(0, range.startOffset);
+        const textAfterCursor = currentElement.innerText.substring(range.startOffset);
+        onChange(block.id, textBeforeCursor);
+        insertBlockAfter(block.id, textAfterCursor);
+      }
+    }
+
+    if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      cycleBlockType(block.id);
     }
   };
 
@@ -80,11 +100,12 @@ const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isH
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             className={cn(
-                'w-full outline-none focus:bg-muted/50 p-1 rounded-sm transition-colors whitespace-pre-wrap',
-                isHighlighted && 'bg-yellow-200 dark:bg-yellow-800'
+                'w-full outline-none p-0.5 rounded-sm transition-colors whitespace-pre-wrap',
+                isHighlighted ? 'bg-yellow-200 dark:bg-yellow-800' : 'focus:bg-muted/50'
             )}
             data-block-id={block.id}
             data-block-type={block.type}
+            dangerouslySetInnerHTML={{ __html: block.text }}
         />
         {isSceneHeading && (
              <Button

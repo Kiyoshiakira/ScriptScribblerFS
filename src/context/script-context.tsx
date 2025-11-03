@@ -10,7 +10,7 @@ import type { Scene } from '@/components/views/scenes-view';
 import type { Note } from '@/components/views/notes-view';
 import { ScriptDocument, ScriptBlock, ScriptBlockType } from '@/lib/editor-types';
 import { parseScreenplay, serializeScript } from '@/lib/screenplay-parser';
-import type { Match } from '@/hooks/use-find-replace';
+import type { Match } from '@/hooks/use-find-replace.tsx';
 
 
 interface Script {
@@ -39,7 +39,8 @@ interface ScriptContextType {
   setScriptTitle: (title: string) => void;
   setScriptLogline: (logline: string) => void;
   splitScene: (blockId: string) => void;
-  insertBlockAfter: (blockId: string) => void;
+  insertBlockAfter: (blockId: string, text?: string) => void;
+  cycleBlockType: (blockId: string) => void;
   addComment: (blockId: string, content: string) => void;
   isScriptLoading: boolean;
   characters: Character[] | null;
@@ -59,6 +60,7 @@ export const ScriptContext = createContext<ScriptContextType>({
   setScriptLogline: () => {},
   splitScene: () => {},
   insertBlockAfter: () => {},
+  cycleBlockType: () => {},
   addComment: () => {},
   isScriptLoading: true,
   characters: null,
@@ -238,23 +240,32 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     });
   }, []);
 
-  const insertBlockAfter = useCallback((currentBlockId: string) => {
+  const insertBlockAfter = useCallback((currentBlockId: string, text = '') => {
     setLocalDocument(prevDoc => {
       if (!prevDoc) return null;
       const index = prevDoc.blocks.findIndex(b => b.id === currentBlockId);
       if (index === -1) return prevDoc;
+      const currentBlock = prevDoc.blocks[index];
+      
+      let newBlockType = ScriptBlockType.ACTION;
+      if (currentBlock.type === ScriptBlockType.SCENE_HEADING) {
+          newBlockType = ScriptBlockType.ACTION;
+      } else if (currentBlock.type === ScriptBlockType.CHARACTER) {
+          newBlockType = ScriptBlockType.DIALOGUE;
+      } else if (currentBlock.type === ScriptBlockType.DIALOGUE && text === '') {
+          newBlockType = ScriptBlockType.ACTION;
+      }
 
       const newBlock: ScriptBlock = {
         id: `block_${Date.now()}`,
-        type: ScriptBlockType.ACTION, // Default to action, can be smarter later
-        text: '',
+        type: newBlockType,
+        text: text,
       };
 
       const newBlocks = [...prevDoc.blocks];
       newBlocks.splice(index + 1, 0, newBlock);
       
       // We need to focus the new block after the state updates and DOM renders.
-      // A simple way is to use a timeout, but a more robust way would involve effects.
       setTimeout(() => {
         const newElement = document.querySelector(`[data-block-id="${newBlock.id}"]`) as HTMLElement;
         if (newElement) {
@@ -265,6 +276,34 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
       return { ...prevDoc, blocks: newBlocks };
     });
   }, []);
+
+  const cycleBlockType = (blockId: string) => {
+    const typeCycle: ScriptBlockType[] = [
+      ScriptBlockType.ACTION,
+      ScriptBlockType.CHARACTER,
+      ScriptBlockType.PARENTHETICAL,
+      ScriptBlockType.DIALOGUE,
+      ScriptBlockType.TRANSITION,
+      ScriptBlockType.SCENE_HEADING,
+    ];
+    
+    setLocalDocument(prevDoc => {
+      if (!prevDoc) return null;
+      const blockIndex = prevDoc.blocks.findIndex(b => b.id === blockId);
+      if (blockIndex === -1) return prevDoc;
+
+      const currentBlock = prevDoc.blocks[blockIndex];
+      const currentTypeIndex = typeCycle.indexOf(currentBlock.type);
+      const nextTypeIndex = (currentTypeIndex + 1) % typeCycle.length;
+      const newType = typeCycle[nextTypeIndex];
+      
+      const updatedBlock = { ...currentBlock, type: newType };
+      const newBlocks = [...prevDoc.blocks];
+      newBlocks[blockIndex] = updatedBlock;
+
+      return { ...prevDoc, blocks: newBlocks };
+    });
+  };
 
 
   const addComment = useCallback((blockId: string, content: string) => {
@@ -299,6 +338,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     setScriptLogline,
     splitScene,
     insertBlockAfter,
+    cycleBlockType,
     addComment,
     isScriptLoading,
     characters,
