@@ -10,7 +10,6 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
-import { SCRIPT_TOKEN_LIMIT } from '@/constants';
 
 const AiProofreadScriptInputSchema = z.object({
   script: z.string().describe('The screenplay text to proofread.'),
@@ -81,19 +80,12 @@ const aiProofreadScriptFlow = ai.defineFlow(
     if (input.script.length < 50) {
       return { suggestions: [] };
     }
-     // Prevent token limit errors.
-    if (input.script.length > SCRIPT_TOKEN_LIMIT) {
-        return { suggestions: [] };
-    }
     const model = googleAI('gemini-2.5-flash');
     const { output } = await ai.generate({
       model,
       prompt: prompt,
       input: input,
       output: { schema: AiProofreadScriptOutputSchema },
-      config: {
-        timeout: 30000,
-      }
     });
     if (!output) {
       throw new Error('AI failed to return valid proofreading suggestions. The output did not match the expected format.');

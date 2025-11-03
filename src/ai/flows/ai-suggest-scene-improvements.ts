@@ -59,9 +59,6 @@ const aiSuggestSceneImprovementsFlow = ai.defineFlow(
       prompt: prompt,
       input: input,
       output: { schema: AiSuggestSceneImprovementsOutputSchema },
-      config: {
-        timeout: 30000,
-      }
     });
     if (!output) {
       throw new Error('AI failed to return valid suggestions. The output did not match the expected format.');

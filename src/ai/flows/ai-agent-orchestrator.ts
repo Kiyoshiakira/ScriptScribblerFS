@@ -188,7 +188,7 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
         }),
       },
       config: {
-        timeout: 30000,
+        temperature: 0.1,
       }
     });
 
@@ -243,7 +243,7 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
           }),
         },
         config: {
-            timeout: 30000,
+            temperature: 0.3,
         }
       });
 
@@ -260,9 +260,6 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
       model,
       prompt: `You are an expert AI assistant. The user asked: "${input.request}". The script content is: ---{{{script}}}---. Provide a helpful, conversational answer to their question.`,
       input,
-      config: {
-        timeout: 30000,
-      }
     });
 
     return {

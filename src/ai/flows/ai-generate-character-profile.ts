@@ -75,9 +75,6 @@ const aiGenerateCharacterProfileFlow = ai.defineFlow(
       prompt: prompt,
       input: input,
       output: { schema: AiGenerateCharacterProfileOutputSchema },
-      config: {
-        timeout: 30000,
-      }
     });
     if (!output) {
       throw new Error('AI failed to return a valid character profile. The output did not match the expected format.');

@@ -78,9 +78,6 @@ const aiDiagnoseAppHealthFlow = ai.defineFlow(
       prompt: prompt,
       input: input,
       output: { schema: AiDiagnoseAppHealthOutputSchema },
-      config: {
-        timeout: 30000,
-      },
     });
     if (!output) {
       throw new Error(

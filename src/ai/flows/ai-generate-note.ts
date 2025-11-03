@@ -76,9 +76,6 @@ const aiGenerateNoteFlow = ai.defineFlow(
       prompt: prompt,
       input: input,
       output: { schema: AiGenerateNoteOutputSchema },
-      config: {
-        timeout: 30000,
-      }
     });
     if (!output) {
       throw new Error('AI failed to return a valid note. The output did not match the expected format.');

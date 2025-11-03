@@ -73,9 +73,6 @@ const aiReformatScriptFlow = ai.defineFlow(
       prompt: prompt,
       input: input,
       output: { schema: AiReformatScriptOutputSchema },
-      config: {
-        timeout: 30000,
-      }
     });
     if (!output) {
       throw new Error(
