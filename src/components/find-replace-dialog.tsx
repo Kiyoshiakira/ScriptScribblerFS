@@ -66,6 +66,8 @@ export function FindReplaceDialog({ open, onOpenChange }: FindReplaceDialogProps
   }, [findValue, document, matchCase, wholeWord]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     if (open) {
       findMatches();
     } else {
@@ -78,6 +80,8 @@ export function FindReplaceDialog({ open, onOpenChange }: FindReplaceDialogProps
   }, [findValue, open, matchCase, wholeWord, findMatches]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const activeMatch = matches[currentMatchIndex];
     document.querySelectorAll('[data-find-active="true"]').forEach(el => el.removeAttribute('data-find-active'));
     if (activeMatch) {
