@@ -113,7 +113,8 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
                 title: 'Import Successful',
                 description: `"${title}" has been added to your scripts.`,
             });
-            setView('profile');
+            setCurrentScriptId(newScriptRef.id);
+            setView('dashboard');
         } catch (error: any) {
              console.error("Error processing imported content:", error);
              dismiss();
@@ -204,7 +205,8 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
           title: 'Import Successful',
           description: `"${projectData.title}" has been added to your scripts.`,
         });
-        setView('profile');
+        setCurrentScriptId(newScriptRef.id);
+        setView('dashboard');
 
     } catch (error) {
         console.error('Scribbler import failed:', error);
@@ -291,7 +293,8 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
           title: 'Import Successful',
           description: `"${scriptTitle}" has been added to your scripts.`,
         });
-        setView('profile');
+        setCurrentScriptId(newScriptRef.id);
+        setView('dashboard');
 
       } catch (error) {
          console.error('--- DEBUG: Import Parsing Failed ---', error);
@@ -405,7 +408,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
   };
   
   const SaveStatusIndicator = () => {
-    if (isProfileView || !saveStatus || saveStatus === 'idle') return null;
+    if (!currentScriptId || !saveStatus || saveStatus === 'idle') return null;
 
     let content;
     if (saveStatus === 'saving') {
@@ -434,15 +437,17 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
     );
   }
 
-  const isProfileView = activeView === 'profile';
+  const isProfileOrDashboard = activeView === 'profile' || activeView === 'dashboard';
 
   return (
     <>
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
       <SidebarTrigger className="flex md:hidden" aria-label="Toggle sidebar" />
       <div className="flex flex-1 items-center gap-2 min-w-0">
-        {isProfileView ? (
-             <h1 className="text-xl font-bold font-headline truncate">My Profile</h1>
+        {isProfileOrDashboard ? (
+             <h1 className="text-xl font-bold font-headline truncate">
+                {activeView === 'profile' ? 'My Profile' : 'Dashboard'}
+             </h1>
         ) : (
           <>
             <Book className="h-6 w-6 text-muted-foreground hidden sm:block" />
@@ -489,7 +494,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
         </DropdownMenu>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button disabled={isProfileView}>
+            <Button disabled={isProfileOrDashboard}>
               <Download className="h-4 w-4 md:mr-2" />
               <span className='hidden md:inline'>Export</span>
               <ChevronDown className="h-4 w-4 ml-0 md:ml-2" />

@@ -32,7 +32,7 @@ function AppLayoutInternal() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const [view, setView] = React.useState<View>('profile');
+  const [view, setView] = React.useState<View>('dashboard');
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
 
@@ -67,7 +67,10 @@ function AppLayoutInternal() {
     } else {
        // Allow navigation to dashboard or profile anytime.
        // For other views, a script must be loaded.
-      if (newView === 'dashboard' || newView === 'profile' || currentScriptId) {
+      if (newView === 'dashboard' || newView === 'profile') {
+        setView(newView);
+      } else if (currentScriptId) {
+        // Only allow navigation to other views if a script is loaded.
         setView(newView);
       } else {
         // If no script is loaded and trying to access a script-specific view, stay on profile.
@@ -77,10 +80,8 @@ function AppLayoutInternal() {
   };
 
   const renderView = () => {
-    // Determine the correct view to render.
-    // If no script is loaded, always show the profile view.
-    const viewToRender = (currentScriptId || view === 'profile') ? view : 'dashboard';
-
+    // If no script is loaded, force the profile view unless the user explicitly selected the dashboard.
+    const viewToRender = currentScriptId ? view : (view === 'dashboard' ? 'dashboard' : 'profile');
 
     switch(viewToRender) {
       case 'dashboard': return <DashboardView setView={handleSetView} />;
@@ -156,7 +157,9 @@ export default function AppLayout() {
         </ScriptProvider>
       ) : (
         // Render without ScriptProvider if no script is selected
-        <AppLayoutInternal />
+        <ScriptProvider scriptId="">
+            <AppLayoutInternal />
+        </ScriptProvider>
       )}
     </SidebarProvider>
   );

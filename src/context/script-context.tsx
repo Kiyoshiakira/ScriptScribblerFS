@@ -144,6 +144,9 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
         timestamp: serverTimestamp()
     };
     const mainScriptUpdateData = {
+        content: newContent,
+        title: localScript.title,
+        logline: localScript.logline,
         lastModified: serverTimestamp()
     }
 
@@ -154,7 +157,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
         const newVersionRef = doc(versionsCollectionRef);
         batch.set(newVersionRef, versionData);
 
-        // Update the lastModified timestamp on the main script document
+        // Update the main script document with all changes
         batch.update(scriptDocRef, mainScriptUpdateData);
 
         await batch.commit();
@@ -179,8 +182,13 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
         setLocalScript(firestoreScript);
         setLocalDocument(parseScreenplay(firestoreScript.content));
         setIsInitialLoad(false);
+    } else if (!scriptId && isInitialLoad) {
+        // Handle case where there is no script ID
+        setLocalScript(null);
+        setLocalDocument(null);
+        setIsInitialLoad(false);
     }
-  }, [firestoreScript, isInitialLoad]);
+  }, [firestoreScript, isInitialLoad, scriptId]);
 
   // Debounced effect for saving ALL changes
   useEffect(() => {
@@ -244,7 +252,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
 
   }, [commentsCollectionRef, user]);
   
-  const isScriptLoading = isInitialLoad || isDocLoading;
+  const isScriptLoading = isInitialLoad || (!!scriptId && isDocLoading);
 
   const value = { 
     script: localScript,
