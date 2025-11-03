@@ -101,7 +101,7 @@ const generateCharacterTool = ai.defineTool(
   async (toolInput): Promise<AiGenerateCharacterProfileOutput> => {
     return await aiGenerateCharacterProfile({
       characterDescription: toolInput.description,
-    } as AiGenerateCharacterProfileInput);
+    });
   }
 );
 
@@ -116,7 +116,7 @@ const proofreadScriptTool = ai.defineTool(
     outputSchema: AiProofreadScriptOutputSchema,
   },
   async ({ script }): Promise<AiProofreadScriptOutput> => {
-    return await aiProofreadScript({ script } as AiProofreadScriptInput);
+    return await aiProofreadScript({ script });
   }
 );
 
@@ -131,7 +131,7 @@ const reformatScriptTool = ai.defineTool(
     outputSchema: AiReformatScriptOutputSchema,
   },
   async ({ script }): Promise<AiReformatScriptOutput> => {
-    return await aiReformatScript({ rawScript: script } as AiReformatScriptInput);
+    return await aiReformatScript({ rawScript: script });
   }
 );
 
@@ -174,7 +174,7 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
     let decision = await ai.generate({
       model,
       prompt: orchestratorPrompt,
-      input,
+      history: [{role: 'user', content: [{text: input.request}, {text: input.script}]}],
       tools: [generateCharacterTool, proofreadScriptTool, reformatScriptTool],
       output: {
         format: 'json',
@@ -259,7 +259,7 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
     const generalResponse = await ai.generate({
       model,
       prompt: `You are an expert AI assistant. The user asked: "${input.request}". The script content is: ---{{{script}}}---. Provide a helpful, conversational answer to their question.`,
-      input,
+      history: [{role: 'user', content: [{text: input.request}, {text: input.script}]}],
     });
 
     return {
