@@ -23,19 +23,31 @@ npm install
 
 The application uses environment variables to handle API keys and other configuration.
 
-1.  Create a new file named `.env.local` in the root of the project.
-2.  Fill in the required environment variables as shown below.
+1.  Create a new file named `.env.local` in the root of the project by copying the `.env` file.
+2.  Fill in the required environment variables in `.env.local`.
 
 ```env
 # .env.local
 
 # The API key for Google's Gemini models. Required for all AI features.
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# Firebase Configuration
+NEXT_PUBLIC_FIREBASE_API_KEY="your_firebase_api_key"
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="your_project_id.firebaseapp.com"
+NEXT_PUBLIC_FIREBASE_PROJECT_ID="your_project_id"
+NEXT_PUBLIC_FIREBASE_APP_ID="your_app_id"
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="your_sender_id"
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="your_measurement_id"
+
+# Google Picker API Configuration
+NEXT_PUBLIC_GOOGLE_API_KEY="your_google_cloud_api_key_for_picker"
+NEXT_PUBLIC_GOOGLE_APP_ID="your_google_cloud_app_id"
 ```
 
 **Note on `.env.local` vs `.env`:** This project follows the standard Next.js convention. You must place your secret keys in a file named `.env.local`. This file is ignored by version control, keeping your keys safe. The empty `.env` file in the project is just a placeholder and is not used for local development.
 
-**Note:** AI features will be gracefully disabled if the `GEMINI_API_KEY` is not provided.
+**Note:** AI features will be gracefully disabled if the `GEMINI_API_KEY` is not provided. Firebase features will not work without the Firebase configuration.
 
 ### 3. Run the Development Server
 
@@ -77,4 +89,4 @@ This is often caused by an issue with Firebase authentication or data fetching. 
 
 3.  **Check Firestore Rules:** Ensure your `firestore.rules` are deploed and allow the signed-in user to read and write the necessary documents. An incorrect rule can cause data fetches to fail silently. You can check for `FirebaseError: Missing or insufficient permissions` in the browser console.
 
-4.  **Check API Keys:** Ensure your `GEMINI_API_KEY` in `.env.local` is correct. While the app should disable AI features gracefully, a misconfiguration could potentially cause issues.
+4.  **Check API Keys:** Ensure your environment variables in `.env.local` are correct. While the app should disable AI features gracefully, a misconfiguration could potentially cause issues.
