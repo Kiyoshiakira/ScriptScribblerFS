@@ -59,36 +59,38 @@ export default function ScriptEditor({ isStandalone = false }: ScriptEditorProps
     <div
       className={cn(
         'relative h-full w-full font-code max-w-3xl mx-auto',
-        isStandalone ? 'p-4' : 'p-8 md:p-12 bg-card shadow-sm rounded-lg border'
+        isStandalone ? 'p-4' : 'bg-card shadow-sm rounded-lg border'
       )}
     >
-      {document.blocks.map((block, index) => {
-        let sceneHeaderCard = null;
-        if (block.type === ScriptBlockType.SCENE_HEADING) {
-            sceneCounter++;
-            const sceneData = scenes?.find(s => s.sceneNumber === sceneCounter);
-            if (sceneData) {
-                 sceneHeaderCard = (
-                    <SceneHeaderCard
-                        sceneNumber={sceneData.sceneNumber}
-                        setting={sceneData.setting}
-                        description={sceneData.description}
-                    />
-                );
-            }
-        }
-        
-        return (
-             <React.Fragment key={block.id}>
-                {sceneHeaderCard}
-                <ScriptBlockComponent
-                    block={block}
-                    onChange={handleBlockChange}
-                    isHighlighted={activeMatch?.blockIndex === index}
-                />
-            </React.Fragment>
-        )
-      })}
+      <div className={cn(isStandalone ? '' : 'p-8 md:p-12')}>
+        {document.blocks.map((block, index) => {
+          let sceneHeaderCard = null;
+          if (block.type === ScriptBlockType.SCENE_HEADING) {
+              sceneCounter++;
+              const sceneData = scenes?.find(s => s.sceneNumber === sceneCounter);
+              if (sceneData) {
+                  sceneHeaderCard = (
+                      <SceneHeaderCard
+                          sceneNumber={sceneData.sceneNumber}
+                          setting={sceneData.setting}
+                          description={sceneData.description}
+                      />
+                  );
+              }
+          }
+          
+          return (
+              <React.Fragment key={block.id}>
+                  {sceneHeaderCard}
+                  <ScriptBlockComponent
+                      block={block}
+                      onChange={handleBlockChange}
+                      isHighlighted={activeMatch?.blockIndex === index}
+                  />
+              </React.Fragment>
+          )
+        })}
+      </div>
     </div>
   );
 }
