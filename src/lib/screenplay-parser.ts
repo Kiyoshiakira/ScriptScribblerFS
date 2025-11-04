@@ -154,7 +154,50 @@ export function serializeScript(scriptDoc: ScriptDocument): string {
         }
     }
 
-    // A more sophisticated serializer might adjust spacing based on screenplay rules.
-    // For now, join with double newlines as a solid default.
     return scriptDoc.blocks.map(b => b.text).join('\n\n');
+}
+
+/**
+ * Estimates various metrics for a screenplay document.
+ * @param doc The ScriptDocument to analyze.
+ * @returns An object with page count, character count, word count, and estimated minutes.
+ */
+export function estimateScriptMetrics(doc: ScriptDocument) {
+  const linesPerPage = 55;
+  let lineCount = 0;
+  let charCount = 0;
+  let wordCount = 0;
+
+  doc.blocks.forEach(block => {
+    const text = block.text;
+    charCount += text.length;
+    wordCount += text.split(/\s+/).filter(Boolean).length;
+
+    // Add lines based on block type and content
+    let blockHeight = 1; // Each block is at least one line
+    if (block.type === ScriptBlockType.ACTION) {
+      blockHeight = (text.match(/\n/g) || []).length + 1;
+    }
+    
+    // Add extra spacing that screenplay formatters insert
+    switch (block.type) {
+        case ScriptBlockType.SCENE_HEADING:
+        case ScriptBlockType.CHARACTER:
+        case ScriptBlockType.TRANSITION:
+            lineCount += 2; // Add space before these elements
+            break;
+    }
+
+    lineCount += blockHeight;
+  });
+  
+  const pageCount = Math.max(1, Math.ceil(lineCount / linesPerPage));
+  const estimatedMinutes = pageCount;
+
+  return {
+    pageCount,
+    charCount,
+    wordCount,
+    estimatedMinutes,
+  };
 }

@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import { Search } from 'lucide-react';
 import { FindReplaceDialog } from '../find-replace-dialog';
 import { FindReplaceProvider } from '@/hooks/use-find-replace';
+import EditorStatusBar from '../editor-status-bar';
 
 function EditorViewContent() {
   const [isFindOpen, setIsFindOpen] = useState(false);
@@ -18,9 +19,10 @@ function EditorViewContent() {
             Find & Replace
           </Button>
         </div>
-        <div className="flex-1 overflow-y-auto pt-12">
+        <div className="flex-1 overflow-y-auto pt-12 pb-12">
           <ScriptEditor isStandalone={false} />
         </div>
+        <EditorStatusBar />
         <AiFab />
         <FindReplaceDialog open={isFindOpen} onOpenChange={setIsFindOpen} />
       </div>

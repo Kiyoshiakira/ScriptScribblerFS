@@ -50,6 +50,8 @@ interface ScriptContextType {
   saveStatus: SaveStatus;
   activeMatch: Match | null;
   setActiveMatch: React.Dispatch<React.SetStateAction<Match | null>>;
+  activeBlockId: string | null;
+  setActiveBlockId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 export const ScriptContext = createContext<ScriptContextType>({
@@ -70,6 +72,8 @@ export const ScriptContext = createContext<ScriptContextType>({
   saveStatus: 'idle',
   activeMatch: null,
   setActiveMatch: () => {},
+  activeBlockId: null,
+  setActiveBlockId: () => {},
 });
 
 export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, scriptId: string }) => {
@@ -81,6 +85,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [activeMatch, setActiveMatch] = useState<Match | null>(null);
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
 
 
   const scriptDocRef = useMemoFirebase(
@@ -367,6 +372,8 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     saveStatus,
     activeMatch,
     setActiveMatch,
+    activeBlockId,
+    setActiveBlockId,
   };
 
   return (

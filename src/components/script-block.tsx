@@ -33,7 +33,7 @@ const getBlockStyles = (type: ScriptBlockType): string => {
 
 const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isHighlighted }) => {
   const elementRef = useRef<HTMLDivElement>(null);
-  const { insertBlockAfter, cycleBlockType, mergeWithPreviousBlock } = useScript();
+  const { insertBlockAfter, cycleBlockType, mergeWithPreviousBlock, setActiveBlockId } = useScript();
 
   useEffect(() => {
     const element = elementRef.current;
@@ -55,7 +55,12 @@ const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isH
     if (newText !== block.text) {
       onChange(block.id, newText);
     }
+    setActiveBlockId(null);
   };
+  
+  const handleFocus = () => {
+    setActiveBlockId(block.id);
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const selection = window.getSelection();
@@ -67,9 +72,6 @@ const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isH
         return;
     }
 
-    // When Shift+Enter is pressed, we let the default action proceed (inserting a <br>).
-    // We don't need an explicit case for it.
-
     if (e.key === 'Tab' && !e.shiftKey) {
       e.preventDefault();
       cycleBlockType(block.id);
@@ -77,7 +79,7 @@ const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isH
 
     if (e.key === 'Backspace') {
       const currentText = e.currentTarget.innerText;
-      if (selection && range && range.startOffset === 0 && range.endOffset === 0 && currentText === '') {
+      if (selection && range && range.startOffset === 0 && range.endOffset === 0 && currentText.trim() === '') {
         e.preventDefault();
         mergeWithPreviousBlock(block.id);
       }
@@ -91,10 +93,11 @@ const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({ block, onChange, isH
             ref={elementRef}
             contentEditable
             suppressContentEditableWarning={true}
+            onFocus={handleFocus}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             className={cn(
-                'w-full outline-none p-1 rounded-sm transition-colors whitespace-pre-wrap',
+                'w-full outline-none p-2 rounded-sm transition-colors whitespace-pre-wrap',
                 'focus:bg-muted/50 focus:shadow-inner',
                  isHighlighted ? 'bg-yellow-200 dark:bg-yellow-800' : 'hover:bg-muted/30'
             )}
