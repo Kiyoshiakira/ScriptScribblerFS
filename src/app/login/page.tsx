@@ -73,7 +73,7 @@ function LoginCard() {
 
   const handleAuthAction = async (action: 'signIn' | 'signUp') => {
     console.log(`[LoginPage] Starting ${action} attempt`, {
-      email: email.trim(),
+      hasEmail: !!email.trim(),
       authAvailable: !!auth,
     });
 
