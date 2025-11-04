@@ -24,7 +24,7 @@ import { useFirebase } from '@/firebase';
 import { Logo } from '@/components/layout/app-sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Chrome } from 'lucide-react'; // Using Chrome icon for Google as a generic browser icon
+import { Chrome, Eye, EyeOff } from 'lucide-react';
 
 function LoginCard() {
   // Use useFirebase instead of useAuth to get nullable auth
@@ -38,6 +38,7 @@ function LoginCard() {
   const [signInPassword, setSignInPassword] = React.useState('');
   const [signUpEmail, setSignUpEmail] = React.useState('');
   const [signUpPassword, setSignUpPassword] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
 
 
   // Log auth availability for debugging
@@ -215,13 +216,24 @@ function LoginCard() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password-signin">Password</Label>
-                <Input
-                  id="password-signin"
-                  type="password"
-                  value={signInPassword}
-                  onChange={(e) => setSignInPassword(e.target.value)}
-                  disabled={isLoading || isGoogleLoading}
-                />
+                <div className="relative">
+                  <Input
+                    id="password-signin"
+                    type={showPassword ? 'text' : 'password'}
+                    value={signInPassword}
+                    onChange={(e) => setSignInPassword(e.target.value)}
+                    disabled={isLoading || isGoogleLoading}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                    onClick={() => setShowPassword(prev => !prev)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
             </div>
             <CardFooter className="px-0 pt-6">
@@ -245,13 +257,24 @@ function LoginCard() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password-signup">Password</Label>
-                <Input
-                  id="password-signup"
-                  type="password"
-                  value={signUpPassword}
-                  onChange={(e) => setSignUpPassword(e.target.value)}
-                  disabled={isLoading || isGoogleLoading}
-                />
+                <div className="relative">
+                  <Input
+                    id="password-signup"
+                    type={showPassword ? 'text' : 'password'}
+                    value={signUpPassword}
+                    onChange={(e) => setSignUpPassword(e.target.value)}
+                    disabled={isLoading || isGoogleLoading}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                    onClick={() => setShowPassword(prev => !prev)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
             </div>
             <CardFooter className="px-0 pt-6">
