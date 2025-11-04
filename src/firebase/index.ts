@@ -2,8 +2,10 @@
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, Auth, User } from 'firebase/auth';
 import { getFirestore, Firestore, initializeFirestore, persistentLocalCache } from 'firebase/firestore';
+import { FirebaseContext, FirebaseContextState } from './provider';
+import React, { useMemo, type DependencyList, useContext } from 'react';
 
 // Store the initialized services in a module-level variable to act as a singleton.
 let firebaseServices: { firebaseApp: FirebaseApp; auth: Auth; firestore: Firestore; } | null = null;
@@ -65,9 +67,71 @@ export function getSdks(firebaseApp: FirebaseApp) {
   };
 }
 
+/**
+ * Hook to access core Firebase services and user authentication state.
+ * Throws error if core services are not available or used outside provider.
+ */
+export const useFirebase = (): FirebaseContextState => {
+  const context = useContext(FirebaseContext);
+
+  if (context === undefined) {
+    throw new Error('useFirebase must be used within a FirebaseProvider.');
+  }
+  return context;
+};
+
+/** Hook to access Firebase Auth instance. */
+export const useAuth = (): Auth => {
+  const { auth } = useFirebase();
+  if (!auth) {
+      throw new Error('Firebase Auth service not available. Check FirebaseProvider setup.');
+  }
+  return auth;
+};
+
+/** Hook to access Firestore instance. */
+export const useFirestore = (): Firestore => {
+  const { firestore } = useFirebase();
+   if (!firestore) {
+      throw new Error('Firebase Firestore service not available. Check FirebaseProvider setup.');
+  }
+  return firestore;
+};
+
+/** Hook to access Firebase App instance. */
+export const useFirebaseApp = (): FirebaseApp => {
+  const { firebaseApp } = useFirebase();
+   if (!firebaseApp) {
+      throw new Error('Firebase App instance not available. Check FirebaseProvider setup.');
+  }
+  return firebaseApp;
+};
+
+/**
+ * Hook specifically for accessing the authenticated user's state.
+ */
+export const useUser = (): { user: User | null; isUserLoading: boolean; userError: Error | null } => {
+  const { user, isUserLoading, userError } = useFirebase();
+  return { user, isUserLoading, userError };
+};
+
+
+type MemoFirebase <T> = T & {__memo?: boolean};
+
+export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (MemoFirebase<T>) {
+  const memoized = useMemo(factory, deps);
+  
+  if(typeof memoized !== 'object' || memoized === null) return memoized;
+  (memoized as MemoFirebase<T>).__memo = true;
+  
+  return memoized;
+}
+
+
 export * from './provider';
 export * from './client-provider';
 export * from './firestore/use-collection';
 export * from './firestore/use-doc';
 export * from './errors';
 export * from './error-emitter';
+export * from './auth/use-user';
