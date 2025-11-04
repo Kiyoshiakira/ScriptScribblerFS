@@ -33,8 +33,12 @@ function LoginCard() {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
+  
+  const [signInEmail, setSignInEmail] = React.useState('');
+  const [signInPassword, setSignInPassword] = React.useState('');
+  const [signUpEmail, setSignUpEmail] = React.useState('');
+  const [signUpPassword, setSignUpPassword] = React.useState('');
+
 
   // Log auth availability for debugging
   React.useEffect(() => {
@@ -45,7 +49,9 @@ function LoginCard() {
   }, [auth]);
 
   const validateInputs = (action: 'signIn' | 'signUp'): string | null => {
-    // Trim inputs
+    const email = action === 'signIn' ? signInEmail : signUpEmail;
+    const password = action === 'signIn' ? signInPassword : signUpPassword;
+
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
 
@@ -72,6 +78,9 @@ function LoginCard() {
   };
 
   const handleAuthAction = async (action: 'signIn' | 'signUp') => {
+    const email = action === 'signIn' ? signInEmail : signUpEmail;
+    const password = action === 'signIn' ? signInPassword : signUpPassword;
+    
     console.log(`[LoginPage] Starting ${action} attempt`, {
       hasEmail: !!email.trim(),
       authAvailable: !!auth,
@@ -199,8 +208,8 @@ function LoginCard() {
                   id="email-signin"
                   type="email"
                   placeholder="m@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={signInEmail}
+                  onChange={(e) => setSignInEmail(e.target.value)}
                   disabled={isLoading || isGoogleLoading}
                 />
               </div>
@@ -209,8 +218,8 @@ function LoginCard() {
                 <Input
                   id="password-signin"
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={signInPassword}
+                  onChange={(e) => setSignInPassword(e.target.value)}
                   disabled={isLoading || isGoogleLoading}
                 />
               </div>
@@ -229,8 +238,8 @@ function LoginCard() {
                   id="email-signup"
                   type="email"
                   placeholder="m@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={signUpEmail}
+                  onChange={(e) => setSignUpEmail(e.target.value)}
                   disabled={isLoading || isGoogleLoading}
                 />
               </div>
@@ -239,8 +248,8 @@ function LoginCard() {
                 <Input
                   id="password-signup"
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={signUpPassword}
+                  onChange={(e) => setSignUpPassword(e.target.value)}
                   disabled={isLoading || isGoogleLoading}
                 />
               </div>
