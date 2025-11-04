@@ -291,44 +291,56 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
 
   const mergeWithPreviousBlock = useCallback((blockId: string) => {
     setLocalDocument(prevDoc => {
-      if (!prevDoc) return null;
-      const index = prevDoc.blocks.findIndex(b => b.id === blockId);
-      
-      if (index <= 0) return prevDoc; // Cannot merge the first block
+        if (!prevDoc) return null;
+        const index = prevDoc.blocks.findIndex(b => b.id === blockId);
 
-      const currentBlock = prevDoc.blocks[index];
-      const prevBlock = prevDoc.blocks[index - 1];
+        if (index <= 0) return prevDoc;
 
-      const newBlocks = [...prevDoc.blocks];
-      const originalPrevTextLength = prevBlock.text.length;
+        const currentBlock = prevDoc.blocks[index];
+        const prevBlock = prevDoc.blocks[index - 1];
+        
+        const newBlocks = [...prevDoc.blocks];
+        const originalPrevTextLength = prevBlock.text.length;
 
-      // Merge text and remove the current block
-      prevBlock.text += currentBlock.text;
-      newBlocks.splice(index, 1);
-      
-      setTimeout(() => {
-        const prevElement = document.querySelector(`[data-block-id="${prevBlock.id}"]`) as HTMLElement;
-        if (prevElement) {
-          prevElement.focus();
-          const selection = window.getSelection();
-          const range = document.createRange();
-          
-          if (prevElement.childNodes.length > 0) {
-            const textNode = prevElement.childNodes[prevElement.childNodes.length - 1];
-            // Ensure cursor position is valid
-            const newCursorPos = Math.min(originalPrevTextLength, textNode.textContent?.length || 0);
-            range.setStart(textNode, newCursorPos);
-            range.collapse(true); // This is crucial
-            
-            selection?.removeAllRanges();
-            selection?.addRange(range);
-          }
-        }
-      }, 0);
-      
-      return { ...prevDoc, blocks: newBlocks };
+        // Merge text and remove the current block
+        prevBlock.text += currentBlock.text;
+        newBlocks.splice(index, 1);
+        
+        setTimeout(() => {
+            const prevElement = document.querySelector(`[data-block-id="${prevBlock.id}"]`) as HTMLElement;
+            if (prevElement) {
+                prevElement.focus();
+                const selection = window.getSelection();
+                const range = document.createRange();
+                
+                // Check if the element has any child nodes. If not, we can't set a range.
+                if (prevElement.childNodes.length > 0) {
+                    // It's safer to work with the element itself if it contains text directly,
+                    // or traverse to the last text node.
+                    let textNode: Node = prevElement;
+                    while(textNode.lastChild) {
+                        textNode = textNode.lastChild;
+                    }
+
+                    // Ensure cursor position is valid. Use textNode.textContent as it contains the actual text.
+                    const newCursorPos = Math.min(originalPrevTextLength, textNode.textContent?.length || 0);
+
+                    try {
+                        range.setStart(textNode, newCursorPos);
+                        range.collapse(true); // This collapses the range to its start point (the cursor).
+                        
+                        selection?.removeAllRanges();
+                        selection?.addRange(range);
+                    } catch (e) {
+                         console.error("Failed to set cursor position after merge:", e);
+                    }
+                }
+            }
+        }, 0);
+        
+        return { ...prevDoc, blocks: newBlocks };
     });
-  }, []);
+}, []);
 
   const addComment = useCallback((blockId: string, content: string) => {
       if (!commentsCollectionRef || !user) return;
