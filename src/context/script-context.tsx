@@ -310,9 +310,11 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
           
           if (prevElement.childNodes.length > 0) {
             const textNode = prevElement.childNodes[0];
+            // Ensure cursor position is valid
             const newCursorPos = Math.min(originalPrevTextLength, textNode.textContent?.length || 0);
             range.setStart(textNode, newCursorPos);
-            range.collapse(true);
+            range.collapse(true); // This is crucial
+            
             selection?.removeAllRanges();
             selection?.addRange(range);
           }
