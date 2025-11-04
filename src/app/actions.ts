@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -21,11 +22,11 @@ import {
     type AiGenerateCharacterProfileInput,
 } from '@/ai/flows/ai-generate-character-profile';
 import {
-    aiGenerateNote as aiGenerateNoteFlow,
+    aiGenerateNote,
     type AiGenerateNoteInput,
 } from '@/ai/flows/ai-generate-note';
 import {
-    aiGenerateLogline as aiGenerateLoglineFlow,
+    aiGenerateLogline,
     type AiGenerateLoglineInput,
 } from '@/ai/flows/ai-generate-logline';
 import {
@@ -90,7 +91,7 @@ export async function runAiGenerateLogline(input: AiGenerateLoglineInput) {
         return { data: null, error: 'AI features are disabled. Please set your GEMINI_API_KEY.' };
     }
     try {
-        const result = await aiGenerateLoglineFlow(input);
+        const result = await aiGenerateLogline(input);
         return { data: result, error: null };
     } catch (error) {
         console.error(error);
@@ -124,7 +125,7 @@ export async function runAiGenerateNote(input: AiGenerateNoteInput) {
         return { data: null, error: 'AI features are disabled. Please set your GEMINI_API_KEY.' };
     }
     try {
-        const result = await aiGenerateNoteFlow(input);
+        const result = await aiGenerateNote(input);
         return { data: result, error: null };
     } catch (error) {
         console.error(error);
@@ -205,5 +206,3 @@ export async function runAiDiagnoseAppHealth(input: AiDiagnoseAppHealthInput) {
         };
     }
 }
-
-    
