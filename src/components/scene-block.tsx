@@ -81,6 +81,7 @@ const SceneBlock: React.FC<SceneBlockProps> = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
+              // TODO: Replace confirm() with accessible dialog component for better UX
               if (confirm(`Delete Scene ${sceneNumber} and all its ${blocks.length} block(s)?`)) {
                 onDeleteScene();
               }
@@ -94,7 +95,7 @@ const SceneBlock: React.FC<SceneBlockProps> = ({
         )}
       </div>
 
-      {/* Scene Content - Always rendered but hidden when collapsed for keyboard navigation */}
+      {/* Scene Content - Hidden when collapsed to avoid confusing keyboard navigation */}
       <div className={isCollapsed ? 'hidden' : 'scene-content space-y-0'}>
         {blocks.map((block, index) => (
           <ScriptBlockComponent

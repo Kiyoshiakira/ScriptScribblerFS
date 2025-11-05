@@ -358,7 +358,8 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
       // Focus on the previous block if available, or next block if this was the first scene
       setTimeout(() => {
         if (newBlocks.length > 0) {
-          const targetIndex = Math.max(0, Math.min(startBlockIndex - 1, newBlocks.length - 1));
+          // If deleting from start, focus first remaining block; otherwise focus previous block
+          const targetIndex = Math.min(startBlockIndex > 0 ? startBlockIndex - 1 : 0, newBlocks.length - 1);
           const targetBlock = newBlocks[targetIndex];
           const targetElement = document.querySelector(`[data-block-id="${targetBlock.id}"]`) as HTMLElement;
           if (targetElement) {
