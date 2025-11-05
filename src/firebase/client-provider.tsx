@@ -15,10 +15,11 @@ interface FirebaseClientProviderProps {
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
   const [firebaseServices, setFirebaseServices] = useState<ReturnType<typeof initializeFirebase> | null>(null);
   const [initError, setInitError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // Only run on client side
-    if (typeof window === 'undefined') return;
+    // Mark that we're on the client side
+    setIsClient(true);
 
     // Check if Firebase config is valid before trying to initialize
     if (!isFirebaseConfigValid()) {
@@ -75,8 +76,8 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
     );
   }
 
-  // Show loading state while initializing
-  if (!firebaseServices) {
+  // Show loading state while initializing or on server-side
+  if (!isClient || (!firebaseServices && !initError)) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="text-center">
