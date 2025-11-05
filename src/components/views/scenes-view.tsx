@@ -13,7 +13,7 @@ import {
 } from '../ui/dropdown-menu';
 import { useCollection, useFirestore, useUser, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useCurrentScript } from '@/context/current-script-context';
-import { collection, query, orderBy, addDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, doc, setDoc } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
 import AiFab from '../ai-fab';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
@@ -78,7 +78,7 @@ function SceneDialog({
       setting,
       description,
       time,
-    } as Scene);
+    });
     setIsSaving(false);
     onOpenChange(false);
   };
