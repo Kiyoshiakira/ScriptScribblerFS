@@ -269,6 +269,9 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
       ScriptBlockType.DIALOGUE,
       ScriptBlockType.TRANSITION,
       ScriptBlockType.SCENE_HEADING,
+      ScriptBlockType.CENTERED,
+      ScriptBlockType.SECTION,
+      ScriptBlockType.SYNOPSIS,
     ];
     
     setLocalDocument(prevDoc => {
