@@ -167,10 +167,10 @@ export default function AiEditContextMenu({
                         {suggestion.reason}
                       </div>
                       <div className="text-xs text-red-500 line-through">
-                        &quot;{suggestion.originalText}&quot;
+                        {suggestion.originalText}
                       </div>
                       <div className="text-xs text-green-600">
-                        &quot;{suggestion.editedText}&quot;
+                        {suggestion.editedText}
                       </div>
                       <div className="flex justify-end gap-2 mt-2">
                         <Button

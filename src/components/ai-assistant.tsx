@@ -129,7 +129,8 @@ export default function AiAssistant({ openProofreadDialog }: AiAssistantProps) {
               description: `${charData.name} has been added to your characters list.`,
             });
           })
-          .catch(() => {
+          .catch((error) => {
+            console.error('Failed to create character:', error);
             const permissionError = new FirestorePermissionError({
               path: charactersCollectionRef.path,
               operation: 'create',
