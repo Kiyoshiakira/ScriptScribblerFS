@@ -22,7 +22,19 @@ export async function POST(request: NextRequest) {
 
     // Decode base64 content to ArrayBuffer
     const base64Data = content.split(',')[1] || content; // Handle data URL or raw base64
-    const binaryString = atob(base64Data);
+    let binaryString;
+    try {
+      binaryString = atob(base64Data);
+    } catch (decodeError) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Invalid base64 content: ${decodeError instanceof Error ? decodeError.message : 'Could not decode file'}` 
+        },
+        { status: 400 }
+      );
+    }
+    
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);

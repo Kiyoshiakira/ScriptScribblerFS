@@ -40,7 +40,15 @@ export async function importScriteFile(fileData: ArrayBuffer): Promise<ScriteImp
     
     // Extract and parse the header JSON
     const headerContent = await headerFile.async('string');
-    const headerJson = JSON.parse(headerContent);
+    let headerJson;
+    try {
+      headerJson = JSON.parse(headerContent);
+    } catch (parseError) {
+      return {
+        success: false,
+        error: `Invalid JSON in header file: ${parseError instanceof Error ? parseError.message : 'Could not parse header'}`,
+      };
+    }
     
     // Use the existing parser to convert to Fountain
     const parsedData = await parseScriteFile(fileData);
