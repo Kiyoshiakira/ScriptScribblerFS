@@ -537,11 +537,27 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
           const targetIndex = Math.min(index > 0 ? index - 1 : 0, newBlocks.length - 1);
           const targetBlock = newBlocks[targetIndex];
           const targetElement = document.querySelector(`[data-block-id="${targetBlock.id}"]`) as HTMLElement;
-          if (targetElement) {
+          if (targetElement && targetElement.focus) {
             targetElement.focus();
+            // Move cursor to end of block
+            const range = document.createRange();
+            const selection = window.getSelection();
+            if (targetElement.childNodes.length > 0) {
+              const lastNode = targetElement.childNodes[targetElement.childNodes.length - 1];
+              const length = lastNode.textContent?.length || 0;
+              try {
+                range.setStart(lastNode, length);
+                range.collapse(true);
+                selection?.removeAllRanges();
+                selection?.addRange(range);
+              } catch (e) {
+                // Fallback: just focus without setting cursor position
+                console.debug('Could not set cursor position after block deletion');
+              }
+            }
           }
         }
-      }, 0);
+      }, 10); // Slightly longer delay to ensure DOM update
       
       return { ...prevDoc, blocks: newBlocks };
     });
