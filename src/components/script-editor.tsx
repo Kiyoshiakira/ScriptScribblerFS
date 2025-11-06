@@ -8,7 +8,7 @@ import { Skeleton } from './ui/skeleton';
 import ScriptBlockComponent from './script-block';
 import SceneBlock from './scene-block';
 import BlockSeparator from './block-separator';
-import type { ScriptBlock, ScriptBlockType } from '@/lib/editor-types';
+import type { ScriptBlock } from '@/lib/editor-types';
 import { ScriptBlockType } from '@/lib/editor-types';
 
 interface ScriptEditorProps {
