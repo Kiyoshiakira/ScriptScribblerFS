@@ -474,13 +474,13 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
                 Export as .scribbler
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem disabled>
                 <GoogleDocIcon className="h-4 w-4 mr-2" />
-                Export to Google Docs
+                Export to Google Docs (Coming Soon)
             </DropdownMenuItem>
-            <DropdownMenuItem>Export as PDF</DropdownMenuItem>
-            <DropdownMenuItem>Export as Fountain</DropdownMenuItem>
-            <DropdownMenuItem>Export as Final Draft</DropdownMenuItem>
+            <DropdownMenuItem disabled>Export as PDF (Coming Soon)</DropdownMenuItem>
+            <DropdownMenuItem disabled>Export as Fountain (Coming Soon)</DropdownMenuItem>
+            <DropdownMenuItem disabled>Export as Final Draft (Coming Soon)</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         <UserMenu />

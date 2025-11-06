@@ -13,7 +13,7 @@ import {
 } from '../ui/dropdown-menu';
 import { useCollection, useFirestore, useUser, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useCurrentScript } from '@/context/current-script-context';
-import { collection, query, orderBy, addDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
 import AiFab from '../ai-fab';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
@@ -149,7 +149,7 @@ function SceneDialog({
 }
 
 
-const ScenesListView = ({ scenes, onEdit }: { scenes: Scene[] | null; onEdit: (scene: Scene) => void }) => (
+const ScenesListView = ({ scenes, onEdit, onDuplicate, onDelete }: { scenes: Scene[] | null; onEdit: (scene: Scene) => void; onDuplicate: (scene: Scene) => void; onDelete: (scene: Scene) => void }) => (
     <div className="space-y-4">
         {scenes && scenes.map((scene) => (
             <Card key={scene.id} className="flex items-center p-2 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -180,8 +180,8 @@ const ScenesListView = ({ scenes, onEdit }: { scenes: Scene[] | null; onEdit: (s
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => onEdit(scene)}>Edit</DropdownMenuItem>
-                    <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onDuplicate(scene)}>Duplicate</DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive" onClick={() => onDelete(scene)}>Delete</DropdownMenuItem>
                 </DropdownMenuContent>
                 </DropdownMenu>
             </Card>
@@ -331,6 +331,75 @@ export default function ScenesView() {
     }
   };
 
+  const handleDuplicateScene = async (scene: Scene) => {
+    if (!firestore || !scenesCollection) return;
+
+    try {
+      const duplicatedScene = {
+        sceneNumber: nextSceneNumber,
+        setting: scene.setting + ' (Copy)',
+        description: scene.description,
+        time: scene.time,
+      };
+      await addDoc(scenesCollection, duplicatedScene).catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: scenesCollection.path,
+          operation: 'create',
+          requestResourceData: duplicatedScene,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        throw permissionError;
+      });
+      toast({
+        title: 'Scene Duplicated',
+        description: `Scene ${scene.sceneNumber} has been duplicated as scene ${nextSceneNumber}.`,
+      });
+    } catch (error) {
+      if (!(error instanceof FirestorePermissionError)) {
+        console.error('Error duplicating scene:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Duplication Error',
+          description: 'An error occurred while duplicating the scene.',
+        });
+      }
+    }
+  };
+
+  const handleDeleteScene = async (scene: Scene) => {
+    if (!firestore || !scenesCollection || !scene.id) return;
+
+    if (!confirm(`Delete scene ${scene.sceneNumber}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const sceneRef = doc(scenesCollection, scene.id);
+      await deleteDoc(sceneRef).catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: sceneRef.path,
+          operation: 'delete',
+          requestResourceData: {},
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        throw permissionError;
+      });
+      toast({
+        title: 'Scene Deleted',
+        description: `Scene ${scene.sceneNumber} has been deleted.`,
+      });
+    } catch (error) {
+      if (!(error instanceof FirestorePermissionError)) {
+        console.error('Error deleting scene:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Deletion Error',
+          description: 'An error occurred while deleting the scene.',
+        });
+      }
+    }
+  };
+
 
   if (areScenesLoading) {
     return (
@@ -385,7 +454,7 @@ export default function ScenesView() {
         </div>
       </div>
 
-      {viewMode === 'list' ? <ScenesListView scenes={scenes} onEdit={handleOpenDialog} /> : <BeatboardView scenes={scenes} onEdit={handleOpenDialog} />}
+      {viewMode === 'list' ? <ScenesListView scenes={scenes} onEdit={handleOpenDialog} onDuplicate={handleDuplicateScene} onDelete={handleDeleteScene} /> : <BeatboardView scenes={scenes} onEdit={handleOpenDialog} />}
 
       {!areScenesLoading && scenes && scenes.length === 0 && (
         <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">

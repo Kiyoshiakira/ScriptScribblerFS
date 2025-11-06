@@ -83,6 +83,45 @@ export default function DashboardView({ setView }: { setView: (view: View) => vo
         }
     };
 
+    const handleStartWithAI = async () => {
+        if (!firestore || !user) return;
+        try {
+            const scriptsCollectionRef = collection(firestore, 'users', user.uid, 'scripts');
+            const scriptData = {
+                title: 'AI-Assisted Script',
+                content: 'INT. WRITER\'S ROOM - DAY\n\nA blank page awaits. The AI assistant stands ready to help craft your story.\n\n(Click the AI assistant button in the bottom right to start collaborating)',
+                logline: 'An AI-assisted screenplay waiting to be written',
+                authorId: user.uid,
+                createdAt: serverTimestamp(),
+                lastModified: serverTimestamp(),
+            };
+            const newScriptDoc = await addDoc(scriptsCollectionRef, scriptData).catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: scriptsCollectionRef.path,
+                    operation: 'create',
+                    requestResourceData: scriptData
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                throw permissionError;
+            });
+            toast({
+                title: 'AI-Assisted Script Created',
+                description: 'Open the AI assistant to start creating your screenplay.',
+            });
+            setCurrentScriptId(newScriptDoc.id);
+            setView('editor');
+        } catch (error) {
+            console.error('Error creating AI script:', error);
+            if (!(error instanceof FirestorePermissionError)) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: 'Could not create a new script.',
+                });
+            }
+        }
+    };
+
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">
@@ -98,7 +137,7 @@ export default function DashboardView({ setView }: { setView: (view: View) => vo
                         <Plus className="mr-2 h-5 w-5" />
                         Create New Script
                     </Button>
-                    <Button size="lg" variant="secondary" className="w-full">
+                    <Button size="lg" variant="secondary" className="w-full" onClick={handleStartWithAI}>
                         <Sparkles className="mr-2 h-5 w-5" />
                         Start with AI
                     </Button>
