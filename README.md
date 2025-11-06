@@ -2,6 +2,12 @@
 
 ScriptScribbler is a modern, collaborative screenwriting application built with Next.js, Firebase, and Google's Generative AI. It provides a powerful editor with AI-powered tools to assist writers in their creative process.
 
+## Application Architecture
+
+ScriptScribbler is a **single-page application (SPA)** with a **tabbed sidebar interface**. The main application uses tabs in the left sidebar to navigate between different views (Dashboard, Editor, Logline, Scenes, Characters, and Notes). Profile and Settings are accessible via the user menu in the top-right corner. This tab-based architecture allows you to work on different aspects of your screenplay without leaving the main application.
+
+Additionally, there are separate public sharing routes for viewing scripts outside the main app, and utility tools for importing files.
+
 ## Getting Started
 
 Follow these steps to get the development environment running on your local machine.
@@ -61,27 +67,37 @@ The application will be available at [http://localhost:9002](http://localhost:90
 
 ## Features
 
+### Main Application Tabs
+
+The application uses a **sidebar with tabs** to navigate between different views:
+
+- **Dashboard Tab**: Manage your scripts, create new projects, and access recent work
+- **Editor Tab**: Write screenplays using the built-in editor with Fountain format support
+- **Logline Tab**: Create and edit concise story summaries for your screenplay
+- **Scenes Tab**: Organize your script into structured scenes with details and metadata
+- **Characters Tab**: Define and manage character profiles with descriptions and portraits
+- **Notes Tab**: Add production notes, ideas, and research for your screenplay
+
+**Profile & Settings**: Access your profile and app settings via the user avatar menu in the top-right corner (not in the sidebar).
+
 ### Script Management
-- **Create and Edit Scripts**: Write screenplays using the built-in editor with Fountain format support
+- **Create and Edit Scripts**: Write screenplays using the Fountain format in the Editor tab
 - **Import Scripts**: Import scripts from .scrite files (Scrite format) or .scribbler files (native format)
 - **Import from Google Docs**: Directly import scripts from Google Docs with AI-powered formatting
 - **Export Scripts**: Export your work in various formats (.scribbler, PDF, Fountain, Final Draft)
 
-### Public Sharing
+### Public Sharing (Separate Routes)
+
+Share your work with others via dedicated public sharing routes (outside the main app):
+
 - **Public Script Views**: Share your scripts with others via public URLs
   - View scripts at `/user/{userId}/script/{scriptId}`
   - Read-only access for non-owners
   - Full script content, characters, scenes, and notes visible
 - **Public User Profiles**: View other users' profiles and their script portfolio at `/user/{userId}`
 
-### Script Organization
-- **Characters**: Define and manage character profiles
-- **Scenes**: Organize your script into structured scenes
-- **Notes**: Add production notes and ideas
-- **Loglines**: Create concise story summaries
-
 ### Deletion Control
-- **Selective Deletion**: When deleting a script, choose exactly what to remove:
+- **Selective Deletion**: When deleting a script from the Profile view (accessed via top-right avatar menu), choose exactly what to remove:
   - Script document itself
   - All characters
   - All scenes
@@ -89,8 +105,8 @@ The application will be available at [http://localhost:9002](http://localhost:90
   - Or any combination of the above
 
 ### Collaboration & AI
-- **AI Assistant**: Get writing suggestions and script improvements
-- **Public Access**: Scripts are readable by all authenticated users (write access remains owner-only)
+- **AI Assistant**: Get writing suggestions and script improvements from within the Editor tab
+- **Public Access**: Scripts are readable by all authenticated users via public routes (write access remains owner-only)
 
 ## Available Scripts
 
