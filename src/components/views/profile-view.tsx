@@ -6,7 +6,7 @@ import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, errorEmi
 import { collection, addDoc, serverTimestamp, deleteDoc, doc, getDocs, writeBatch, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Book, Edit, Loader2, Plus, Trash, Users, UserCheck } from 'lucide-react';
+import { Book, Edit, Loader2, Plus, Trash, Users, UserCheck, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentScript } from '@/context/current-script-context';
 import { Skeleton } from '../ui/skeleton';
@@ -26,6 +26,7 @@ import { Label } from '../ui/label';
 import type { View } from '../layout/AppLayout';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Link from 'next/link';
 
 
 interface Script {
@@ -156,15 +157,24 @@ export default function ProfileView({ setView }: ProfileViewProps) {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex-grow" />
-                                <CardContent className="flex justify-between items-center">
-                                    <Button onClick={() => handleOpenScript(script.id)}>
-                                        <Book className="mr-2 h-4 w-4" />
-                                        Open
-                                    </Button>
+                                <CardContent className="flex flex-col gap-2">
+                                    <div className="flex gap-2">
+                                        <Button onClick={() => handleOpenScript(script.id)} className="flex-1">
+                                            <Book className="mr-2 h-4 w-4" />
+                                            Edit
+                                        </Button>
+                                        <Link href={`/user/${user!.uid}/script/${script.id}`} target="_blank" className="flex-1">
+                                            <Button variant="outline" className="w-full">
+                                                <ExternalLink className="mr-2 h-4 w-4" />
+                                                View
+                                            </Button>
+                                        </Link>
+                                    </div>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" size="icon">
-                                                <Trash className="h-4 w-4" />
+                                            <Button variant="destructive" size="sm" className="w-full">
+                                                <Trash className="mr-2 h-4 w-4" />
+                                                Delete
                                             </Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
