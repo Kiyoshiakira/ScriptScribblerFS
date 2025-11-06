@@ -451,7 +451,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
             <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={triggerFileSelect}>
                     <FileJson className="h-4 w-4 mr-2" />
-                    Import from file...
+                    Import .scrite or .scribbler file
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={openPicker}>
