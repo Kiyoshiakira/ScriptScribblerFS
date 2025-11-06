@@ -62,12 +62,8 @@ const getBlockStyles = (
       return tightenSpacing ? 'text-center text-sm my-0' : 'text-center text-sm my-1';
     case ScriptBlockType.DIALOGUE:
       // Reduce top margin when following parenthetical or character
-      if (tightenSpacing) {
-        if (previousBlockType === ScriptBlockType.PARENTHETICAL) {
-          return 'mt-0 mb-1 w-9/12 md:w-7/12 mx-auto';
-        } else if (previousBlockType === ScriptBlockType.CHARACTER) {
-          return 'mt-0 mb-1 w-9/12 md:w-7/12 mx-auto';
-        }
+      if (tightenSpacing && (previousBlockType === ScriptBlockType.PARENTHETICAL || previousBlockType === ScriptBlockType.CHARACTER)) {
+        return 'mt-0 mb-1 w-9/12 md:w-7/12 mx-auto';
       }
       return 'my-1 w-9/12 md:w-7/12 mx-auto';
     case ScriptBlockType.TRANSITION:
