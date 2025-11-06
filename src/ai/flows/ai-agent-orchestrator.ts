@@ -126,11 +126,15 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
       
       const modifiedScriptAsString = reformatResult.formattedScript;
       
+      // Generate unique block IDs using a counter to avoid duplicates
+      let blockCounter = 0;
+      const timestamp = Date.now();
+      
       return {
         response: "I've reformatted your script to standard screenplay format.",
         modifiedDocument: { 
-          blocks: modifiedScriptAsString.split('\n\n').map((line, index) => ({ 
-            id: `block-${index}-${Date.now()}`, 
+          blocks: modifiedScriptAsString.split('\n\n').map((line) => ({ 
+            id: `block-${timestamp}-${blockCounter++}`, 
             text: line, 
             type: 'action' as const 
           }))
