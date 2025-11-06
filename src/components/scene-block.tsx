@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Clock, MapPin, Trash2, Edit, Check } from 'lucide-react';
+import { ChevronDown, ChevronRight, Clock, MapPin, Trash2, Edit, Check, Undo2 } from 'lucide-react';
 import ScriptBlockComponent from './script-block';
 import BlockSeparator from './block-separator';
 import type { ScriptBlock, ScriptBlockType } from '@/lib/editor-types';
@@ -146,6 +146,16 @@ const SceneBlock: React.FC<SceneBlockProps> = ({
           ) : (
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground italic">Scene ended</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEnded(false)}
+                className="text-muted-foreground hover:bg-muted/50"
+                title="Undo scene end"
+              >
+                <Undo2 className="mr-2 h-4 w-4" />
+                Undo
+              </Button>
               {onEditScene && (
                 <Button
                   variant="outline"
