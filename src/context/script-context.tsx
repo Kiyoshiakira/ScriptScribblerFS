@@ -304,8 +304,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
         currentSceneNumber++;
       } else if (block.type === ScriptBlockType.CHARACTER) {
         const characterName = block.text.trim()
-          .replace(/\(V\.O\.\)/gi, '')
-          .replace(/\(O\.S\.\)/gi, '')
+          .replace(/\((V\.O\.|O\.S\.)\)/gi, '')
           .trim();
         
         if (characterName && currentSceneNumber > 0) {

@@ -200,7 +200,7 @@ const BeatboardView = ({ scenes, onEdit }: { scenes: Scene[] | null; onEdit: (sc
             <CardHeader>
                 <CardTitle className='font-headline text-lg flex items-start justify-between gap-2'>
                     <span className="truncate">Scene {scene.sceneNumber}: {scene.setting}</span>
-                    <span className="text-sm font-medium text-muted-foreground flex-shrink-0">{scene.time}&apos;</span>
+                    <span className="text-sm font-medium text-muted-foreground flex-shrink-0">{scene.time}'</span>
                 </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 min-h-0">
