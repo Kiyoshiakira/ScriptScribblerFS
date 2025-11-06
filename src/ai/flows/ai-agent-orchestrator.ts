@@ -195,6 +195,13 @@ The user asked: {{{request}}}
 Current screenplay document:
 {{{json document}}}
 
+Available Features in the Application:
+- Scene Management: Users can add scenes below the editor using the "Add Scene" button
+- End Scene: Each scene has an "End Scene" button to mark it as complete
+- Edit Scene: After a scene is ended, users can click "Edit Scene" to modify scene details (setting, description, time)
+- Scene Editing Dialog: Available in the Scenes tab for detailed scene management
+- Scene Grouping: Scenes are automatically grouped by SCENE_HEADING blocks in the editor
+
 Provide a helpful, conversational answer to their question.`,
       config: {
         temperature: 0.3,

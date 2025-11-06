@@ -185,6 +185,50 @@ Configuration is persisted in localStorage.
 - Custom AI editing commands
 - Learning from user preferences
 
+## Scene Management Features
+
+### Add Scene Button
+
+The editor now includes an "Add Scene" button positioned below the editor content. This allows writers to:
+- Quickly add a new scene heading at the end of the script
+- Continue writing without manually creating a new SCENE_HEADING block
+- Maintain workflow without switching between tabs
+
+**How to use:**
+1. Scroll to the bottom of the editor
+2. Click the "Add Scene" button
+3. A new scene heading will be inserted with placeholder text: "INT. NEW LOCATION - DAY"
+4. Edit the scene heading to match your needs
+
+### End Scene Functionality
+
+Each scene block in the editor now includes an "End Scene" button that appears below the scene content. This feature:
+- Marks a scene as complete
+- Provides visual feedback that the scene is finished
+- Enables the "Edit Scene" functionality
+
+**How to use:**
+1. Write your scene content in the editor
+2. When finished, click the "End Scene" button at the bottom of the scene block
+3. The button will be replaced with "Scene ended" text and an "Edit Scene" button
+
+### Edit Scene
+
+After ending a scene, writers can edit the scene's metadata using the "Edit Scene" button. This provides:
+- Quick access to scene details
+- Ability to modify scene setting, description, and estimated time
+- Integration with the Scenes tab for comprehensive scene management
+
+**How to use:**
+1. Click "End Scene" on a completed scene
+2. Click "Edit Scene" that appears
+3. You'll be directed to edit the scene in the Scenes tab where you can modify:
+   - Scene setting (e.g., "INT. COFFEE SHOP - DAY")
+   - Scene description
+   - Estimated time in minutes
+
+**Note:** For detailed scene management, including viewing all scenes in list or beatboard view, navigate to the Scenes tab in the sidebar.
+
 ## Technical Details
 
 ### AI Model

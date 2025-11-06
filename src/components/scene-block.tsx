@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Clock, MapPin, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Clock, MapPin, Trash2, Edit, Check } from 'lucide-react';
 import ScriptBlockComponent from './script-block';
 import BlockSeparator from './block-separator';
 import type { ScriptBlock, ScriptBlockType } from '@/lib/editor-types';
 import type { Scene } from './views/scenes-view';
 import { useScript } from '@/context/script-context';
+import { Button } from './ui/button';
 
 interface SceneBlockProps {
   sceneNumber: number;
@@ -14,6 +15,7 @@ interface SceneBlockProps {
   blocks: ScriptBlock[];
   onBlockChange: (blockId: string, newText: string) => void;
   onDeleteScene?: () => void;
+  onEditScene?: (sceneNumber: number) => void;
   highlightedBlockIndex: number | undefined;
   startBlockIndex: number;
 }
@@ -24,10 +26,12 @@ const SceneBlock: React.FC<SceneBlockProps> = ({
   blocks,
   onBlockChange,
   onDeleteScene,
+  onEditScene,
   highlightedBlockIndex,
   startBlockIndex,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isEnded, setIsEnded] = useState(false);
   const { insertBlockAfter } = useScript();
 
   const hasSceneData = !!sceneData;
@@ -123,6 +127,38 @@ const SceneBlock: React.FC<SceneBlockProps> = ({
       {isCollapsed && (
         <div className="text-sm text-muted-foreground italic">
           {blocks.length} block{blocks.length !== 1 ? 's' : ''} (collapsed)
+        </div>
+      )}
+
+      {/* End Scene / Edit Scene Section */}
+      {!isCollapsed && (
+        <div className="mt-4 mb-2 flex items-center justify-end gap-2 pr-2">
+          {!isEnded ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEnded(true)}
+              className="text-primary hover:bg-primary/10"
+            >
+              <Check className="mr-2 h-4 w-4" />
+              End Scene
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground italic">Scene ended</span>
+              {onEditScene && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEditScene(sceneNumber)}
+                  className="text-primary hover:bg-primary/10"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Scene
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
