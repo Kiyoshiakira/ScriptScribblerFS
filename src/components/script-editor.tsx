@@ -1,7 +1,6 @@
-
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useScript } from '@/context/script-context';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
@@ -13,9 +12,10 @@ import { ScriptBlockType } from '@/lib/editor-types';
 
 interface ScriptEditorProps {
   isStandalone?: boolean;
+  onEditScene?: (sceneNumber: number) => void;
 }
 
-export default function ScriptEditor({ isStandalone = false }: ScriptEditorProps) {
+export default function ScriptEditor({ isStandalone = false, onEditScene }: ScriptEditorProps) {
   const { document, setBlocks, isScriptLoading, activeMatch, scenes, deleteScene, insertBlockAfter } = useScript();
 
   const handleBlockChange = (blockId: string, newText: string) => {
@@ -94,6 +94,7 @@ export default function ScriptEditor({ isStandalone = false }: ScriptEditorProps
                 blocks={scene.blocks}
                 onBlockChange={handleBlockChange}
                 onDeleteScene={() => deleteScene(scene.startIndex, scene.blocks.length)}
+                onEditScene={onEditScene}
                 highlightedBlockIndex={activeMatch?.blockIndex}
                 startBlockIndex={scene.startIndex}
               />
