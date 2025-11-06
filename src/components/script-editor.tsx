@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import ScriptBlockComponent from './script-block';
 import SceneBlock from './scene-block';
+import BlockSeparator from './block-separator';
 import type { ScriptBlock } from '@/lib/editor-types';
 import { ScriptBlockType } from '@/lib/editor-types';
 
@@ -15,7 +16,7 @@ interface ScriptEditorProps {
 }
 
 export default function ScriptEditor({ isStandalone = false }: ScriptEditorProps) {
-  const { document, setBlocks, isScriptLoading, activeMatch, scenes, deleteScene } = useScript();
+  const { document, setBlocks, isScriptLoading, activeMatch, scenes, deleteScene, insertBlockAfter } = useScript();
 
   const handleBlockChange = (blockId: string, newText: string) => {
     if (document) {
@@ -101,14 +102,21 @@ export default function ScriptEditor({ isStandalone = false }: ScriptEditorProps
         ) : (
           // Fallback: render blocks without scene grouping (e.g., no scene headings yet)
           document.blocks.map((block, index) => (
-            <ScriptBlockComponent
-              key={block.id}
-              block={block}
-              onChange={handleBlockChange}
-              isHighlighted={activeMatch?.blockIndex === index}
-              previousBlockType={index > 0 ? document.blocks[index - 1].type : undefined}
-              nextBlockType={index < document.blocks.length - 1 ? document.blocks[index + 1].type : undefined}
-            />
+            <React.Fragment key={block.id}>
+              <ScriptBlockComponent
+                block={block}
+                onChange={handleBlockChange}
+                isHighlighted={activeMatch?.blockIndex === index}
+                previousBlockType={index > 0 ? document.blocks[index - 1].type : undefined}
+                nextBlockType={index < document.blocks.length - 1 ? document.blocks[index + 1].type : undefined}
+              />
+              {/* Add separator after each block except the last one */}
+              {index < document.blocks.length - 1 && (
+                <BlockSeparator 
+                  onInsertBlock={(type: ScriptBlockType) => insertBlockAfter(block.id, '', type)}
+                />
+              )}
+            </React.Fragment>
           ))
         )}
       </div>

@@ -55,13 +55,13 @@ const getBlockStyles = (
     case ScriptBlockType.CHARACTER:
       // Tighten top margin when part of dialogue group and not active
       if (tightenSpacing && previousBlockType === ScriptBlockType.DIALOGUE) {
-        return 'text-center uppercase mt-2 mb-0';
+        return 'text-center uppercase mt-2 mb-0 w-7/12 md:w-6/12 mx-auto';
       }
       // Use mb-1 when not in dialogue group to maintain spacing from following non-dialogue blocks
-      return tightenSpacing ? 'text-center uppercase mt-4 mb-0' : 'text-center uppercase mt-4 mb-1';
+      return tightenSpacing ? 'text-center uppercase mt-4 mb-0 w-7/12 md:w-6/12 mx-auto' : 'text-center uppercase mt-4 mb-1 w-7/12 md:w-6/12 mx-auto';
     case ScriptBlockType.PARENTHETICAL:
-      // Remove vertical margins when grouped and not active
-      return tightenSpacing ? 'text-center text-sm my-0' : 'text-center text-sm my-1';
+      // Remove vertical margins when grouped and not active, make narrower
+      return tightenSpacing ? 'text-center text-sm my-0 w-5/12 md:w-4/12 mx-auto' : 'text-center text-sm my-1 w-5/12 md:w-4/12 mx-auto';
     case ScriptBlockType.DIALOGUE:
       // Reduce top margin when following parenthetical or character
       if (tightenSpacing && (previousBlockType === ScriptBlockType.PARENTHETICAL || previousBlockType === ScriptBlockType.CHARACTER)) {
@@ -69,7 +69,9 @@ const getBlockStyles = (
       }
       return 'my-1 w-9/12 md:w-7/12 mx-auto';
     case ScriptBlockType.TRANSITION:
-      return 'text-right uppercase mt-4 mb-2';
+      return 'text-right uppercase mt-4 mb-2 w-full';
+    case ScriptBlockType.SHOT:
+      return 'uppercase my-3 w-full';
     case ScriptBlockType.CENTERED:
       return 'text-center my-4 font-medium';
     case ScriptBlockType.SECTION:
@@ -163,9 +165,13 @@ const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({
       return;
     }
 
-    if (e.key === 'Tab' && !e.shiftKey) {
-      e.preventDefault();
-      cycleBlockType(block.id);
+    if (e.key === 'Tab') {
+      e.preventDefault(); // Always prevent tab from leaving the editor
+      if (!e.shiftKey) {
+        cycleBlockType(block.id);
+      }
+      // Shift+Tab could cycle backwards in the future, for now just prevent default
+      return;
     }
     
     if (e.key === 'Backspace' && range.startOffset === 0 && range.endOffset === 0) {
