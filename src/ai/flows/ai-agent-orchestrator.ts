@@ -23,6 +23,10 @@ import {
   aiReformatScript,
   type AiReformatScriptOutput,
 } from './ai-reformat-script';
+import {
+  aiEditScript,
+  type AiEditScriptOutput,
+} from './ai-edit-script';
 import { ScriptBlock, ScriptDocument } from '@/lib/editor-types';
 
 
@@ -142,6 +146,34 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
         toolResult: {
           type: 'reformat',
           data: reformatResult,
+        },
+      };
+    }
+    
+    // Check if user wants to edit/improve the script
+    const editKeywords = [
+      'edit', 'improve', 'fix', 'change', 'rewrite', 'make better',
+      'enhance', 'spelling', 'grammar', 'dialogue', 'action',
+      'more natural', 'more engaging', 'clearer', 'stronger'
+    ];
+    
+    if (editKeywords.some(keyword => input.request.toLowerCase().includes(keyword))) {
+      const editResult = await aiEditScript({
+        instruction: input.request,
+        context: input.document.blocks,
+      });
+      
+      if (editResult.suggestions.length === 0) {
+        return {
+          response: editResult.summary || "Your script looks good! I didn't find anything that needs editing based on your request.",
+        };
+      }
+      
+      return {
+        response: `${editResult.summary}\n\nI found ${editResult.suggestions.length} suggestion(s) to improve your script.`,
+        toolResult: {
+          type: 'edit',
+          data: editResult,
         },
       };
     }

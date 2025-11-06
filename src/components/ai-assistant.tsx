@@ -145,6 +145,19 @@ export default function AiAssistant({ openProofreadDialog }: AiAssistantProps) {
             openProofreadDialog(suggestions);
           }
       }
+      
+      if (result.data.toolResult?.type === 'edit') {
+          const suggestions = result.data.toolResult.data.suggestions;
+          if (suggestions && suggestions.length > 0) {
+            // Convert edit suggestions to proofread format for display
+            const proofreadSuggestions = suggestions.map((s: any) => ({
+              originalText: s.originalText,
+              correctedText: s.editedText,
+              explanation: `${s.reason} (Confidence: ${s.confidence})`,
+            }));
+            openProofreadDialog(proofreadSuggestions);
+          }
+      }
     }
   };
 
