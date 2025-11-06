@@ -229,7 +229,7 @@ const ScriptBlockComponent: React.FC<ScriptBlockProps> = ({
             e.stopPropagation();
             deleteBlock(block.id);
           }}
-          className="absolute -right-8 top-1/2 -translate-y-1/2 p-1 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive opacity-0 group-hover/block:opacity-100 transition-opacity z-10"
+          className="absolute right-1 top-1 p-1 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive opacity-0 group-hover/block:opacity-100 transition-opacity z-10"
           aria-label="Delete block"
           title="Delete block"
         >

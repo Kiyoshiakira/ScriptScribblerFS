@@ -12,6 +12,8 @@ import { ScriptDocument, ScriptBlock, ScriptBlockType } from '@/lib/editor-types
 import { parseScreenplay, serializeScript } from '@/lib/screenplay-parser';
 import type { Match } from '@/hooks/use-find-replace.tsx';
 
+// Delay to ensure DOM has updated before focusing elements
+const DOM_UPDATE_DELAY_MS = 10;
 
 interface Script {
     id: string;
@@ -550,14 +552,14 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
                 range.collapse(true);
                 selection?.removeAllRanges();
                 selection?.addRange(range);
-              } catch (e) {
-                // Fallback: just focus without setting cursor position
-                console.debug('Could not set cursor position after block deletion');
+              } catch (error) {
+                // Cursor positioning failed, but focus succeeded which is acceptable
+                console.debug('Could not set cursor position after block deletion:', error);
               }
             }
           }
         }
-      }, 10); // Slightly longer delay to ensure DOM update
+      }, DOM_UPDATE_DELAY_MS);
       
       return { ...prevDoc, blocks: newBlocks };
     });
