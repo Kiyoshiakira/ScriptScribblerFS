@@ -1,7 +1,15 @@
 # Implementation Summary: Public Script Viewing and Upload Clarification
 
 ## Overview
-This implementation addresses the requirements specified in the problem statement, adding public script viewing capabilities, clarifying the upload functionality, and improving the user experience around script management.
+This implementation addresses the requirements specified in the problem statement, adding public script viewing capabilities via dedicated routes (outside the main app), clarifying the upload functionality, and improving the user experience around script management.
+
+## Application Architecture
+
+ScriptScribbler is a **single-page application (SPA)** with a **tabbed sidebar interface**:
+- **Main App Tabs (Left Sidebar)**: Dashboard, Editor, Logline, Scenes, Characters, Notes
+- **Profile & Settings**: Accessible via user avatar menu in top-right corner (not in sidebar)
+- **Public Sharing Routes**: Separate standalone routes for sharing scripts with others
+- **Utility Routes**: Standalone tools like the Scrite to Fountain converter
 
 ## Changes Made
 
@@ -16,8 +24,8 @@ This implementation addresses the requirements specified in the problem statemen
 - Enables public profile and script viewing features
 - Maintains data security by keeping write access restricted to owners
 
-### 2. Public User Profile Page (`src/app/user/[userId]/page.tsx`)
-**New Route:** `/user/[userId]`
+### 2. Public User Profile Route (`src/app/user/[userId]/page.tsx`)
+**Route:** `/user/[userId]` (Standalone, outside main app)
 
 **Features:**
 - Displays user profile information (avatar, bio, cover image)
@@ -26,10 +34,10 @@ This implementation addresses the requirements specified in the problem statemen
 - Navigation back to the main app
 - Read-only for all users (even when viewing your own profile from this route)
 
-**Use Case:** Share your profile URL with others to showcase your script portfolio
+**Use Case:** Share your profile URL with others to showcase your script portfolio. This is a separate route from the main app's Profile tab.
 
-### 3. Public Script View Page (`src/app/user/[userId]/script/[scriptId]/page.tsx`)
-**New Route:** `/user/[userId]/script/[scriptId]`
+### 3. Public Script View Route (`src/app/user/[userId]/script/[scriptId]/page.tsx`)
+**Route:** `/user/[userId]/script/[scriptId]` (Standalone, outside main app)
 
 **Features:**
 - Full read-only script view with tabs for:
@@ -42,26 +50,29 @@ This implementation addresses the requirements specified in the problem statemen
   - Properly sets script ID in localStorage for seamless editing
 - Navigation back to user profile
 
-**Use Case:** Share individual script URLs with readers, collaborators, or for portfolio purposes
+**Use Case:** Share individual script URLs with readers, collaborators, or for portfolio purposes. This is separate from the main app's Editor and other tabs.
 
 ### 4. Profile View Updates (`src/components/views/profile-view.tsx`)
+**Location:** Accessible via user avatar menu in top-right corner (not in sidebar)
+
 **Changes:**
 - Reorganized script card buttons for better UX
-- Added "View" button that opens script in new tab (public view)
-- Renamed "Open" to "Edit" for clarity
+- Added "View" button that opens script in new tab (opens public sharing route)
+- Renamed "Open" to "Edit" for clarity (opens in Editor tab)
 - Separated Delete button to its own row
 - Added null safety check for user object
 
 **Button Layout:**
 ```
-[Edit] [View]
+[Edit] (opens Editor tab)  [View] (opens public sharing route)
 [Delete]
 ```
 
 **Benefits:**
-- Clear distinction between editing and viewing
-- Easier to share scripts (copy URL from View page)
+- Clear distinction between editing in the app and viewing via public route
+- Easier to share scripts (copy URL from public View route)
 - Delete action is visually separated from other actions
+- Profile accessed via top-right menu keeps sidebar focused on script work
 
 ### 5. Upload/Import Clarification (`src/components/layout/app-header.tsx`)
 **Changes:**
@@ -84,15 +95,17 @@ This implementation addresses the requirements specified in the problem statemen
 
 ### Issue 1: "Scripts should be shown on the profile, but only for other people to look at"
 ✅ **Solution:** 
-- Created public script viewing pages (`/user/[userId]/script/[scriptId]`)
+- Created public script viewing routes (`/user/{userId}/script/{scriptId}`) - separate from main app
 - Updated Firestore rules to allow read access
 - Scripts are fully viewable but not editable by others
+- Main app Profile tab shows your scripts with edit/view/delete options
 
 ### Issue 2: "Not sure it's a place I should be able to delete scripts. Maybe it's own script page?"
 ✅ **Solution:**
-- Delete functionality remains on profile (standard pattern)
-- Public script view page has no delete option
-- Delete button is clearly separated from other actions
+- Delete functionality remains in Profile view (accessed via top-right avatar menu)
+- This is the standard pattern for app management functionality
+- Public script view route has no delete option
+- Delete button is clearly separated from other actions in Profile view
 - Selective deletion gives granular control
 
 ### Issue 3: "I can't delete any scripts, not sure why"
@@ -112,8 +125,9 @@ This implementation addresses the requirements specified in the problem statemen
 ## Technical Implementation
 
 ### Architecture
-- Uses Next.js App Router with dynamic routes
-- Client-side rendering for public pages
+- Single-page application with tabbed sidebar for main app navigation
+- Public sharing routes use Next.js App Router with dynamic segments (separate from main app)
+- Client-side rendering for public sharing routes
 - Firebase Firestore for data storage
 - React hooks for state management
 

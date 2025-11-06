@@ -51,9 +51,8 @@ function AppLayoutInternal() {
       return; // Wait for all loading to complete
     }
 
-    // If there is no script, force profile view. Otherwise, default to dashboard.
-    const initialView = currentScriptId ? 'dashboard' : 'profile';
-    setView(initialView);
+    // Default to dashboard view (profile is only accessible via top-right menu)
+    setView('dashboard');
 
   }, [isUserLoading, currentScriptId, isCurrentScriptLoading]);
 
@@ -64,23 +63,24 @@ function AppLayoutInternal() {
     } else if (newView === 'profile-edit') {
       setProfileOpen(true);
     } else {
-       // Allow navigation to dashboard or profile anytime.
-       // For other views, a script must be loaded.
+       // Profile is always accessible (from top-right menu)
+       // Dashboard is always accessible
+       // Other views require a script to be loaded
       if (newView === 'dashboard' || newView === 'profile') {
         setView(newView);
       } else if (currentScriptId) {
         // Only allow navigation to other views if a script is loaded.
         setView(newView);
-      } else {
-        // If no script is loaded and trying to access a script-specific view, stay on profile.
-        setView('profile');
       }
+      // If no script is loaded and trying to access a script-specific view, do nothing
     }
   };
 
   const renderView = () => {
-    // If no script is loaded, force the profile view unless the user explicitly selected the dashboard.
-    const viewToRender = currentScriptId ? view : (view === 'dashboard' ? 'dashboard' : 'profile');
+    // Dashboard and Profile are always accessible
+    // Profile is only accessible from top-right menu, not sidebar
+    // Other views require a script to be loaded
+    const viewToRender = (currentScriptId || view === 'dashboard' || view === 'profile') ? view : 'dashboard';
 
     switch(viewToRender) {
       case 'dashboard': return <DashboardView setView={handleSetView} />;
@@ -90,7 +90,7 @@ function AppLayoutInternal() {
       case 'characters': return <CharactersView />;
       case 'notes': return <NotesView />;
       case 'profile': return <ProfileView setView={handleSetView} />;
-      default: return <ProfileView setView={handleSetView} />;
+      default: return <DashboardView setView={handleSetView} />;
     }
   };
   
