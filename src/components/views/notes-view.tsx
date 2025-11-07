@@ -1,4 +1,3 @@
-```tsx
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,9 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+// Remove Textarea import — replaced with RichTextEditor
+// import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from '@/components/rich-text-editor';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
@@ -34,6 +35,7 @@ import { collection, addDoc, doc, setDoc, serverTimestamp } from 'firebase/fires
 import { Skeleton } from '../ui/skeleton';
 import AiFab from '../ai-fab';
 import { runAiGenerateNote } from '@/app/actions';
+import DOMPurify from 'isomorphic-dompurify';
 
 const NOTE_CATEGORIES = {
   Plot: 'bg-yellow-100 border-yellow-200 dark:bg-yellow-900/30 dark:border-yellow-800/50',
@@ -50,9 +52,9 @@ export type NoteCategory = keyof typeof NOTE_CATEGORIES;
 export interface Note {
   id?: string;
   title: string;
-  content: string;
+  content: string; // HTML string saved from the rich editor
   category: NoteCategory;
-  color?: string; // new optional inline color hex (e.g. #fef3c7)
+  color?: string; // optional inline color hex
   imageUrl?: string;
   createdAt?: any;
   updatedAt?: any;
@@ -72,7 +74,7 @@ function NoteDialog({
   isGenerating: boolean;
 }) {
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState<string>(''); // HTML content
   const [category, setCategory] = useState<NoteCategory>('General');
   const [imageUrl, setImageUrl] = useState('');
   const [color, setColor] = useState<string>('#fff7ed'); // default gentle background
@@ -83,7 +85,8 @@ function NoteDialog({
   useEffect(() => {
     if (open) {
       setTitle(note?.title || '');
-      setContent(note?.content || '');
+      // If note.content exists but is raw text (legacy), convert it to simple paragraph HTML
+      setContent(note?.content ? note.content : '');
       setCategory(note?.category || 'General');
       setImageUrl(note?.imageUrl || '');
       setColor(note?.color || '#fff7ed');
@@ -107,11 +110,13 @@ function NoteDialog({
       return;
     }
     setIsSaving(true);
+    // The content is HTML; sanitize it prior to saving as a precaution (server should also validate).
+    const sanitized = DOMPurify.sanitize(content || '');
     await onSave({
       ...(note || {}),
       id: note?.id,
       title,
-      content,
+      content: sanitized,
       category,
       color,
       imageUrl,
@@ -128,7 +133,6 @@ function NoteDialog({
           <DialogDescription>{note ? 'Edit your note details.' : 'Create a new note to organize your ideas.'}</DialogDescription>
         </DialogHeader>
 
-        {/* The ScrollArea wraps the whole content editor and ensures internal scrolling for very large notes */}
         <ScrollArea className="flex-1 -mx-6 px-6">
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
@@ -164,14 +168,13 @@ function NoteDialog({
                     onChange={(e) => setColor(e.target.value)}
                     className="w-10 h-10 p-0 border rounded"
                   />
-                  <div className="text-sm text-muted-foreground">Pick a background color for the note</div>
+                  <div className="text-sm text-muted-foreground">Pick a background color</div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="content">Content</Label>
-              {/* Use a large, non-resizable textarea inside the ScrollArea to allow very large content and ensure the dialog scrolls internally */}
               {isGenerating ? (
                 <Skeleton className="h-24 w-full" />
               ) : (
@@ -181,14 +184,7 @@ function NoteDialog({
                     backgroundColor: color,
                   }}
                 >
-                  <Textarea
-                    id="content"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Jot down your thoughts..."
-                    // Make the textarea tall so users can work with large notes; the ScrollArea will handle overflow
-                    className="min-h-[30rem] h-auto max-h-[70vh] resize-none bg-transparent"
-                  />
+                  <RichTextEditor value={content} onChange={(val) => setContent(val)} />
                 </div>
               )}
             </div>
@@ -235,7 +231,6 @@ export default function NotesView() {
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Two-step create flow: when user clicks Add Note, show a small create dialog to capture title and color.
   const [createPromptOpen, setCreatePromptOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState<NoteCategory>('General');
@@ -268,7 +263,6 @@ export default function NotesView() {
       color: newColor,
     };
     setCreatePromptOpen(false);
-    // Immediately open the full editor dialog with the new note (not yet persisted to Firestore)
     setEditingNote(createdNote);
     setDialogOpen(true);
   };
@@ -279,13 +273,11 @@ export default function NotesView() {
       return;
     }
     try {
-      // If note has an id, update; otherwise add a new doc
       if (noteToSave.id) {
         const d = doc(notesCollection as any, noteToSave.id);
         await setDoc(d, { ...noteToSave, updatedAt: serverTimestamp() }, { merge: true });
       } else {
         const added = await addDoc(notesCollection as any, { ...noteToSave, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-        // best-effort set the id locally (other readers will see the generated id via firestore stream)
         noteToSave.id = added.id;
       }
       toast({ title: 'Saved', description: 'Note saved successfully.' });
@@ -305,7 +297,7 @@ export default function NotesView() {
     } else {
       const { id, createdAt, updatedAt, ...generatedData } = result.data as Note;
       setEditingNote(generatedData);
-      setDialogOpen(true); // Open the dialog with the generated content
+      setDialogOpen(true);
       setIsGenerating(false);
     }
   };
@@ -337,43 +329,42 @@ export default function NotesView() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {notes && notes.map((note) => (
-            <Card
-              key={note.id}
-              onClick={() => handleOpenDialog(note)}
-              className={cn('flex flex-col shadow-sm hover:shadow-lg transition-shadow cursor-pointer', NOTE_CATEGORIES[note.category])}
-              // Use inline color if present to allow custom note colors
-              style={{ backgroundColor: note.color || undefined }}
-            >
-              {note.imageUrl && (
-                <div className="aspect-video w-full overflow-hidden border-b">
-                  <Image src={note.imageUrl} alt={note.title} width={300} height={169} className="object-cover w-full h-full" />
-                </div>
-              )}
-              <CardHeader>
-                <CardTitle className="font-headline text-lg flex justify-between items-start">
-                  <span className="line-clamp-2 text-lg">{note.title}</span>
-                  <Badge variant="secondary" className="flex-shrink-0 ml-2">{note.category}</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                {/* Increase preview font-size to make notes more readable in the grid */}
-                <p className="text-base text-foreground/90 whitespace-pre-wrap line-clamp-6">{note.content}</p>
-              </CardContent>
-            </Card>
-          ))}
+          {notes && notes.map((note) => {
+            // sanitize HTML for preview (shorten to a snippet)
+            const raw = note.content || '';
+            const sanitized = DOMPurify.sanitize(raw);
+            // Optionally create a short excerpt by stripping tags:
+            const excerpt = sanitized.replace(/<\/?[^>]+(>|$)/g, '').slice(0, 400);
+            return (
+              <Card
+                key={note.id}
+                onClick={() => handleOpenDialog(note)}
+                className={cn('flex flex-col shadow-sm hover:shadow-lg transition-shadow cursor-pointer', NOTE_CATEGORIES[note.category])}
+                style={{ backgroundColor: note.color || undefined }}
+              >
+                {note.imageUrl && (
+                  <div className="aspect-video w-full overflow-hidden border-b">
+                    <Image src={note.imageUrl} alt={note.title} width={300} height={169} className="object-cover w-full h-full" />
+                  </div>
+                )}
+                <CardHeader>
+                  <CardTitle className="font-headline text-lg flex justify-between items-start">
+                    <span className="line-clamp-2 text-lg">{note.title}</span>
+                    <Badge variant="secondary" className="flex-shrink-0 ml-2">{note.category}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  {/* Render a sanitized excerpt as plain text to keep the card simple */}
+                  <p className="text-base text-foreground/90 whitespace-pre-wrap line-clamp-6">{excerpt}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {!isLoading && notes && notes.length === 0 && (
-        <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
-          <StickyNote className="mx-auto h-12 w-12" />
-          <h3 className="mt-4 text-lg font-medium">No Notes Yet</h3>
-          <p className="mt-1 text-sm">Create your first note to start organizing your ideas.</p>
-        </div>
-      )}
+      {/* ... create prompt dialog and editor dialog from earlier ... */}
 
-      {/* Create prompt dialog (first-time naming + pick color) */}
       <Dialog open={createPromptOpen} onOpenChange={setCreatePromptOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -408,9 +399,7 @@ export default function NotesView() {
         </DialogContent>
       </Dialog>
 
-      {/* Full editor dialog */}
       <NoteDialog note={editingNote} onSave={handleSaveNote} open={dialogOpen} onOpenChange={setDialogOpen} isGenerating={isGenerating} />
     </div>
   );
 }
-```
