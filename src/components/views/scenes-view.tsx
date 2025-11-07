@@ -19,6 +19,7 @@ import AiFab from '../ai-fab';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { ScrollArea } from '../ui/scroll-area';
 import { useScript } from '@/context/script-context';
+import { ScriptBlockType } from '@/lib/editor-types';
 import { runGetAiSuggestions } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
@@ -221,7 +222,7 @@ export default function ScenesView() {
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionsDialogOpen, setSuggestionsDialogOpen] = useState(false);
-  const { script } = useScript();
+  const { script, document, deleteScene: deleteScriptBlocks } = useScript();
   const { toast } = useToast();
   const [viewMode, setViewMode] = useState<'list' | 'beatboard'>('list');
   const [sceneDialogOpen, setSceneDialogOpen] = useState(false);
@@ -376,6 +377,44 @@ export default function ScenesView() {
     }
 
     try {
+      // First, delete the script blocks for this scene
+      if (document) {
+        // Find the scene blocks by grouping the document blocks
+        let currentSceneNumber = 0;
+        let sceneStartIndex = -1;
+        let sceneBlockCount = 0;
+        
+        for (let i = 0; i < document.blocks.length; i++) {
+          const block = document.blocks[i];
+          
+          if (block.type === ScriptBlockType.SCENE_HEADING) {
+            currentSceneNumber++;
+            
+            if (currentSceneNumber === scene.sceneNumber) {
+              // Found the scene to delete
+              sceneStartIndex = i;
+              sceneBlockCount = 1; // Count the scene heading itself
+              
+              // Count all blocks until the next scene heading or end of document
+              for (let j = i + 1; j < document.blocks.length; j++) {
+                if (document.blocks[j].type === ScriptBlockType.SCENE_HEADING) {
+                  break; // Stop at the next scene heading
+                }
+                sceneBlockCount++;
+              }
+              
+              break; // Found and counted the scene, exit loop
+            }
+          }
+        }
+        
+        // Delete the script blocks if we found the scene
+        if (sceneStartIndex >= 0 && sceneBlockCount > 0) {
+          deleteScriptBlocks(sceneStartIndex, sceneBlockCount);
+        }
+      }
+      
+      // Then, delete the Firestore scene metadata
       const sceneRef = doc(scenesCollection, scene.id);
       await deleteDoc(sceneRef).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
