@@ -19,12 +19,14 @@ import AiFab from '../ai-fab';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { ScrollArea } from '../ui/scroll-area';
 import { useScript } from '@/context/script-context';
+import { ScriptBlockType } from '@/lib/editor-types';
 import { runGetAiSuggestions } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
+import type { ScriptDocument } from '@/lib/editor-types';
 
 export interface Scene {
   id: string;
@@ -32,6 +34,44 @@ export interface Scene {
   setting: string;
   description: string;
   time: number;
+}
+
+/**
+ * Finds the start index and block count for a scene in the document.
+ * @param document The script document
+ * @param sceneNumber The scene number to find (1-indexed)
+ * @returns An object with startIndex and blockCount, or null if scene not found
+ */
+function findSceneBlockRange(
+  document: ScriptDocument,
+  sceneNumber: number
+): { startIndex: number; blockCount: number } | null {
+  let currentSceneNumber = 0;
+  
+  for (let i = 0; i < document.blocks.length; i++) {
+    const block = document.blocks[i];
+    
+    if (block.type === ScriptBlockType.SCENE_HEADING) {
+      currentSceneNumber++;
+      
+      if (currentSceneNumber === sceneNumber) {
+        // Found the scene to delete
+        let blockCount = 1; // Count the scene heading itself
+        
+        // Count all blocks until the next scene heading or end of document
+        for (let j = i + 1; j < document.blocks.length; j++) {
+          if (document.blocks[j].type === ScriptBlockType.SCENE_HEADING) {
+            break; // Stop at the next scene heading
+          }
+          blockCount++;
+        }
+        
+        return { startIndex: i, blockCount };
+      }
+    }
+  }
+  
+  return null; // Scene not found
 }
 
 function SceneDialog({ 
@@ -221,7 +261,7 @@ export default function ScenesView() {
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionsDialogOpen, setSuggestionsDialogOpen] = useState(false);
-  const { script } = useScript();
+  const { script, document, deleteScene: deleteScriptBlocks } = useScript();
   const { toast } = useToast();
   const [viewMode, setViewMode] = useState<'list' | 'beatboard'>('list');
   const [sceneDialogOpen, setSceneDialogOpen] = useState(false);
@@ -376,6 +416,7 @@ export default function ScenesView() {
     }
 
     try {
+      // First, delete the Firestore scene metadata
       const sceneRef = doc(scenesCollection, scene.id);
       await deleteDoc(sceneRef).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -386,6 +427,18 @@ export default function ScenesView() {
         errorEmitter.emit('permission-error', permissionError);
         throw permissionError;
       });
+      
+      // Only delete the script blocks after successful Firestore deletion
+      if (document) {
+        const sceneRange = findSceneBlockRange(document, scene.sceneNumber);
+        if (sceneRange) {
+          deleteScriptBlocks(sceneRange.startIndex, sceneRange.blockCount);
+        } else {
+          // Scene exists in metadata but not in document - possible data inconsistency
+          console.warn(`Scene ${scene.sceneNumber} exists in Firestore but not found in document. Metadata has been deleted.`);
+        }
+      }
+      
       toast({
         title: 'Scene Deleted',
         description: `Scene ${scene.sceneNumber} has been deleted.`,

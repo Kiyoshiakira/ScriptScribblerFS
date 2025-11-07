@@ -41,6 +41,7 @@ const SceneBlock: React.FC<SceneBlockProps> = ({
       {/* Scene Header */}
       <div className="flex items-start gap-2 mb-4 -ml-4 pl-4 py-2 bg-primary/5 rounded-r-lg group hover:bg-primary/10 transition-colors">
         <button
+          type="button"
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="flex-shrink-0 p-1 hover:bg-primary/20 rounded transition-colors"
           aria-label={isCollapsed ? 'Expand scene' : 'Collapse scene'}
@@ -86,6 +87,7 @@ const SceneBlock: React.FC<SceneBlockProps> = ({
         {/* Delete Scene Button */}
         {onDeleteScene && (
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               // TODO: Replace confirm() with accessible dialog component for better UX
