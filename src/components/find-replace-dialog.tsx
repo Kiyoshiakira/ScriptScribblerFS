@@ -14,7 +14,7 @@ import { Label } from './ui/label';
 import { Separator } from './ui/separator';
 import { Checkbox } from './ui/checkbox';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
-import { useFindReplace } from '@/hooks/use-find-replace';
+import { useFindReplaceContext } from '@/hooks/use-find-replace';
 
 interface FindReplaceDialogProps {
   open: boolean;
@@ -38,7 +38,7 @@ export function FindReplaceDialog({ open, onOpenChange }: FindReplaceDialogProps
     handleReplace,
     handleReplaceAll,
     clearHighlights,
-  } = useFindReplace();
+  } = useFindReplaceContext();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
