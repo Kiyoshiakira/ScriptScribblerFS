@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, User as UserIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ReactMarkdown from 'react-markdown';
+import DOMPurify from 'isomorphic-dompurify';
 
 interface Script {
     title: string;
@@ -247,9 +247,12 @@ export default function PublicScriptView() {
                                             <CardTitle>{note.title}</CardTitle>
                                         </CardHeader>
                                         <CardContent>
-                                            <div className="prose prose-sm max-w-none dark:prose-invert">
-                                                <ReactMarkdown>{note.content}</ReactMarkdown>
-                                            </div>
+                                            <div 
+                                                className="prose prose-sm max-w-none dark:prose-invert"
+                                                dangerouslySetInnerHTML={{ 
+                                                    __html: DOMPurify.sanitize(note.content || '') 
+                                                }}
+                                            />
                                         </CardContent>
                                     </Card>
                                 ))}
