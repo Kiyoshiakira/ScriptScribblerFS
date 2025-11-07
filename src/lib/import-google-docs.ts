@@ -5,6 +5,17 @@
 
 import { ScriptDocument, ScriptBlock, ScriptBlockType } from './editor-types';
 
+// Screenplay formatting constants (in inches)
+const CHARACTER_INDENT_MIN = 2.0;
+const CHARACTER_INDENT_MAX = 2.5;
+const DIALOGUE_INDENT_MIN = 1.2;
+const DIALOGUE_INDENT_MAX = 1.8;
+const PARENTHETICAL_INDENT_MIN = 1.5;
+
+// Regular expression patterns for screenplay element detection
+const SCENE_HEADING_PATTERN = /^(INT\.|EXT\.|INT\/EXT\.|I\/E\.|INTERIOR|EXTERIOR)/i;
+const SHOT_PATTERN = /^(CLOSE ON|ANGLE ON|POV|WIDE SHOT|CLOSE UP|MEDIUM SHOT)/i;
+
 /**
  * Google Docs API document structure (simplified types)
  */
@@ -110,13 +121,12 @@ function inferBlockType(paragraph: GoogleDocsParagraph, text: string): ScriptBlo
   const indentStart = style?.indentStart?.magnitude || 0;
   const indentEnd = style?.indentEnd?.magnitude || 0;
   const isBold = paragraph.elements.some(e => e.textRun?.textStyle?.bold);
-  const isUpperCase = text === text.toUpperCase();
+  const isUpperCase = /[A-Z]/.test(text) && text === text.toUpperCase();
 
   // Scene Heading: Bold, uppercase, left-aligned
   // Typically starts with INT., EXT., or similar
   if (isBold && isUpperCase && alignment === 'START' && indentStart < 1) {
-    const sceneHeadingPattern = /^(INT\.|EXT\.|INT\/EXT\.|I\/E\.|INTERIOR|EXTERIOR)/i;
-    if (sceneHeadingPattern.test(text)) {
+    if (SCENE_HEADING_PATTERN.test(text)) {
       return ScriptBlockType.SCENE_HEADING;
     }
   }
@@ -137,24 +147,23 @@ function inferBlockType(paragraph: GoogleDocsParagraph, text: string): ScriptBlo
   }
 
   // Character: Uppercase, indented left (around 2.2 inches)
-  if (isUpperCase && indentStart >= 2.0 && indentStart <= 2.5 && indentEnd < 1) {
+  if (isUpperCase && indentStart >= CHARACTER_INDENT_MIN && indentStart <= CHARACTER_INDENT_MAX && indentEnd < 1) {
     return ScriptBlockType.CHARACTER;
   }
 
   // Parenthetical: Indented both sides, usually in parentheses
-  if (indentStart >= 1.5 && indentEnd >= 1.5 && text.startsWith('(') && text.endsWith(')')) {
+  if (indentStart >= PARENTHETICAL_INDENT_MIN && indentEnd >= PARENTHETICAL_INDENT_MIN && text.startsWith('(') && text.endsWith(')')) {
     return ScriptBlockType.PARENTHETICAL;
   }
 
   // Dialogue: Indented both sides (around 1.5 inches)
-  if (indentStart >= 1.2 && indentStart <= 1.8 && indentEnd >= 1.2 && indentEnd <= 1.8) {
+  if (indentStart >= DIALOGUE_INDENT_MIN && indentStart <= DIALOGUE_INDENT_MAX && indentEnd >= DIALOGUE_INDENT_MIN && indentEnd <= DIALOGUE_INDENT_MAX) {
     return ScriptBlockType.DIALOGUE;
   }
 
   // Shot: Uppercase, may have specific keywords
   if (isUpperCase) {
-    const shotPattern = /^(CLOSE ON|ANGLE ON|POV|WIDE SHOT|CLOSE UP|MEDIUM SHOT)/i;
-    if (shotPattern.test(text)) {
+    if (SHOT_PATTERN.test(text)) {
       return ScriptBlockType.SHOT;
     }
   }
