@@ -6,11 +6,16 @@
 import { ScriptDocument, ScriptBlock, ScriptBlockType } from './editor-types';
 
 // Screenplay formatting constants (in inches)
-const CHARACTER_INDENT_MIN = 2.0;
-const CHARACTER_INDENT_MAX = 2.5;
-const DIALOGUE_INDENT_MIN = 1.2;
-const DIALOGUE_INDENT_MAX = 1.8;
-const PARENTHETICAL_INDENT_MIN = 1.5;
+// These match the export values with small tolerance for round-trip compatibility
+const CHARACTER_INDENT = 2.2;
+const CHARACTER_INDENT_TOLERANCE = 0.2;
+
+const DIALOGUE_INDENT = 1.5;
+const DIALOGUE_INDENT_TOLERANCE = 0.2;
+
+const PARENTHETICAL_INDENT_START = 1.8;
+const PARENTHETICAL_INDENT_END = 2.0;
+const PARENTHETICAL_INDENT_TOLERANCE = 0.2;
 
 // Regular expression patterns for screenplay element detection
 const SCENE_HEADING_PATTERN = /^(INT\.|EXT\.|INT\/EXT\.|I\/E\.|INTERIOR|EXTERIOR)/i;
@@ -121,7 +126,8 @@ function inferBlockType(paragraph: GoogleDocsParagraph, text: string): ScriptBlo
   const indentStart = style?.indentStart?.magnitude || 0;
   const indentEnd = style?.indentEnd?.magnitude || 0;
   const isBold = paragraph.elements.some(e => e.textRun?.textStyle?.bold);
-  const isUpperCase = /[A-Z]/.test(text) && text === text.toUpperCase();
+  const hasLetters = /[A-Za-z]/.test(text);
+  const isUpperCase = hasLetters && text === text.toUpperCase();
 
   // Scene Heading: Bold, uppercase, left-aligned
   // Typically starts with INT., EXT., or similar
@@ -146,18 +152,23 @@ function inferBlockType(paragraph: GoogleDocsParagraph, text: string): ScriptBlo
     return ScriptBlockType.TRANSITION;
   }
 
-  // Character: Uppercase, indented left (around 2.2 inches)
-  if (isUpperCase && indentStart >= CHARACTER_INDENT_MIN && indentStart <= CHARACTER_INDENT_MAX && indentEnd < 1) {
+  // Character: Uppercase, indented left (2.2 inches ± tolerance)
+  const isCharacterIndent = Math.abs(indentStart - CHARACTER_INDENT) <= CHARACTER_INDENT_TOLERANCE;
+  if (isUpperCase && isCharacterIndent && indentEnd < 1) {
     return ScriptBlockType.CHARACTER;
   }
 
-  // Parenthetical: Indented both sides, usually in parentheses
-  if (indentStart >= PARENTHETICAL_INDENT_MIN && indentEnd >= PARENTHETICAL_INDENT_MIN && text.startsWith('(') && text.endsWith(')')) {
+  // Parenthetical: Indented both sides (1.8" left, 2.0" right ± tolerance), usually in parentheses
+  const isParentheticalIndentStart = Math.abs(indentStart - PARENTHETICAL_INDENT_START) <= PARENTHETICAL_INDENT_TOLERANCE;
+  const isParentheticalIndentEnd = Math.abs(indentEnd - PARENTHETICAL_INDENT_END) <= PARENTHETICAL_INDENT_TOLERANCE;
+  if (isParentheticalIndentStart && isParentheticalIndentEnd && text.startsWith('(') && text.endsWith(')')) {
     return ScriptBlockType.PARENTHETICAL;
   }
 
-  // Dialogue: Indented both sides (around 1.5 inches)
-  if (indentStart >= DIALOGUE_INDENT_MIN && indentStart <= DIALOGUE_INDENT_MAX && indentEnd >= DIALOGUE_INDENT_MIN && indentEnd <= DIALOGUE_INDENT_MAX) {
+  // Dialogue: Indented both sides (1.5 inches ± tolerance)
+  const isDialogueIndentStart = Math.abs(indentStart - DIALOGUE_INDENT) <= DIALOGUE_INDENT_TOLERANCE;
+  const isDialogueIndentEnd = Math.abs(indentEnd - DIALOGUE_INDENT) <= DIALOGUE_INDENT_TOLERANCE;
+  if (isDialogueIndentStart && isDialogueIndentEnd) {
     return ScriptBlockType.DIALOGUE;
   }
 
