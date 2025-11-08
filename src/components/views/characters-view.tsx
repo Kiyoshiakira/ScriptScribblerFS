@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Sparkles, User, FileText, Upload, Loader2, Users, MoreHorizontal, Trash2 } from 'lucide-react';
@@ -39,8 +39,8 @@ export interface Character {
   scenes: number;
   profile?: string;
   imageUrl?: string;
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: unknown;
+  updatedAt?: unknown;
 }
 
 function CharacterDialog({ character, onSave, onGenerate, open, onOpenChange, isGenerating }: { character: Character | null, onSave: (char: Character) => void, onGenerate: (desc: string, name?: string, profile?: string) => Promise<Character | null>, open: boolean, onOpenChange: (open: boolean) => void, isGenerating: boolean }) {
@@ -233,7 +233,7 @@ export default function CharactersView() {
   const handleOpenDialog = (character: Character | null) => {
     // Remove timestamp properties before passing to the dialog
     if (character) {
-      const { createdAt, updatedAt, ...rest } = character;
+      const { createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = character;
       setEditingCharacter(rest);
     } else {
       setEditingCharacter(null);
@@ -248,7 +248,7 @@ export default function CharactersView() {
     }
   
     const isNew = !charToSave.id;
-    const { id, createdAt, updatedAt, ...plainCharData } = charToSave;
+    const { id, createdAt: _createdAt, updatedAt: _updatedAt, ...plainCharData } = charToSave;
 
   
     try {
