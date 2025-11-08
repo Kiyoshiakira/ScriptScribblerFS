@@ -38,6 +38,7 @@ export default function CollabHub() {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isVoiceConnected, setIsVoiceConnected] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   const {
     transcript,
@@ -47,8 +48,11 @@ export default function CollabHub() {
   } = useSpeechRecognition();
 
   useEffect(() => {
-    setChatInput(transcript);
-  }, [transcript]);
+    // Only update input from transcript when actively listening and transcript has content
+    if (listening && transcript) {
+      setChatInput(transcript);
+    }
+  }, [transcript, listening]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -121,6 +125,7 @@ export default function CollabHub() {
       </ScrollArea>
       <div className="mt-2 flex items-center gap-2">
         <Input
+          ref={inputRef}
           placeholder={listening ? 'Listening...' : 'Send a message...'}
           value={chatInput}
           onChange={e => setChatInput(e.target.value)}

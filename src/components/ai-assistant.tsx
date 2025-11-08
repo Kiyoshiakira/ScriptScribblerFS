@@ -48,6 +48,7 @@ export default function AiAssistant({ openProofreadDialog }: AiAssistantProps) {
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const { user } = useUser();
   const firestore = useFirestore();
@@ -61,8 +62,11 @@ export default function AiAssistant({ openProofreadDialog }: AiAssistantProps) {
   } = useSpeechRecognition();
 
   useEffect(() => {
-    setChatInput(transcript);
-  }, [transcript]);
+    // Only update input from transcript when actively listening and transcript has content
+    if (listening && transcript) {
+      setChatInput(transcript);
+    }
+  }, [transcript, listening]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -240,6 +244,7 @@ export default function AiAssistant({ openProofreadDialog }: AiAssistantProps) {
         </ScrollArea>
         <div className="mt-4 flex items-center gap-2">
           <Input
+            ref={inputRef}
             placeholder={listening ? 'Listening...' : 'Ask the AI...'}
             value={chatInput}
             onChange={e => setChatInput(e.target.value)}
