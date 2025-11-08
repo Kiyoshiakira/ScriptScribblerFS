@@ -104,10 +104,10 @@ export default function CollabHub() {
               )}
               <div
                 className={cn(
-                  'p-2 rounded-lg max-w-[220px]',
+                  'p-3 rounded-2xl max-w-[220px] shadow-sm',
                   msg.sender === 'me'
                     ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
+                    : 'bg-card border border-border'
                 )}
               >
                  {msg.sender === 'other' && <p className="text-xs font-bold mb-0.5">{msg.name}</p>}
@@ -131,7 +131,7 @@ export default function CollabHub() {
           onChange={e => setChatInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSendChat()}
           disabled={isChatLoading}
-          className="text-sm h-8"
+          className="text-sm h-10 border-2 focus-visible:ring-2"
         />
         {browserSupportsSpeechRecognition && (
           <Button
@@ -139,22 +139,22 @@ export default function CollabHub() {
             size="icon"
             onClick={handleVoiceToggle}
             disabled={isChatLoading}
-            className="h-8 w-8"
+            className="h-10 w-10 border-2"
           >
             {listening ? (
-              <Square className="w-3 h-3 text-red-500 fill-red-500" />
+              <Square className="w-4 h-4 text-red-500 fill-red-500" />
             ) : (
-              <Mic className="w-3 h-3" />
+              <Mic className="w-4 h-4" />
             )}
           </Button>
         )}
         <Button
           onClick={handleSendChat}
           disabled={isChatLoading || !chatInput.trim()}
-          size="sm"
-          className="h-8"
+          size="default"
+          className="h-10 px-4 shadow-md"
         >
-          <Send className="w-3 h-3" />
+          <Send className="w-4 h-4" />
         </Button>
       </div>
     </div>
@@ -182,7 +182,7 @@ export default function CollabHub() {
   );
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-muted/30 rounded-lg border-2 border-border p-3">
       <Tabs defaultValue="chat" className="flex-1 flex flex-col min-h-0">
         <div className='flex items-center justify-between pr-1.5 gap-2'>
             <TabsList className="h-8">
