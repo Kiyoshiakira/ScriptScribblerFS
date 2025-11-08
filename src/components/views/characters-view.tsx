@@ -441,15 +441,12 @@ export default function CharactersView() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleOpenDialog(character)}>
+                    <DropdownMenuItem onSelect={() => handleOpenDialog(character)}>
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       className="text-destructive" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteCharacter(character);
-                      }}
+                      onSelect={() => handleDeleteCharacter(character)}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
