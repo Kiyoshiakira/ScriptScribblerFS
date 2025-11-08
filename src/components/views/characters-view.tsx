@@ -426,7 +426,7 @@ export default function CharactersView() {
           return (
             <Card
               key={character.id}
-              className="overflow-hidden shadow-sm hover:shadow-lg transition-shadow relative"
+              className="overflow-hidden shadow-md hover:shadow-xl transition-all duration-200 border-2 hover:border-primary/50 relative group cursor-pointer"
             >
               <div className="absolute top-2 right-2 z-10">
                 <DropdownMenu>
@@ -456,18 +456,18 @@ export default function CharactersView() {
               </div>
               <div className="cursor-pointer" onClick={() => handleOpenDialog(character)}>
                 <CardHeader className="p-0">
-                  <div className="aspect-square w-full bg-muted overflow-hidden">
+                  <div className="aspect-square w-full bg-gradient-to-br from-muted to-muted/50 overflow-hidden">
                     {character.imageUrl ? (
                       <Image
                         src={character.imageUrl}
                         alt={`Portrait of ${character.name}`}
                         width={200}
                         height={200}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                         data-ai-hint={'character portrait'}
                       />
                     ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center"><User className="w-1/2 h-1/2 text-muted-foreground" /></div>
+                      <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center group-hover:from-primary/10 group-hover:to-primary/5 transition-colors"><User className="w-1/2 h-1/2 text-muted-foreground" /></div>
                     )}
                   </div>
                 </CardHeader>
