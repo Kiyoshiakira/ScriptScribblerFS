@@ -46,7 +46,7 @@ export function useProfileExists(firestore: Firestore | null, user: User | null)
     };
 
     checkProfile();
-  }, [firestore, user?.uid]); // Only re-check if user ID changes
+  }, [firestore, user]); // Only re-check if user ID changes
 
   return state;
 }

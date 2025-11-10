@@ -125,7 +125,7 @@ export default function OnboardingPage() {
           </div>
           <CardTitle className="font-headline text-2xl">Complete Your Profile</CardTitle>
           <CardDescription>
-            Let's set up your profile to get started.
+            Let&apos;s set up your profile to get started.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
