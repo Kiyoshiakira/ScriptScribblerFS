@@ -15,7 +15,13 @@ This document explains how to deploy the updated Firestore security rules to fix
 - Ensures Firebase uses the correct rules file during deployment
 
 ### 2. Updated `firestore.rules`
+- **Added catch-all wildcard rule** under `/users/{userId}/` - This is the key fix!
+  - Gives owners full access to all their data
+  - Acts as a fallback for any subcollections without specific rules
+  - Ensures new subcollections automatically work without rule updates
 - Added missing `feedback` collection rule
+- Changed Story Scribbler features to owner-only access (outline, chapters, timeline, etc.)
+- Kept screenplay features as shareable (scripts, scenes, characters, notes)
 - Consolidated all rules in the root-level `firestore.rules` file
 - Removed duplicate `src/firestore.rules` to avoid confusion
 
@@ -80,11 +86,18 @@ After deploying the rules, verify the fix by:
 ## Security Model
 
 The deployed rules enforce:
-- **User Ownership**: Users can only access their own data under `/users/{userId}/`
+- **Owner Access (PRIMARY)**: Catch-all rule ensures owners have full access to all data under `/users/{userId}/`
 - **Authentication Required**: All operations require authenticated users
 - **Public Profiles**: User profiles are readable by all but only writable by owner
+- **Sharing Features**: Scripts, scenes, characters, and notes are readable by any authenticated user (for sharing)
+- **Private Features**: Story Scribbler features (outline, chapters, timeline, etc.) are owner-only
 - **Error Reporting**: Anyone can submit errors/feedback, but cannot read others' submissions
 - **No User Listing**: Prevents listing all users in the system
+
+**Key Fix**: The catch-all wildcard rule `match /{document=**}` nested under `/users/{userId}/` ensures that:
+1. Owners can always access their own data
+2. New subcollections work automatically
+3. Permission errors like the one reported are prevented
 
 ## Troubleshooting
 
