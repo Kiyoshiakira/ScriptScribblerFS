@@ -12,12 +12,13 @@
  * - /users/{userId}/scripts/{scriptId}: Core script documents.
  * - /users/{userId}/scripts/{scriptId}/[characters|notes|scenes|comments|versions|outline|chapters|storyCharacters|storyNotes|timeline|worldBuilding]/{docId}: Subcollections for script data.
  * - /error-reports/{reportId}: Collection for users to submit error logs.
+ * - /feedback/{feedbackId}: Collection for users to submit feedback.
  *
  * Key Security Decisions:
  * - User profiles (`/users/{userId}`) are world-readable to facilitate future social features,
  *   but only the owner can write to their own profile.
  * - All script-related data is nested under the user path, making ownership checks straightforward.
- * - Users can write to the `error-reports` collection but cannot read from it, protecting privacy.
+ * - Users can write to the `error-reports` and `feedback` collections but cannot read from them, protecting privacy.
  * - Users cannot list all other users in the system.
  */
 rules_version = '2';
@@ -38,6 +39,20 @@ service cloud.firestore {
       allow list: if false; // Prevent listing all users
 
       allow create, update, delete: if isOwner();
+
+      /**
+       * @description Catch-all rule for all script-related subcollections.
+       * This ensures that all current and future subcollections are accessible
+       * by the owner, even if specific rules aren't defined above.
+       * @path /users/{userId}/** (all subcollections)
+       */
+      match /{document=**} {
+        function isOwner() {
+          return request.auth != null && request.auth.uid == userId;
+        }
+        
+        allow read, write: if isOwner();
+      }
     }
 
     /**
@@ -116,7 +131,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Controls access to outline items within a script. Publicly readable but only owner can write.
+     * @description Controls access to outline items within a script. Only owner can access.
      * @path /users/{userId}/scripts/{scriptId}/outline/{outlineId}
      */
     match /users/{userId}/scripts/{scriptId}/outline/{outlineId} {
@@ -124,13 +139,12 @@ service cloud.firestore {
           return request.auth != null && request.auth.uid == userId;
         }
 
-        // Any authenticated user can read outline items, but only owner can write
-        allow read: if request.auth != null;
-        allow write: if isOwner();
+        // Only the script owner can read/write outline items
+        allow read, write: if isOwner();
     }
 
     /**
-     * @description Controls access to chapters within a script. Publicly readable but only owner can write.
+     * @description Controls access to chapters within a script. Only owner can access.
      * @path /users/{userId}/scripts/{scriptId}/chapters/{chapterId}
      */
     match /users/{userId}/scripts/{scriptId}/chapters/{chapterId} {
@@ -138,13 +152,12 @@ service cloud.firestore {
           return request.auth != null && request.auth.uid == userId;
         }
 
-        // Any authenticated user can read chapters, but only owner can write
-        allow read: if request.auth != null;
-        allow write: if isOwner();
+        // Only the script owner can read/write chapters
+        allow read, write: if isOwner();
     }
 
     /**
-     * @description Controls access to story characters within a script. Publicly readable but only owner can write.
+     * @description Controls access to story characters within a script. Only owner can access.
      * @path /users/{userId}/scripts/{scriptId}/storyCharacters/{characterId}
      */
     match /users/{userId}/scripts/{scriptId}/storyCharacters/{characterId} {
@@ -152,13 +165,12 @@ service cloud.firestore {
           return request.auth != null && request.auth.uid == userId;
         }
 
-        // Any authenticated user can read story characters, but only owner can write
-        allow read: if request.auth != null;
-        allow write: if isOwner();
+        // Only the script owner can read/write story characters
+        allow read, write: if isOwner();
     }
 
     /**
-     * @description Controls access to story notes within a script. Publicly readable but only owner can write.
+     * @description Controls access to story notes within a script. Only owner can access.
      * @path /users/{userId}/scripts/{scriptId}/storyNotes/{noteId}
      */
     match /users/{userId}/scripts/{scriptId}/storyNotes/{noteId} {
@@ -166,13 +178,12 @@ service cloud.firestore {
           return request.auth != null && request.auth.uid == userId;
         }
 
-        // Any authenticated user can read story notes, but only owner can write
-        allow read: if request.auth != null;
-        allow write: if isOwner();
+        // Only the script owner can read/write story notes
+        allow read, write: if isOwner();
     }
 
     /**
-     * @description Controls access to timeline items within a script. Publicly readable but only owner can write.
+     * @description Controls access to timeline items within a script. Only owner can access.
      * @path /users/{userId}/scripts/{scriptId}/timeline/{timelineId}
      */
     match /users/{userId}/scripts/{scriptId}/timeline/{timelineId} {
@@ -180,13 +191,12 @@ service cloud.firestore {
           return request.auth != null && request.auth.uid == userId;
         }
 
-        // Any authenticated user can read timeline items, but only owner can write
-        allow read: if request.auth != null;
-        allow write: if isOwner();
+        // Only the script owner can read/write timeline items
+        allow read, write: if isOwner();
     }
 
     /**
-     * @description Controls access to world building elements within a script. Publicly readable but only owner can write.
+     * @description Controls access to world building elements within a script. Only owner can access.
      * @path /users/{userId}/scripts/{scriptId}/worldBuilding/{worldId}
      */
     match /users/{userId}/scripts/{scriptId}/worldBuilding/{worldId} {
@@ -194,9 +204,8 @@ service cloud.firestore {
           return request.auth != null && request.auth.uid == userId;
         }
 
-        // Any authenticated user can read world building elements, but only owner can write
-        allow read: if request.auth != null;
-        allow write: if isOwner();
+        // Only the script owner can read/write world building elements
+        allow read, write: if isOwner();
     }
 
     /**
@@ -206,6 +215,21 @@ service cloud.firestore {
      * @path /error-reports/{reportId}
      */
     match /error-reports/{reportId} {
+        function isSignedIn() {
+            return request.auth != null;
+        }
+
+        allow create: if isSignedIn();
+        allow read, list, update, delete: if false;
+    }
+
+    /**
+     * @description Controls access to the feedback collection. Allows any
+     * authenticated user to create (submit) feedback, but allows no one to
+     * read, list, update, or delete feedback to protect privacy.
+     * @path /feedback/{feedbackId}
+     */
+    match /feedback/{feedbackId} {
         function isSignedIn() {
             return request.auth != null;
         }
