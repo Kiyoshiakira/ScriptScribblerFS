@@ -4,13 +4,15 @@ The Scribbler is a modern, collaborative writing application built with Next.js,
 
 ## 🚀 Quick Start for New Users
 
+**🔥 Having 403 sign-in errors?** See the **[Quick Start Card](docs/QUICK_START_CARD.md)** for a 4-step fix (10 minutes).
+
 **Setting up for the first time?** Follow these guides in order:
 
 1. **[User Setup Instructions](docs/USER_SETUP_INSTRUCTIONS.md)** - What YOU need to do in Firebase Console ⭐ **START HERE**
 2. **[Setup Checklist](docs/SETUP_CHECKLIST.md)** - Complete setup verification checklist
 3. **[Getting Started](#getting-started)** - Local installation steps (below)
 
-**Having 403 errors?** See the **[403 Troubleshooting Guide](docs/TROUBLESHOOTING_403_ERRORS.md)** for solutions.
+**Need detailed troubleshooting?** See the **[403 Troubleshooting Guide](docs/TROUBLESHOOTING_403_ERRORS.md)** for comprehensive solutions.
 
 ### Setup Flow Overview
 
