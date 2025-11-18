@@ -73,7 +73,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     
     const diagnosisResult = await runAiDiagnoseAppHealth({ appState: JSON.stringify(debugState, null, 2) });
     
-    let logContent = `============ ScriptScribbler Debug Log ============\n`;
+    let logContent = `============ The Scribbler Debug Log ============\n`;
     logContent += `Generated at: ${debugState.timestamp}\n\n`;
     
     logContent += `============ AI Health Diagnosis ============\n`;
@@ -135,7 +135,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
         toast({
             title: 'Feedback Submitted',
-            description: 'Thank you for helping us improve ScriptScribbler!',
+            description: 'Thank you for helping us improve The Scribbler!',
         });
         setFeedbackText('');
         onOpenChange(false);
@@ -158,7 +158,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         <DialogHeader>
           <DialogTitle className="font-headline">Settings</DialogTitle>
           <DialogDescription>
-            Customize your ScriptScribbler experience.
+            Customize your experience with The Scribbler.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="flex-1 -mx-6 px-6">

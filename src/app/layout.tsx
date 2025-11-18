@@ -6,10 +6,11 @@ import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { CurrentScriptProvider } from '@/context/current-script-context';
 import { SettingsProvider } from '@/context/settings-context';
+import { ToolProvider } from '@/context/tool-context';
 
 export const metadata: Metadata = {
-  title: 'ScriptScribbler',
-  description: 'Collaborative screenwriting with AI-powered tools.',
+  title: 'The Scribbler',
+  description: 'Collaborative writing with AI-powered tools.',
 };
 
 export default function RootLayout({
@@ -31,8 +32,10 @@ export default function RootLayout({
         <FirebaseClientProvider>
           <SettingsProvider>
             <CurrentScriptProvider>
+              <ToolProvider>
                 {children}
                 <Toaster />
+              </ToolProvider>
             </CurrentScriptProvider>
           </SettingsProvider>
         </FirebaseClientProvider>
