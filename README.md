@@ -2,16 +2,36 @@
 
 The Scribbler is a modern, collaborative writing application built with Next.js, Firebase, and Google's Generative AI. It provides powerful tools to assist writers in their creative process, with specialized interfaces for different types of writing.
 
-<<<<<<< HEAD
+## 🚀 Quick Start for New Users
+
+**Setting up for the first time?** Follow these guides in order:
+
+1. **[User Setup Instructions](docs/USER_SETUP_INSTRUCTIONS.md)** - What YOU need to do in Firebase Console ⭐ **START HERE**
+2. **[Setup Checklist](docs/SETUP_CHECKLIST.md)** - Complete setup verification checklist
+3. **[Getting Started](#getting-started)** - Local installation steps (below)
+
+**Having 403 errors?** See the **[403 Troubleshooting Guide](docs/TROUBLESHOOTING_403_ERRORS.md)** for solutions.
+
+### Setup Flow Overview
+
+```
+Firebase Console Setup (REQUIRED)          Local Project Setup
+------------------------                   -------------------
+1. Enable Email/Password auth       →      1. npm install
+2. Enable Google auth               →      2. Create .env.local
+3. Add authorized domains           →      3. npm run dev
+4. Create Firestore database        →      4. Test sign-in
+   ↓
+   Success! You can now sign in
+```
+
+---
+
 ## Tools
 
 The Scribbler currently includes:
 - **ScriptScribbler**: A screenwriting tool with AI-powered features for screenplay writing
 - **StoryScribbler**: Coming soon - tools for story writing and organization
-=======
-
-ScriptScribbler is a modern, collaborative screenwriting application built with Next.js, Firebase, and Google's Generative AI. It provides a powerful editor with AI-powered tools to assist writers in their creative process.
->>>>>>> a4931b8 (Editing the readme)
 
 ## Application Architecture
 
