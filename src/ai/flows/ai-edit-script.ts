@@ -10,6 +10,9 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
+import { getEditingPrompt } from '@/lib/ai-system-prompts';
+import { enrichDocumentWithSemantics } from '@/lib/semantic-document-model';
+import { getRelevantContext } from '@/lib/rag-service';
 
 const ScriptBlockSchema = z.object({
   id: z.string(),
@@ -50,18 +53,11 @@ const prompt = ai.definePrompt({
   model: googleAI.model('gemini-2.5-flash'),
   config: {
     temperature: 0.3,
+    systemInstruction: getEditingPrompt(false), // Set to true if working with Skylantia
   },
   input: { schema: AiEditScriptInputSchema },
   output: { schema: AiEditScriptOutputSchema },
-  prompt: `You are an expert screenwriting assistant with deep knowledge of:
-- Proper screenplay formatting and conventions
-- Engaging dialogue and character voice
-- Clear, visual action description
-- Grammar, spelling, and punctuation
-- Story structure and pacing
-- Industry best practices
-
-**User Instruction:** {{{instruction}}}
+  prompt: `**User Instruction:** {{{instruction}}}
 
 **Context (Screenplay Blocks):**
 {{{json context}}}
