@@ -85,7 +85,7 @@ export default function OnboardingPage() {
 
       toast({
         title: 'Profile Created',
-        description: 'Welcome to ScriptScribbler! Redirecting to dashboard...',
+        description: 'Welcome to The Scribbler! Redirecting to dashboard...',
       });
 
       // Redirect to home page
@@ -121,7 +121,7 @@ export default function OnboardingPage() {
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex items-center gap-2">
             <Logo />
-            <h1 className="text-2xl font-bold font-headline">ScriptScribbler</h1>
+            <h1 className="text-2xl font-bold font-headline">The Scribbler</h1>
           </div>
           <CardTitle className="font-headline text-2xl">Complete Your Profile</CardTitle>
           <CardDescription>

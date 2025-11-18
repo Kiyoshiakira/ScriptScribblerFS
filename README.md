@@ -1,10 +1,16 @@
-# ScriptScribbler
+# The Scribbler
 
-ScriptScribbler is a modern, collaborative screenwriting application built with Next.js, Firebase, and Google's Generative AI. It provides a powerful editor with AI-powered tools to assist writers in their creative process.
+The Scribbler is a modern, collaborative writing application built with Next.js, Firebase, and Google's Generative AI. It provides powerful tools to assist writers in their creative process, with specialized interfaces for different types of writing.
+
+## Tools
+
+The Scribbler currently includes:
+- **ScriptScribbler**: A screenwriting tool with AI-powered features for screenplay writing
+- **StoryScribbler**: Coming soon - tools for story writing and organization
 
 ## Application Architecture
 
-ScriptScribbler is a **single-page application (SPA)** with a **tabbed sidebar interface**. The main application uses tabs in the left sidebar to navigate between different views (Dashboard, Editor, Logline, Scenes, Characters, and Notes). Profile and Settings are accessible via the user menu in the top-right corner. This tab-based architecture allows you to work on different aspects of your screenplay without leaving the main application.
+The Scribbler is a **single-page application (SPA)** with a **tabbed sidebar interface** and **tool selection**. The application allows you to switch between different writing tools (ScriptScribbler, StoryScribbler) while sharing common features like Profile and Settings.
 
 Additionally, there are separate public sharing routes for viewing scripts outside the main app, and utility tools for importing files.
 
@@ -67,9 +73,9 @@ The application will be available at [http://localhost:9002](http://localhost:90
 
 ## Features
 
-### Main Application Tabs
+### ScriptScribbler Tool
 
-The application uses a **sidebar with tabs** to navigate between different views:
+The ScriptScribbler tool uses tabs in the left sidebar to navigate between different views:
 
 - **Dashboard Tab**: Manage your scripts, create new projects, and access recent work
 - **Editor Tab**: Write screenplays using the built-in editor with Fountain format support
@@ -78,7 +84,7 @@ The application uses a **sidebar with tabs** to navigate between different views
 - **Characters Tab**: Define and manage character profiles with descriptions and portraits (see [Character Management](docs/CHARACTER_MANAGEMENT.md))
 - **Notes Tab**: Add production notes, ideas, and research for your screenplay
 
-**Profile & Settings**: Access your profile and app settings via the user avatar menu in the top-right corner (not in the sidebar).
+**Profile & Settings**: Access your profile and app settings via the user avatar menu in the top-right corner (not in the sidebar). These are shared across all tools.
 
 ### Script Management
 - **Create and Edit Scripts**: Write screenplays using the Fountain format in the Editor tab

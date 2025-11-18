@@ -15,10 +15,18 @@ import {
   Users,
   NotebookPen,
   LayoutDashboard,
+  ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { View } from './AppLayout';
 import { useCurrentScript } from '@/context/current-script-context';
+import { useTool } from '@/context/tool-context';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export const Logo = () => (
   <svg
@@ -46,6 +54,7 @@ interface AppSidebarProps {
 export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
   const { currentScriptId } = useCurrentScript();
   const { isMobile, setOpenMobile } = useSidebar();
+  const { currentTool, setCurrentTool } = useTool();
   const noScriptLoaded = !currentScriptId;
 
   const handleViewChange = (view: View | 'profile-edit') => {
@@ -67,13 +76,32 @@ export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" side="left">
       <SidebarHeader>
-        <button className="flex flex-col items-center justify-center gap-1 p-2 w-full" onClick={() => handleViewChange('dashboard')}>
-          <Logo />
-          <div className="flex flex-col items-center leading-tight">
-            <span className="text-sm font-bold font-headline">Script</span>
-            <span className="text-sm font-bold font-headline">Scribbler</span>
-          </div>
-        </button>
+        <div className="flex flex-col items-center justify-center gap-1 p-2 w-full">
+          <button onClick={() => handleViewChange('dashboard')}>
+            <Logo />
+          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-1 px-2 py-1 rounded hover:bg-accent transition-colors">
+              <div className="flex flex-col items-center leading-tight">
+                <span className="text-sm font-bold font-headline">{currentTool === 'ScriptScribbler' ? 'Script' : 'Story'}</span>
+                <span className="text-sm font-bold font-headline">Scribbler</span>
+              </div>
+              <ChevronDown className="h-3 w-3 opacity-50" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center">
+              <DropdownMenuItem onClick={() => setCurrentTool('ScriptScribbler')}>
+                <span className={cn('font-medium', currentTool === 'ScriptScribbler' && 'text-primary')}>
+                  ScriptScribbler
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setCurrentTool('StoryScribbler')}>
+                <span className={cn('font-medium', currentTool === 'StoryScribbler' && 'text-primary')}>
+                  StoryScribbler
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu className="flex-1 overflow-y-auto p-2">

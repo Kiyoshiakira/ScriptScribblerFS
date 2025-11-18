@@ -15,9 +15,11 @@ import LoglineView from '../views/logline-view';
 import ScenesView from '../views/scenes-view';
 import CharactersView from '../views/characters-view';
 import NotesView from '../views/notes-view';
+import StoryScribblerView from '../views/story-scribbler-view';
 import { useUser, useDoc, useMemoFirebase, useFirestore } from '@/firebase';
 import { EditProfileDialog } from '../edit-profile-dialog';
 import { doc } from 'firebase/firestore';
+import { useTool } from '@/context/tool-context';
 
 
 export type View = 'dashboard' | 'editor' | 'scenes' | 'characters' | 'notes' | 'logline' | 'profile';
@@ -30,6 +32,7 @@ function AppLayoutInternal() {
   const { currentScriptId, isCurrentScriptLoading } = useCurrentScript();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const { currentTool } = useTool();
 
   const [view, setView] = React.useState<View>('dashboard');
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -77,8 +80,20 @@ function AppLayoutInternal() {
   };
 
   const renderView = () => {
+    // If StoryScribbler is selected, only show StoryScribbler view, Dashboard, or Profile
+    if (currentTool === 'StoryScribbler') {
+      if (view === 'profile') {
+        return <ProfileView setView={handleSetView} />;
+      } else if (view === 'dashboard') {
+        return <DashboardView setView={handleSetView} />;
+      } else {
+        // For any other view, show the StoryScribbler placeholder
+        return <StoryScribblerView />;
+      }
+    }
+
+    // ScriptScribbler views (existing logic)
     // Dashboard and Profile are always accessible
-    // Profile is only accessible from top-right menu, not sidebar
     // Other views require a script to be loaded
     const viewToRender = (currentScriptId || view === 'dashboard' || view === 'profile') ? view : 'dashboard';
 
