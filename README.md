@@ -1,6 +1,24 @@
-# The Scribbler
+# The Scribbler 📝
 
-The Scribbler is a modern, collaborative writing application built with Next.js, Firebase, and Google's Generative AI. It provides powerful tools to assist writers in their creative process, with specialized interfaces for different types of writing.
+The Scribbler is a modern, collaborative writing application built with Next.js, Firebase, and Google's Generative AI. It provides powerful tools to assist writers in their creative process, with specialized interfaces for screenplay and story writing.
+
+[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-Latest-orange)](https://firebase.google.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+
+## ✨ Key Features
+
+- **🎬 ScriptScribbler** - Professional screenplay editor with Fountain syntax support
+- **📚 StoryScribbler** - Comprehensive story development tool with outline, chapters, and world-building
+- **🤖 AI-Powered Features** - Intelligent writing assistance powered by Google's Gemini
+- **👥 Character Management** - Scrite-inspired character tracking and profiles
+- **🎭 Scene Organization** - Visual scene blocks with metadata and collapsible sections
+- **🔄 Public Sharing** - Share your scripts and stories with others via public URLs
+- **📤 Multiple Export Formats** - Export to PDF, Fountain, Final Draft, and more
+- **🔐 Secure Authentication** - Firebase authentication with Google and email/password
+- **☁️ Cloud Storage** - Real-time sync with Firebase Firestore
+- **📱 Responsive Design** - Works seamlessly on desktop and mobile devices
 
 ## 🚀 Quick Start for New Users
 
@@ -29,17 +47,73 @@ Firebase Console Setup (REQUIRED)          Local Project Setup
 
 ---
 
-## Tools
+## 📚 Table of Contents
 
-The Scribbler currently includes:
-- **ScriptScribbler**: A screenwriting tool with AI-powered features for screenplay writing
-- **StoryScribbler**: Coming soon - tools for story writing and organization
+- [Quick Start for New Users](#-quick-start-for-new-users)
+- [What's Inside](#-whats-inside)
+- [Application Architecture](#-application-architecture)
+- [Getting Started](#getting-started)
+- [Features](#features)
+- [Documentation](#-documentation)
+- [Available Scripts](#available-scripts)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Application Architecture
+## 🎯 What's Inside
 
-The Scribbler is a **single-page application (SPA)** with a **tabbed sidebar interface** and **tool selection**. The application allows you to switch between different writing tools (ScriptScribbler, StoryScribbler) while sharing common features like Profile and Settings.
+### ScriptScribbler
+A professional screenwriting tool with:
+- **Fountain Format Support** - Industry-standard screenplay markup
+- **Scene Blocks** - Scrite-like collapsible scene organization
+- **Character Management** - Automatic character tracking and profiles
+- **AI Assistant** - Smart writing suggestions and improvements
+- **Multiple Export Formats** - PDF, Fountain, Final Draft, and more
 
-Additionally, there are separate public sharing routes for viewing scripts outside the main app, and utility tools for importing files.
+### StoryScribbler
+A comprehensive story development tool with:
+- **Outline Tab** - Hierarchical story structure
+- **Chapters Tab** - Chapter management with word count tracking
+- **Characters Tab** - Detailed character profiles and development
+- **World Building Tab** - Settings, cultures, and lore management
+- **Timeline Tab** - Visual event timeline with categorization
+- **Story Notes Tab** - Organized notes with tags and categories
+
+## 🏗️ Application Architecture
+
+The Scribbler is a **single-page application (SPA)** with a **tabbed sidebar interface** that allows seamless switching between different writing tools.
+
+### Main Application Structure
+
+**Left Sidebar Tabs:**
+- **Dashboard** - Script management and quick access
+- **Editor** - Screenplay/story writing interface
+- **Logline** - Story summary and loglines
+- **Scenes** - Scene organization and management
+- **Characters** - Character profiles and tracking
+- **Notes** - Ideas, research, and production notes
+
+**Top-Right User Menu:**
+- **Profile** - User profile and script portfolio management
+- **Settings** - Application preferences and configuration
+- **Sign Out** - Secure logout
+
+**Tool Selector:**
+- Switch between ScriptScribbler and StoryScribbler tools
+- Each tool has specialized features for its writing type
+- Shared resources like Profile and Settings across tools
+
+### Additional Features
+
+**Public Sharing Routes** (separate from main app):
+- `/user/{userId}` - Public user profile view with script portfolio
+- `/user/{userId}/script/{scriptId}` - Public read-only script view
+
+**Utility Routes:**
+- `/import-scrite` - Scrite to Fountain converter tool
+- `/login` - Authentication page
+
+For detailed architecture information, see [docs/IMPLEMENTATION_HISTORY.md](docs/IMPLEMENTATION_HISTORY.md).
 
 ## Getting Started
 
@@ -100,53 +174,139 @@ The application will be available at [http://localhost:9002](http://localhost:90
 
 ## Features
 
-### ScriptScribbler Tool
+### ScriptScribbler Features
 
-The ScriptScribbler tool uses tabs in the left sidebar to navigate between different views:
+#### ✍️ Screenplay Editor
+- **Fountain Format Support** - Write using industry-standard Fountain syntax
+- **Scene Blocks** - Scrite-inspired collapsible scene organization
+- **Multiple Block Types** - Scene headings, action, dialogue, transitions, centered text, sections, and synopsis
+- **Keyboard Shortcuts** - Tab to cycle block types, Enter for new blocks, Shift+Enter for line breaks
+- **Visual Hierarchy** - Clear distinction between different screenplay elements
+- **Find & Replace** - Search and replace text throughout your script
 
-- **Dashboard Tab**: Manage your scripts, create new projects, and access recent work
-- **Editor Tab**: Write screenplays using the built-in editor with Fountain format support
-- **Logline Tab**: Create and edit concise story summaries for your screenplay
-- **Scenes Tab**: Organize your script into structured scenes with details and metadata
-- **Characters Tab**: Define and manage character profiles with descriptions and portraits (see [Character Management](docs/CHARACTER_MANAGEMENT.md))
-- **Notes Tab**: Add production notes, ideas, and research for your screenplay
+#### 🎭 Character Management (Scrite-inspired)
+- **Automatic Creation** - Characters are automatically created when first mentioned in dialogue
+- **Scene Tracking** - Automatic tracking of character appearances across scenes
+- **Independent Persistence** - Characters persist even when removed from script (prevents accidental data loss)
+- **Manual Deletion Only** - Characters must be explicitly deleted to prevent data loss
+- **Character Profiles** - Add descriptions, backgrounds, and portraits
+- See [docs/CHARACTER_MANAGEMENT.md](docs/CHARACTER_MANAGEMENT.md) for detailed information
 
-**Profile & Settings**: Access your profile and app settings via the user avatar menu in the top-right corner (not in the sidebar). These are shared across all tools.
+#### 🎬 Scene Management
+- **Scene Organization** - Visual scene blocks with collapsible sections
+- **Scene Metadata** - Track scene number, setting, estimated time, and description
+- **Scene Details** - Add time of day, location, and story beats
+- **Visual Navigation** - Collapse/expand scenes for easier script navigation
 
-### Script Management
-- **Create and Edit Scripts**: Write screenplays using the Fountain format in the Editor tab
-- **Import Scripts**: Import scripts from .scrite files (Scrite format) or .scribbler files (native format)
-- **Import from Google Docs**: Directly import scripts from Google Docs with AI-powered formatting
-- **Export Scripts**: Export your work in various formats (.scribbler, PDF, Fountain, Final Draft)
+#### 📝 Additional Script Features
+- **Logline Editor** - Craft compelling one-sentence story summaries
+- **Notes Management** - Add production notes, ideas, and research
+- **Dashboard** - Manage multiple scripts with quick access
+- **Script Import** - Import from .scrite files (Scrite format) or .scribbler files (native format)
+- **Google Docs Import** - Directly import scripts from Google Docs with AI-powered formatting
 
-### Character Management (Scrite-inspired)
-- **Automatic Creation**: Characters are automatically created when first mentioned in dialogue
-- **Scene Tracking**: Automatic tracking of how many scenes each character appears in
-- **Independent Persistence**: Characters persist even when removed from script content (prevents accidental data loss)
-- **Manual Deletion Only**: Characters must be explicitly deleted from the Characters tab
-- See [detailed documentation](docs/CHARACTER_MANAGEMENT.md) for more information
+#### 📤 Export Options
+- **PDF Export** - Professional screenplay PDFs
+- **Fountain Export** - Industry-standard Fountain format
+- **Final Draft Export** - Compatible with Final Draft software
+- **.scribbler Format** - Native format preserving all data
+- See [docs/EXPORT_FUNCTIONALITY.md](docs/EXPORT_FUNCTIONALITY.md) for details
 
-### Public Sharing (Separate Routes)
+#### 🤖 AI Features
+- **Writing Assistant** - Get intelligent suggestions and improvements
+- **Script Analysis** - AI-powered script review and feedback
+- **Character Insights** - AI-generated character suggestions
+- **Scene Suggestions** - Story development assistance
+- See [docs/AI_EDITOR_FEATURES.md](docs/AI_EDITOR_FEATURES.md) for comprehensive AI features
 
-Share your work with others via dedicated public sharing routes (outside the main app):
+### StoryScribbler Features
 
-- **Public Script Views**: Share your scripts with others via public URLs
-  - View scripts at `/user/{userId}/script/{scriptId}`
-  - Read-only access for non-owners
-  - Full script content, characters, scenes, and notes visible
-- **Public User Profiles**: View other users' profiles and their script portfolio at `/user/{userId}`
+#### 📋 Outline Tab
+- Hierarchical story structure with parent-child relationships
+- Expandable/collapsible sections for organization
+- Order management for story beats
+- Full CRUD operations
 
-### Deletion Control
-- **Selective Deletion**: When deleting a script from the Profile view (accessed via top-right avatar menu), choose exactly what to remove:
-  - Script document itself
-  - All characters
-  - All scenes
-  - All notes
-  - Or any combination of the above
+#### 📖 Chapters Tab
+- Chapter cards with title, summary, and content
+- Automatic word count tracking (per chapter and total)
+- Sequential chapter numbering
+- Rich text content editing
 
-### Collaboration & AI
-- **AI Assistant**: Get writing suggestions and script improvements from within the Editor tab
-- **Public Access**: Scripts are readable by all authenticated users via public routes (write access remains owner-only)
+#### 👤 Characters Tab
+- Character profiles with avatar support
+- Role categorization (Protagonist, Antagonist, Supporting, Minor, Other)
+- Detailed fields: personality, background, goals, description
+- Image upload functionality
+
+#### 🌍 World Building Tab
+- Multiple element types: Location, Culture, Technology, Magic System, Organization, Historical Event
+- Category filtering
+- Significance tracking for story relevance
+- Image support for visual reference
+
+#### ⏱️ Timeline Tab
+- Visual timeline with connecting line
+- Event categorization (Plot, Character, World, Flashback, Foreshadowing)
+- Timeframe specification
+- Sequential ordering
+
+#### 📝 Story Notes Tab
+- Note categorization (Ideas, Research, Plot, Character, Setting, Themes, Dialogue, General)
+- Tag support for better organization
+- Category filtering
+- Full-text content with preview
+
+### Shared Features
+
+#### 🔐 Authentication & Security
+- Email/Password authentication
+- Google Sign-In
+- Secure Firebase authentication
+- User profiles with avatar support
+
+#### 🔄 Public Sharing
+Share your work with others via dedicated public sharing routes:
+- **Public Script Views** - Share scripts with read-only access at `/user/{userId}/script/{scriptId}`
+- **Public User Profiles** - Showcase your portfolio at `/user/{userId}`
+- **Edit in App** - Script owners can quickly jump to editing mode
+
+#### 🗑️ Selective Deletion
+When deleting a script from the Profile view, choose exactly what to remove:
+- Script document itself
+- All characters
+- All scenes
+- All notes
+- Or any combination of the above
+
+#### ☁️ Cloud Sync
+- Real-time synchronization with Firebase Firestore
+- Automatic save as you type
+- Access your work from any device
+- Offline support (coming soon)
+
+## 📖 Documentation
+
+### Getting Started Guides
+- **[Quick Start Card](docs/QUICK_START_CARD.md)** - Fix 403 errors in 4 steps (10 minutes)
+- **[User Setup Instructions](docs/USER_SETUP_INSTRUCTIONS.md)** - Firebase Console setup ⭐ **START HERE**
+- **[Setup Checklist](docs/SETUP_CHECKLIST.md)** - Complete setup verification
+
+### User Guides
+- **[Character Management](docs/CHARACTER_MANAGEMENT.md)** - How the Scrite-inspired character system works
+- **[AI Editor Features](docs/AI_EDITOR_FEATURES.md)** - Comprehensive guide to AI-powered tools
+- **[Export Functionality](docs/EXPORT_FUNCTIONALITY.md)** - Export formats and usage
+- **[Troubleshooting 403 Errors](docs/TROUBLESHOOTING_403_ERRORS.md)** - Detailed troubleshooting guide
+
+### Developer Documentation
+- **[Implementation History](docs/IMPLEMENTATION_HISTORY.md)** - Major implementations and changes
+- **[Development Notes](docs/DEVELOPMENT_NOTES.md)** - Guidelines, tasks, and technical notes
+- **[Wiki](wiki/)** - Comprehensive wiki documentation (16 pages)
+
+### Quick Links
+- [Fountain Syntax Guide](https://fountain.io/) - Learn Fountain screenplay format
+- [Firebase Console](https://console.firebase.google.com/) - Manage your Firebase project
+- [Google Cloud Console](https://console.cloud.google.com/) - For Google Docs import setup
 
 ## Available Scripts
 
@@ -192,3 +352,66 @@ This is often caused by an issue with Firebase authentication setup. Common issu
 5.  **Verify Environment Variables:** Check that `.env.local` has all required Firebase configuration.
 
 **For detailed solutions with screenshots and step-by-step instructions, see [docs/TROUBLESHOOTING_403_ERRORS.md](docs/TROUBLESHOOTING_403_ERRORS.md)**
+
+## Contributing
+
+We welcome contributions to The Scribbler! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.
+
+### How to Contribute
+
+1. **Fork the Repository** - Create your own fork of the project
+2. **Create a Branch** - Make a feature branch from `main`
+3. **Make Changes** - Implement your improvements
+4. **Test Thoroughly** - Ensure your changes work and don't break existing features
+5. **Submit a Pull Request** - Describe your changes clearly
+
+### Development Guidelines
+
+- Follow existing code style and patterns
+- Use TypeScript with proper type definitions
+- Write clear, descriptive commit messages
+- Update documentation when adding features
+- Test on multiple screen sizes
+- Ensure accessibility standards are met
+
+See [docs/DEVELOPMENT_NOTES.md](docs/DEVELOPMENT_NOTES.md) for detailed development guidelines and planned features.
+
+### Reporting Issues
+
+Found a bug or have a feature request?
+
+1. Check if the issue already exists
+2. Use the issue template if available
+3. Provide clear reproduction steps for bugs
+4. Include screenshots for UI issues
+5. Specify your environment (OS, browser, Node version)
+
+## Technology Stack
+
+- **Framework**: [Next.js 15](https://nextjs.org/) - React framework with server-side rendering
+- **Language**: [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
+- **UI Components**: [Radix UI](https://www.radix-ui.com/) - Accessible component primitives
+- **Database**: [Firebase Firestore](https://firebase.google.com/docs/firestore) - Cloud NoSQL database
+- **Authentication**: [Firebase Auth](https://firebase.google.com/docs/auth) - User authentication
+- **AI**: [Google Gemini](https://ai.google.dev/) - Generative AI for writing assistance
+- **Deployment**: Firebase Hosting or Vercel
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- **Fountain** - [fountain.io](https://fountain.io/) for the screenplay markup specification
+- **Scrite** - For character management inspiration
+- **Firebase** - For backend infrastructure
+- **Google Gemini** - For AI capabilities
+- **Next.js Team** - For the excellent framework
+- **Open Source Community** - For all the amazing libraries and tools
+
+---
+
+**Built with ❤️ for writers everywhere**
+
+For questions, support, or feedback, please [open an issue](https://github.com/Kiyoshiakira/ScriptScribblerFS/issues) on GitHub.
