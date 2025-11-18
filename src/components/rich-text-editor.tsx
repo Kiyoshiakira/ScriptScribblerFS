@@ -48,7 +48,8 @@ function useDebouncedCallback<T extends (...args: unknown[]) => void>(cb: T, del
   }, [cb]);
 
   const timeoutRef = useRef<number | undefined>(undefined);
-  return useRef((...args: unknown[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return useRef((...args: any[]) => {
     if (timeoutRef.current) {
       window.clearTimeout(timeoutRef.current);
     }
