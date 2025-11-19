@@ -293,7 +293,7 @@ function ChapterDialog({
     setIsGenerating(true);
     try {
       // Simple AI prompt for now - in production, you'd call an actual AI service
-      const prompt = `Based on the chapter titled "${title}" with summary: "${summary}", suggest some content ideas or continuation for the story.`;
+      // const prompt = `Based on the chapter titled "${title}" with summary: "${summary}", suggest some content ideas or continuation for the story.`;
       
       // Placeholder for AI generation
       const suggestion = `\n\n[AI Suggestion based on "${title}"]\n\nConsider developing the following elements:\n- Character development moments\n- Plot progression\n- Setting descriptions\n- Dialogue exchanges\n\n(Note: This is a placeholder. Connect to the actual AI service for real suggestions.)`;
