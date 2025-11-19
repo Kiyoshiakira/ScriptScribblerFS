@@ -171,7 +171,6 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
     const processImportedContent = async (title: string, content: string, subCollections?: Omit<ParsedScriteData, 'title' | 'rawScript'>) => {
         if (!firestore || !user) return;
         const { dismiss, update } = toast({
-            id: 'import-toast',
             title: 'Saving Script...',
             description: 'Adding the new script to your collection.',
         });
@@ -268,7 +267,6 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
     const { openPicker } = useGooglePicker({
         onFilePicked: async (fileName, fileContent) => {
             const { dismiss, update } = toast({
-                id: 'gdoc-reformat-toast',
                 title: 'Reformatting Script...',
                 description: 'AI is cleaning up the script format.'
             });
@@ -317,7 +315,6 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
   const handleScribblerImport = async (file: File) => {
     if (!firestore || !user) return;
     const { dismiss, update } = toast({
-      id: 'scribbler-import-toast',
       title: 'Importing Scribbler File...',
       description: 'Reading the project archive.',
     });
@@ -361,7 +358,6 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
   const handleStoryImport = async (file: File) => {
     if (!firestore || !user) return;
     const { dismiss, update } = toast({
-      id: 'story-import-toast',
       title: 'Importing Story File...',
       description: 'Reading the story archive.',
     });
@@ -501,13 +497,13 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
 
   const handleScriteImport = async (file: File) => {
     if (!user) return;
-    const { dismiss, update } = toast({ id: 'scrite-import-toast', title: 'Importing Scrite File...', description: 'Parsing file...' });
+    const { dismiss, update } = toast({ title: 'Importing Scrite File...', description: 'Parsing file...' });
 
     try {
         const arrayBuffer = await file.arrayBuffer();
         const parsedData = await parseScriteFile(arrayBuffer);
         
-        update({ id: 'scrite-import-toast', description: 'Reformatting script with AI...' });
+        update({ description: 'Reformatting script with AI...' });
         
         // Call AI to reformat the extracted script
         const reformatResult = await runAiReformatScript({ rawScript: parsedData.rawScript });
