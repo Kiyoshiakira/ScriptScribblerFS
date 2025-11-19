@@ -43,8 +43,8 @@ export const Logo = ({ variant = 'default' }: { variant?: 'default' | ToolType }
     <Image 
       src={logoSrc} 
       alt="The Scribbler Logo" 
-      width={32} 
-      height={32} 
+      width={64} 
+      height={64} 
       className="object-contain"
     />
   );
@@ -98,11 +98,7 @@ export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1 px-2 py-1 rounded hover:bg-accent transition-colors">
-              <div className="flex flex-col items-center leading-tight">
-                <span className="text-sm font-bold font-headline">{currentTool === 'ScriptScribbler' ? 'Script' : 'Story'}</span>
-                <span className="text-sm font-bold font-headline">Scribbler</span>
-              </div>
-              <ChevronDown className="h-3 w-3 opacity-50" />
+              <ChevronDown className="h-4 w-4 opacity-50" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center">
               <DropdownMenuItem onClick={() => setCurrentTool('ScriptScribbler')}>
