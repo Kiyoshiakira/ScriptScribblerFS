@@ -34,8 +34,8 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
                 <Image 
                   src="/images/scriptscribbler.png" 
                   alt="ScriptScribbler" 
-                  width={80} 
-                  height={80} 
+                  width={250} 
+                  height={250} 
                   className="object-contain rounded-md"
                 />
                 <div>
@@ -71,8 +71,8 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
                 <Image 
                   src="/images/storyscribbler.png" 
                   alt="StoryScribbler" 
-                  width={80} 
-                  height={80} 
+                  width={250} 
+                  height={250} 
                   className="object-contain rounded-md"
                 />
                 <div>
