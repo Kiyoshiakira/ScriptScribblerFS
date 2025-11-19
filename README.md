@@ -261,6 +261,13 @@ The application will be available at [http://localhost:9002](http://localhost:90
 - Category filtering
 - Full-text content with preview
 
+#### 📤 Story Import/Export
+- **Story Export** - Export complete story to `.story` file format
+- **Story Import** - Import `.story` files with all story elements
+- **File Structure** - Preserves outline, chapters, characters, world building, timeline, and notes
+- **Seamless Workflow** - Switch between screenplay and story work on the same project
+- See [docs/EXPORT_FUNCTIONALITY.md](docs/EXPORT_FUNCTIONALITY.md) for details
+
 ### Shared Features
 
 #### 🔐 Authentication & Security
