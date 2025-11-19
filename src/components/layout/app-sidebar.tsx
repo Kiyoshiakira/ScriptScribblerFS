@@ -43,8 +43,8 @@ export const Logo = ({ variant = 'default' }: { variant?: 'default' | ToolType }
     <Image 
       src={logoSrc} 
       alt="The Scribbler Logo" 
-      width={64} 
-      height={64} 
+      width={96} 
+      height={96} 
       className="object-contain"
     />
   );

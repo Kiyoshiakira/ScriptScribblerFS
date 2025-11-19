@@ -34,9 +34,9 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
                 <Image 
                   src="/images/scriptscribbler.png" 
                   alt="ScriptScribbler" 
-                  width={250} 
-                  height={250} 
-                  className="object-contain rounded-md"
+                  width={300} 
+                  height={300} 
+                  className="object-contain"
                 />
                 <div>
                   <h3 className="text-xl font-bold font-headline">ScriptScribbler</h3>
@@ -71,9 +71,9 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
                 <Image 
                   src="/images/storyscribbler.png" 
                   alt="StoryScribbler" 
-                  width={250} 
-                  height={250} 
-                  className="object-contain rounded-md"
+                  width={300} 
+                  height={300} 
+                  className="object-contain"
                 />
                 <div>
                   <h3 className="text-xl font-bold font-headline">StoryScribbler</h3>
