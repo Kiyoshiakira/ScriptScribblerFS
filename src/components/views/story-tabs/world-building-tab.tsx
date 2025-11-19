@@ -61,6 +61,7 @@ export default function WorldBuildingTab() {
 
   const handleOpenDialog = (element: WorldElement | null = null) => {
     if (element) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = element;
       setEditingElement(rest);
     } else {
@@ -81,11 +82,13 @@ export default function WorldBuildingTab() {
     }
 
     const isNew = !elementToSave.id;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, createdAt: _createdAt, updatedAt: _updatedAt, ...plainData } = elementToSave;
 
     try {
       if (isNew) {
         const docData = { ...plainData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await addDoc(worldCollection, docData).catch((serverError) => {
           const permissionError = new FirestorePermissionError({
             path: worldCollection.path,
@@ -98,6 +101,7 @@ export default function WorldBuildingTab() {
       } else {
         const elementDocRef = doc(worldCollection, id);
         const updateData = { ...plainData, updatedAt: serverTimestamp() };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await setDoc(elementDocRef, updateData, { merge: true }).catch((serverError) => {
           const permissionError = new FirestorePermissionError({
             path: elementDocRef.path,
@@ -137,6 +141,7 @@ export default function WorldBuildingTab() {
 
     try {
       const elementRef = doc(worldCollection, element.id);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       await deleteDoc(elementRef).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
           path: elementRef.path,

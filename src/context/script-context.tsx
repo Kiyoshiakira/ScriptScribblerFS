@@ -3,7 +3,7 @@
 
 import React, { createContext, useState, useEffect, ReactNode, useContext, useCallback } from 'react';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { doc, collection, setDoc, serverTimestamp, query, orderBy, addDoc, getDocs, writeBatch, deleteDoc } from 'firebase/firestore';
+import { doc, collection, serverTimestamp, query, orderBy, addDoc, writeBatch } from 'firebase/firestore';
 import { useDebounce } from 'use-debounce';
 import type { Character } from '@/components/views/characters-view';
 import type { Scene } from '@/components/views/scenes-view';
@@ -117,7 +117,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     () => (user && firestore && scriptId ? collection(firestore, 'users', user.uid, 'scripts', scriptId, 'characters') : null),
     [firestore, user, scriptId]
   );
-  const { data: characters, isLoading: areCharactersLoading } = useCollection<Character>(charactersCollectionRef);
+  const { data: characters } = useCollection<Character>(charactersCollectionRef);
 
   const scenesCollection = useMemoFirebase(
     () => (user && firestore && scriptId ? collection(firestore, 'users', user.uid, 'scripts', scriptId, 'scenes') : null),
@@ -127,13 +127,13 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     () => (scenesCollection ? query(scenesCollection, orderBy('sceneNumber', 'asc')) : null),
     [scenesCollection]
   );
-  const { data: scenes, isLoading: areScenesLoading } = useCollection<Scene>(scenesQuery);
+  const { data: scenes } = useCollection<Scene>(scenesQuery);
   
   const notesCollection = useMemoFirebase(
     () => (user && firestore && scriptId ? collection(firestore, 'users', user.uid, 'scripts', scriptId, 'notes') : null),
     [firestore, user, scriptId]
   );
-  const { data: notes, isLoading: areNotesLoading } = useCollection<Note>(notesCollection);
+  const { data: notes } = useCollection<Note>(notesCollection);
 
   const commentsCollectionRef = useMemoFirebase(
     () => (user && firestore && scriptId ? collection(firestore, 'users', user.uid, 'scripts', scriptId, 'comments') : null),
@@ -143,7 +143,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
     () => (commentsCollectionRef ? query(commentsCollectionRef, orderBy('createdAt', 'asc')) : null),
     [commentsCollectionRef]
   );
-  const { data: comments, isLoading: areCommentsLoading } = useCollection<Comment>(commentsQuery);
+  const { data: comments } = useCollection<Comment>(commentsQuery);
 
  const updateFirestore = useCallback(async () => {
     if (isInitialLoad || !scriptDocRef || !localScript || !localDocument) return;
@@ -577,7 +577,7 @@ export const ScriptProvider = ({ children, scriptId }: { children: ReactNode, sc
           updatedAt: serverTimestamp(),
       };
 
-      addDoc(commentsCollectionRef, newComment).catch(serverError => {
+      addDoc(commentsCollectionRef, newComment).catch(() => {
           const permissionError = new FirestorePermissionError({
               path: commentsCollectionRef.path,
               operation: 'create',

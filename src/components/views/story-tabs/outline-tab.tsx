@@ -50,6 +50,7 @@ export default function OutlineTab() {
 
   const handleOpenDialog = (item: OutlineItem | null = null) => {
     if (item) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = item;
       setEditingItem(rest);
     } else {
@@ -69,11 +70,13 @@ export default function OutlineTab() {
     }
 
     const isNew = !itemToSave.id;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, createdAt: _createdAt, updatedAt: _updatedAt, ...plainData } = itemToSave;
 
     try {
       if (isNew) {
         const docData = { ...plainData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await addDoc(outlineCollection, docData).catch((serverError) => {
           const permissionError = new FirestorePermissionError({
             path: outlineCollection.path,
@@ -86,6 +89,7 @@ export default function OutlineTab() {
       } else {
         const itemDocRef = doc(outlineCollection, id);
         const updateData = { ...plainData, updatedAt: serverTimestamp() };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await setDoc(itemDocRef, updateData, { merge: true }).catch((serverError) => {
           const permissionError = new FirestorePermissionError({
             path: itemDocRef.path,
@@ -125,6 +129,7 @@ export default function OutlineTab() {
 
     try {
       const itemRef = doc(outlineCollection, item.id);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       await deleteDoc(itemRef).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
           path: itemRef.path,
@@ -266,7 +271,6 @@ export default function OutlineTab() {
         onOpenChange={setDialogOpen}
         item={editingItem}
         onSave={handleSaveItem}
-        parentItems={outlineItems || []}
       />
     </div>
   );
@@ -277,13 +281,11 @@ function OutlineItemDialog({
   onOpenChange,
   item,
   onSave,
-  parentItems,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   item: OutlineItem | null;
   onSave: (item: OutlineItem) => void;
-  parentItems: OutlineItem[];
 }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');

@@ -62,6 +62,7 @@ export default function StoryCharactersTab() {
 
   const handleOpenDialog = (character: StoryCharacter | null = null) => {
     if (character) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = character;
       setEditingCharacter(rest);
     } else {
@@ -84,11 +85,13 @@ export default function StoryCharactersTab() {
     }
 
     const isNew = !characterToSave.id;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, createdAt: _createdAt, updatedAt: _updatedAt, ...plainData } = characterToSave;
 
     try {
       if (isNew) {
         const docData = { ...plainData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await addDoc(charactersCollection, docData).catch((serverError) => {
           const permissionError = new FirestorePermissionError({
             path: charactersCollection.path,
@@ -101,6 +104,7 @@ export default function StoryCharactersTab() {
       } else {
         const characterDocRef = doc(charactersCollection, id);
         const updateData = { ...plainData, updatedAt: serverTimestamp() };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await setDoc(characterDocRef, updateData, { merge: true }).catch((serverError) => {
           const permissionError = new FirestorePermissionError({
             path: characterDocRef.path,
@@ -140,6 +144,7 @@ export default function StoryCharactersTab() {
 
     try {
       const characterRef = doc(charactersCollection, character.id);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       await deleteDoc(characterRef).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
           path: characterRef.path,
