@@ -59,6 +59,7 @@ export default function StoryNotesTab() {
 
   const handleOpenDialog = (note: StoryNote | null = null) => {
     if (note) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = note;
       setEditingNote(rest);
     } else {
@@ -79,11 +80,13 @@ export default function StoryNotesTab() {
     }
 
     const isNew = !noteToSave.id;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, createdAt: _createdAt, updatedAt: _updatedAt, ...plainData } = noteToSave;
 
     try {
       if (isNew) {
         const docData = { ...plainData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await addDoc(notesCollection, docData).catch((serverError) => {
           const permissionError = new FirestorePermissionError({
             path: notesCollection.path,
@@ -96,6 +99,7 @@ export default function StoryNotesTab() {
       } else {
         const noteDocRef = doc(notesCollection, id);
         const updateData = { ...plainData, updatedAt: serverTimestamp() };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await setDoc(noteDocRef, updateData, { merge: true }).catch((serverError) => {
           const permissionError = new FirestorePermissionError({
             path: noteDocRef.path,
@@ -135,6 +139,7 @@ export default function StoryNotesTab() {
 
     try {
       const noteRef = doc(notesCollection, note.id);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       await deleteDoc(noteRef).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
           path: noteRef.path,

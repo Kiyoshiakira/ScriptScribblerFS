@@ -137,6 +137,7 @@ export default function ChaptersTab() {
 
     try {
       const chapterRef = doc(chaptersCollection, chapter.id);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       await deleteDoc(chapterRef).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
           path: chapterRef.path,

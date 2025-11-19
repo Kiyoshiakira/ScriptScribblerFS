@@ -206,6 +206,7 @@ function extractCharacterName(text: string): string {
  */
 export function semanticToStandardDocument(semanticDoc: SemanticDocument): ScriptDocument {
   return {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     blocks: semanticDoc.blocks.map(({ metadata, ...block }) => block),
   };
 }

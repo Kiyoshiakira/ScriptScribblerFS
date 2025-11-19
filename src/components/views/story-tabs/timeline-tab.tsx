@@ -60,6 +60,7 @@ export default function TimelineTab() {
 
   const handleOpenDialog = (event: TimelineEvent | null = null) => {
     if (event) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = event;
       setEditingEvent(rest);
     } else {
@@ -81,11 +82,13 @@ export default function TimelineTab() {
     }
 
     const isNew = !eventToSave.id;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, createdAt: _createdAt, updatedAt: _updatedAt, ...plainData } = eventToSave;
 
     try {
       if (isNew) {
         const docData = { ...plainData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await addDoc(timelineCollection, docData).catch((serverError) => {
           const permissionError = new FirestorePermissionError({
             path: timelineCollection.path,
@@ -98,6 +101,7 @@ export default function TimelineTab() {
       } else {
         const eventDocRef = doc(timelineCollection, id);
         const updateData = { ...plainData, updatedAt: serverTimestamp() };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await setDoc(eventDocRef, updateData, { merge: true }).catch((serverError) => {
           const permissionError = new FirestorePermissionError({
             path: eventDocRef.path,
@@ -137,6 +141,7 @@ export default function TimelineTab() {
 
     try {
       const eventRef = doc(timelineCollection, event.id);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       await deleteDoc(eventRef).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
           path: eventRef.path,
@@ -219,7 +224,7 @@ export default function TimelineTab() {
         <div className="relative">
           <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-border" />
           <div className="space-y-8">
-            {filteredEvents.map((event, index) => (
+            {filteredEvents.map((event) => (
               <div key={event.id} className="relative pl-16">
                 <div className="absolute left-6 top-2 w-5 h-5 rounded-full bg-primary border-4 border-background" />
                 <Card className="hover:shadow-md transition-shadow">

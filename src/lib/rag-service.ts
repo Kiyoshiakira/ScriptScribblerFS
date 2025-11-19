@@ -81,7 +81,7 @@ export function createDocumentChunks(
     maxBlocksPerChunk = 20,
     chunkByScene = true,
     overlapBlocks = 3,
-    maxWordsPerChunk = 500,
+    // maxWordsPerChunk reserved for future word-based chunking
   } = config;
   
   const chunks: DocumentChunk[] = [];
@@ -273,7 +273,7 @@ export function getRelevantContext(
   });
   
   // If blockId is provided, include that block's scene as context
-  let contextChunks: DocumentChunk[] = [];
+  const contextChunks: DocumentChunk[] = [];
   
   if (blockId) {
     const block = doc.blocks.find(b => b.id === blockId);
@@ -298,7 +298,7 @@ export function getRelevantContext(
   
   // Estimate token count (rough: 1 token ≈ 4 characters)
   let combinedText = '';
-  let includedChunks: DocumentChunk[] = [];
+  const includedChunks: DocumentChunk[] = [];
   let tokenCount = 0;
   
   for (const chunk of allChunks) {

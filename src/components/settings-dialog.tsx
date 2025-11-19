@@ -51,7 +51,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [feedbackText, setFeedbackText] = useState('');
   const { toast } = useToast();
 
-  const { user } = useUser();
+  const { user, isUserLoading, userError } = useUser();
   const firestore = useFirestore();
   const currentScriptState = useCurrentScript();
   const scriptState = useScript();
@@ -67,9 +67,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent,
         userContext: {
-            isUserLoading: user?.isUserLoading,
+            isUserLoading,
             user: user ? { uid: user.uid, email: user.email, displayName: user.displayName } : null,
-            userError: user?.userError?.message,
+            userError: userError?.message,
         },
         currentScriptContext: {
             isCurrentScriptLoading: currentScriptState.isCurrentScriptLoading,
