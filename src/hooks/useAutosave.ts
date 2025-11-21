@@ -181,8 +181,9 @@ export function useAutosave({
         e.preventDefault();
         e.returnValue = '';
         
-        // Attempt to save using sendBeacon for better reliability
-        // This is a best-effort save before unload
+        // Save to sessionStorage as a backup before page unload
+        // We use sessionStorage instead of IndexedDB because async operations
+        // may not complete before the page unloads
         try {
           const draft = {
             id,
@@ -192,7 +193,7 @@ export function useAutosave({
             metadata,
           };
           
-          // Use sessionStorage as fallback since we can't use async storage during unload
+          // Store in sessionStorage for synchronous save
           sessionStorage.setItem(`draft-backup-${id}`, JSON.stringify(draft));
         } catch (error) {
           console.error('[useAutosave] Error saving before unload:', error);

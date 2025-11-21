@@ -84,7 +84,7 @@ self.addEventListener('fetch', (event) => {
           }
           
           // Otherwise, return a basic error response
-          return new Response('Network error happened', {
+          return new Response('Unable to connect to network', {
             status: 408,
             headers: { 'Content-Type': 'text/plain' },
           });

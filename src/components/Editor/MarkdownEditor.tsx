@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, KeyboardEvent } from 'react';
+import React, { useRef, useState, KeyboardEvent, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Bold, 
@@ -63,10 +63,20 @@ export default function MarkdownEditor({
   autosaveMetadata,
 }: MarkdownEditorProps) {
   const [showPreview, setShowPreview] = useState(true);
+  const [currentTime, setCurrentTime] = useState(Date.now());
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
+
+  // Update current time every 30 seconds for "saved X ago" display
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 30000); // Update every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Autosave hook
   const {
@@ -312,7 +322,7 @@ export default function MarkdownEditor({
               {!isSaving && lastSaved && (
                 <div className="flex items-center gap-1" title={new Date(lastSaved).toLocaleString()}>
                   <Check className="h-3 w-3" />
-                  <span>Saved {formatDistance(lastSaved, Date.now(), { addSuffix: true })}</span>
+                  <span>Saved {formatDistance(lastSaved, currentTime, { addSuffix: true })}</span>
                 </div>
               )}
               <Button
