@@ -8,6 +8,7 @@ export type ProjectLinkingMode = 'shared' | 'separate';
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type ExportFormat = 'pdf' | 'fountain' | 'finalDraft' | 'plainText' | 'scribbler' | 'googleDocs';
 export type Language = 'en' | 'es' | 'fr' | 'de' | 'ja' | 'zh';
+export type AiProviderType = 'google-ai' | 'openai' | 'local';
 
 interface Settings {
   projectLinkingMode?: ProjectLinkingMode;
@@ -25,6 +26,10 @@ interface Settings {
   scriptSharingDefault?: 'public' | 'private';
   // Language preference for UI (placeholder for future i18n)
   language?: Language;
+  // AI provider selection
+  aiProvider?: AiProviderType;
+  // AI usage limit per session
+  aiUsageLimit?: number;
 }
 
 interface SettingsContextType {
@@ -38,6 +43,8 @@ interface SettingsContextType {
   setProfilePublic: (isPublic: boolean) => void;
   setScriptSharingDefault: (mode: 'public' | 'private') => void;
   setLanguage: (language: Language) => void;
+  setAiProvider: (provider: AiProviderType) => void;
+  setAiUsageLimit: (limit: number) => void;
 }
 
 export const SettingsContext = createContext<SettingsContextType>({
@@ -51,6 +58,8 @@ export const SettingsContext = createContext<SettingsContextType>({
   setProfilePublic: () => {},
   setScriptSharingDefault: () => {},
   setLanguage: () => {},
+  setAiProvider: () => {},
+  setAiUsageLimit: () => {},
 });
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
@@ -119,6 +128,16 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     updateSettings({ ...settings, language });
   };
 
+  // AI provider: Select which AI provider to use
+  const setAiProvider = (provider: AiProviderType) => {
+    updateSettings({ ...settings, aiProvider: provider });
+  };
+
+  // AI usage limit: Set usage limit per session
+  const setAiUsageLimit = (limit: number) => {
+    updateSettings({ ...settings, aiUsageLimit: limit });
+  };
+
   const value = {
     settings,
     isSettingsLoading,
@@ -130,6 +149,8 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     setProfilePublic,
     setScriptSharingDefault,
     setLanguage,
+    setAiProvider,
+    setAiUsageLimit,
   };
 
   return (

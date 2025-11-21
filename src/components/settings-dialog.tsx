@@ -45,6 +45,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setProfilePublic,
     setScriptSharingDefault,
     setLanguage,
+    setAiProvider,
+    setAiUsageLimit,
   } = useSettings();
   const [isExporting, setIsExporting] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
@@ -418,9 +420,69 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               <Separator />
 
               <div className="space-y-2">
+                <Label>AI Provider</Label>
+                <p className="text-sm text-muted-foreground">
+                    Select which AI service to use for AI-assisted features.
+                </p>
+                <Select 
+                  value={settings.aiProvider || 'google-ai'} 
+                  onValueChange={(value) => setAiProvider(value as any)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select AI provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="google-ai">Google AI (Gemini)</SelectItem>
+                    <SelectItem value="openai" disabled>OpenAI (Coming Soon)</SelectItem>
+                    <SelectItem value="local" disabled>Local Model (Coming Soon)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label>AI Usage Limit</Label>
+                <p className="text-sm text-muted-foreground">
+                    Maximum number of AI operations per session. Prevents excessive API usage. (Current: {settings.aiUsageLimit || 100})
+                </p>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-muted-foreground w-12">10</span>
+                  <Slider
+                    value={[settings.aiUsageLimit || 100]}
+                    onValueChange={([value]) => setAiUsageLimit(value)}
+                    min={10}
+                    max={500}
+                    step={10}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-muted-foreground w-12">500</span>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
                 <Label>AI Model</Label>
                 <div className='p-3 border rounded-md bg-muted/50 text-sm text-muted-foreground'>
-                    The application is configured to use the <strong>gemini-2.5-flash</strong> model for all AI operations.
+                    The application is configured to use the <strong>gemini-2.0-flash-exp</strong> model for all AI operations.
+                </div>
+              </div>
+
+              <Separator />
+                
+              <div className="space-y-2">
+                <Label>API Key Configuration</Label>
+                <div className='p-3 border rounded-md bg-muted/50 space-y-2'>
+                    <p className="text-sm text-muted-foreground">
+                        API keys are configured via environment variables for security.
+                    </p>
+                    <p className="text-sm">
+                        <strong>Google AI:</strong> Set <code className="px-1 py-0.5 bg-background rounded">GEMINI_API_KEY</code> in your <code className="px-1 py-0.5 bg-background rounded">.env.local</code> file.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                        See <code>docs/AI_INTEGRATION.md</code> for detailed configuration instructions.
+                    </p>
                 </div>
               </div>
 
