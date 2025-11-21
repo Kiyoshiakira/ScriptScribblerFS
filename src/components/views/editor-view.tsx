@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from 'react';
 import AiFab from '@/components/ai-fab';
 import ScriptEditor from '@/components/script-editor';
 import { Button } from '../ui/button';
-import { Search, Plus, Maximize2, Minimize2 } from 'lucide-react';
+import { Search, Plus, Maximize2, Minimize2, FileCode } from 'lucide-react';
 import { FindReplaceDialog } from '../find-replace-dialog';
 import { FindReplaceProvider } from '@/hooks/use-find-replace';
 import EditorStatusBar from '../editor-status-bar';
@@ -23,6 +23,7 @@ import { collection, doc, setDoc } from 'firebase/firestore';
 import { useFullscreen } from '@/hooks/use-fullscreen';
 import { cn } from '@/lib/utils';
 import { sanitizeFirestorePayload } from '@/lib/firestore-utils';
+import { SnippetManager } from '@/components/Snippets';
 
 function EditorViewContent() {
   const [isFindOpen, setIsFindOpen] = useState(false);
@@ -30,9 +31,10 @@ function EditorViewContent() {
   const [editingSceneNumber, setEditingSceneNumber] = useState<number | null>(null);
   const [sceneSettings, setSceneSettings] = useState({ setting: '', description: '', time: 5 });
   const [isSaving, setIsSaving] = useState(false);
+  const [isSnippetManagerOpen, setIsSnippetManagerOpen] = useState(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   
-  const { document, insertBlockAfter, scenes } = useScript();
+  const { document, insertBlockAfter, scenes, script, setBlocks } = useScript();
   const { settings } = useSettings();
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -117,6 +119,16 @@ function EditorViewContent() {
     }
   };
 
+  const handleSnippetInsert = useCallback((content: string) => {
+    if (!script || !document) return;
+    
+    // Insert snippet at the end of the current content
+    const lastBlock = document.blocks[document.blocks.length - 1];
+    if (lastBlock) {
+      insertBlockAfter(lastBlock.id, content, ScriptBlockType.ACTION);
+    }
+  }, [script, document, insertBlockAfter]);
+
   return (
       <div 
         ref={editorContainerRef}
@@ -148,6 +160,10 @@ function EditorViewContent() {
                 <Search className="mr-2 h-4 w-4" />
                 Find & Replace
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setIsSnippetManagerOpen(true)}>
+                <FileCode className="mr-2 h-4 w-4" />
+                Snippets
+            </Button>
         </div>
         <div className="flex-1 overflow-y-auto pb-24">
           <ScriptEditor isStandalone={false} onEditScene={handleEditScene} />
@@ -168,6 +184,11 @@ function EditorViewContent() {
         <EditorStatusBar />
         {aiEnabled && <AiFab />}
         <FindReplaceDialog open={isFindOpen} onOpenChange={setIsFindOpen} />
+        <SnippetManager 
+          open={isSnippetManagerOpen} 
+          onOpenChange={setIsSnippetManagerOpen}
+          onSnippetInsert={handleSnippetInsert}
+        />
         
         {/* Scene Edit Dialog */}
         <Dialog open={isSceneEditOpen} onOpenChange={setIsSceneEditOpen}>
