@@ -30,8 +30,6 @@ export function parseMarkdown(markdownContent: string): ParsedMarkdown {
   let currentChapter: Partial<Chapter> | null = null;
   let currentContent: string[] = [];
   let chapterOrder = 0;
-  let inBlockquote = false;
-  let blockquoteContent: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
