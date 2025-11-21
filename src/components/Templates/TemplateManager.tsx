@@ -40,22 +40,15 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { sanitizeFirestorePayload } from '@/lib/firestore-utils';
 import { defaultTemplates } from '@/data/templates';
+import { 
+  loadLocalTemplates, 
+  saveLocalTemplates, 
+  isLocalTemplate 
+} from '@/lib/template-storage';
 
 interface TemplateManagerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-/**
- * Local storage key for custom templates
- */
-const LOCAL_STORAGE_KEY = 'scribbler-custom-templates';
-
-/**
- * Check if a template is stored locally (vs cloud/Firestore)
- */
-function isLocalTemplate(template: Template): boolean {
-  return template.id.startsWith('local-') || template.id.startsWith('custom-local-');
 }
 
 /**
@@ -65,32 +58,6 @@ function extractPlaceholders(content: string): string[] {
   const matches = content.match(/{{(\w+)}}/g);
   if (!matches) return [];
   return [...new Set(matches.map(m => m.slice(2, -2)))];
-}
-
-/**
- * Load custom templates from local storage
- */
-function loadLocalTemplates(): Template[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch (error) {
-    console.error('Error loading templates from local storage:', error);
-    return [];
-  }
-}
-
-/**
- * Save custom templates to local storage
- */
-function saveLocalTemplates(templates: Template[]): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(templates));
-  } catch (error) {
-    console.error('Error saving templates to local storage:', error);
-  }
 }
 
 /**
@@ -270,7 +237,7 @@ export function TemplateManager({ open, onOpenChange }: TemplateManagerProps) {
         } else {
           // Save to local storage
           const newTemplate: Template = {
-            id: `custom-local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            id: `custom-local-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
             ...formData,
             placeholders,
           };

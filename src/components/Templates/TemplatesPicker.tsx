@@ -19,31 +19,16 @@ import { FileText, BookOpen, FileCode } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
+import { 
+  loadLocalTemplates, 
+  deduplicateTemplates 
+} from '@/lib/template-storage';
 
 interface TemplatesPickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onTemplateSelect: (content: string) => void;
   category?: 'script' | 'story' | 'general' | 'all';
-}
-
-/**
- * Local storage key for custom templates
- */
-const LOCAL_STORAGE_KEY = 'scribbler-custom-templates';
-
-/**
- * Load custom templates from local storage
- */
-function loadLocalTemplates(): Template[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch (error) {
-    console.error('Error loading templates from local storage:', error);
-    return [];
-  }
 }
 
 /**
@@ -84,8 +69,8 @@ export function TemplatesPicker({ open, onOpenChange, onTemplateSelect, category
     setLocalTemplates(loadLocalTemplates());
   }, []);
 
-  // Combine default templates with custom templates (local + cloud)
-  const customTemplates = [...localTemplates, ...(cloudTemplates || [])];
+  // Combine default templates with custom templates (local + cloud), with deduplication
+  const customTemplates = deduplicateTemplates([...localTemplates, ...(cloudTemplates || [])]);
   const allTemplates = [...defaultTemplates, ...customTemplates];
 
   // Filter templates by category
