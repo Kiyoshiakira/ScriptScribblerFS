@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, Loader2, FileText, Edit, Maximize2, Minimize2, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Loader2, FileText, Edit, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -21,9 +21,9 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useFullscreen } from '@/hooks/use-fullscreen';
 import { cn } from '@/lib/utils';
 import { sanitizeFirestorePayload } from '@/lib/firestore-utils';
+import MarkdownEditor from '@/components/Editor/MarkdownEditor';
 
 interface Chapter {
   id?: string;
@@ -270,9 +270,7 @@ function ChapterDialog({
   const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const contentAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { isFullscreen, toggleFullscreen } = useFullscreen(contentAreaRef);
 
   useEffect(() => {
     if (open) {
@@ -339,7 +337,7 @@ function ChapterDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[90vw] max-w-6xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="font-headline">{chapter?.id ? 'Edit Chapter' : 'Add Chapter'}</DialogTitle>
           <DialogDescription>
@@ -347,9 +345,31 @@ function ChapterDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Chapter Title</Label>
-            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="The Beginning" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Chapter Title</Label>
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="The Beginning" />
+            </div>
+            <div className="space-y-2 flex items-end">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleAIAssist}
+                  disabled={isGenerating}
+                  title="Get AI writing suggestions"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-1" />
+                  )}
+                  AI Assist
+                </Button>
+                <span className="text-xs text-muted-foreground">{wordCount} words</span>
+              </div>
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="summary">Summary</Label>
@@ -361,53 +381,13 @@ function ChapterDialog({
               rows={2}
             />
           </div>
-          <div 
-            ref={contentAreaRef}
-            className={cn(
-              "space-y-2",
-              isFullscreen && "bg-background p-4"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <Label htmlFor="content">Content</Label>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleAIAssist}
-                  disabled={isGenerating}
-                  title="Get AI writing suggestions"
-                >
-                  {isGenerating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                </Button>
-                <span className="text-xs text-muted-foreground">{wordCount} words</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleFullscreen}
-                  title={isFullscreen ? "Exit fullscreen (Esc)" : "Enter fullscreen"}
-                >
-                  {isFullscreen ? (
-                    <Minimize2 className="h-4 w-4" />
-                  ) : (
-                    <Maximize2 className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-            <Textarea
-              id="content"
+          <div className="space-y-2">
+            <Label htmlFor="content">Content (Markdown)</Label>
+            <MarkdownEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Write your chapter content here..."
-              rows={isFullscreen ? 30 : 12}
-              className="font-mono text-sm"
+              onChange={setContent}
+              placeholder="Write your chapter content here using Markdown..."
+              minHeight={500}
             />
           </div>
         </div>
