@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from "react";
 import { useScript } from "@/context/script-context";
 import { useUser, useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from '@/firebase';
 import { useCurrentScript } from "@/context/current-script-context";
@@ -17,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTool } from "@/context/tool-context";
 import { useSettings } from "@/context/settings-context";
 import { sanitizeFirestorePayload } from '@/lib/firestore-utils';
+import { TemplatesPicker } from '@/components/Templates';
 
 
 function StatCard({ title, value, icon, isLoading }: { title: string, value: number, icon: React.ReactNode, isLoading: boolean }) {
@@ -89,6 +91,7 @@ export default function DashboardView({ setView }: { setView: (view: View) => vo
     const { toast } = useToast();
     const { currentTool } = useTool();
     const { settings } = useSettings();
+    const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
 
     const projectLinkingMode = settings.projectLinkingMode || 'shared';
 
@@ -207,6 +210,45 @@ export default function DashboardView({ setView }: { setView: (view: View) => vo
         }
     };
 
+    const handleTemplateSelect = async (content: string) => {
+        if (!firestore || !user) return;
+        try {
+            const scriptsCollectionRef = collection(firestore, 'users', user.uid, 'scripts');
+            const scriptData = sanitizeFirestorePayload({
+                title: 'Untitled Document',
+                content: content,
+                logline: '',
+                authorId: user.uid,
+                createdAt: serverTimestamp(),
+                lastModified: serverTimestamp(),
+            });
+            const newScriptDoc = await addDoc(scriptsCollectionRef, scriptData).catch(() => {
+                const permissionError = new FirestorePermissionError({
+                    path: scriptsCollectionRef.path,
+                    operation: 'create',
+                    requestResourceData: scriptData
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                throw permissionError;
+            });
+            toast({
+                title: 'Document Created',
+                description: 'A new document from template has been created.',
+            });
+            setCurrentScriptId(newScriptDoc.id);
+            setView('editor');
+        } catch (error) {
+            console.error('Error creating document from template:', error);
+            if (!(error instanceof FirestorePermissionError)) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: 'Could not create document from template.',
+                });
+            }
+        }
+    };
+
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">
@@ -247,8 +289,19 @@ export default function DashboardView({ setView }: { setView: (view: View) => vo
                         <Sparkles className="mr-2 h-5 w-5" />
                         Start with AI
                     </Button>
+                    <Button size="lg" variant="outline" className="w-full" onClick={() => setIsTemplatePickerOpen(true)}>
+                        <FileText className="mr-2 h-5 w-5" />
+                        Start with Template
+                    </Button>
                 </CardContent>
             </Card>
+
+            <TemplatesPicker
+                open={isTemplatePickerOpen}
+                onOpenChange={setIsTemplatePickerOpen}
+                onTemplateSelect={handleTemplateSelect}
+                category={currentTool === 'StoryScribbler' ? 'story' : 'all'}
+            />
 
             {currentScriptId && (
                 <>
