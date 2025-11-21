@@ -37,7 +37,6 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { 
     settings, 
-    isSettingsLoading, 
     setProjectLinkingMode,
     setTheme,
     setExportFormat,

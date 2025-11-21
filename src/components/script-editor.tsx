@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useScript } from '@/context/script-context';
 import { useSettings } from '@/context/settings-context';
 import { cn } from '@/lib/utils';
