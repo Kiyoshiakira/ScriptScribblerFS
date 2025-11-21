@@ -345,31 +345,9 @@ function ChapterDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto space-y-4 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Chapter Title</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="The Beginning" />
-            </div>
-            <div className="space-y-2 flex items-end">
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleAIAssist}
-                  disabled={isGenerating}
-                  title="Get AI writing suggestions"
-                >
-                  {isGenerating ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                  ) : (
-                    <Sparkles className="h-4 w-4 mr-1" />
-                  )}
-                  AI Assist
-                </Button>
-                <span className="text-xs text-muted-foreground">{wordCount} words</span>
-              </div>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="title">Chapter Title</Label>
+            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="The Beginning" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="summary">Summary</Label>
@@ -381,8 +359,28 @@ function ChapterDialog({
               rows={2}
             />
           </div>
-          <div className="space-y-2">
+          <div className="flex items-center justify-between mb-2">
             <Label htmlFor="content">Content (Markdown)</Label>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleAIAssist}
+                disabled={isGenerating}
+                title="Get AI writing suggestions"
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-1" />
+                )}
+                <span className="hidden sm:inline">AI Assist</span>
+              </Button>
+              <span className="text-xs text-muted-foreground">{wordCount} words</span>
+            </div>
+          </div>
+          <div className="space-y-2">
             <MarkdownEditor
               value={content}
               onChange={setContent}

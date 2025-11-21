@@ -45,8 +45,12 @@ export default function MarkdownEditor({
     const editor = editorRef.current;
     const preview = previewRef.current;
     
-    const scrollPercentage = editor.scrollTop / (editor.scrollHeight - editor.clientHeight);
-    preview.scrollTop = scrollPercentage * (preview.scrollHeight - preview.clientHeight);
+    const maxScroll = editor.scrollHeight - editor.clientHeight;
+    if (maxScroll <= 0) return; // Prevent division by zero
+    
+    const scrollPercentage = editor.scrollTop / maxScroll;
+    const previewMaxScroll = preview.scrollHeight - preview.clientHeight;
+    preview.scrollTop = scrollPercentage * previewMaxScroll;
   };
 
   const handlePreviewScroll = () => {
@@ -55,8 +59,12 @@ export default function MarkdownEditor({
     const editor = editorRef.current;
     const preview = previewRef.current;
     
-    const scrollPercentage = preview.scrollTop / (preview.scrollHeight - preview.clientHeight);
-    editor.scrollTop = scrollPercentage * (editor.scrollHeight - editor.clientHeight);
+    const maxScroll = preview.scrollHeight - preview.clientHeight;
+    if (maxScroll <= 0) return; // Prevent division by zero
+    
+    const scrollPercentage = preview.scrollTop / maxScroll;
+    const editorMaxScroll = editor.scrollHeight - editor.clientHeight;
+    editor.scrollTop = scrollPercentage * editorMaxScroll;
   };
 
   // Insert text at cursor position
@@ -163,8 +171,39 @@ export default function MarkdownEditor({
         if (!textarea) return;
         const start = textarea.selectionStart;
         const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-        insertText('# ', '', '');
-        textarea.setSelectionRange(lineStart + 2, lineStart + 2);
+        const lineEnd = value.indexOf('\n', start);
+        const actualLineEnd = lineEnd === -1 ? value.length : lineEnd;
+        
+        const currentLine = value.substring(lineStart, actualLineEnd);
+        const headingMatch = currentLine.match(/^(#{1,6})\s/);
+        
+        let newLine;
+        if (headingMatch) {
+          // Cycle through heading levels
+          const level = headingMatch[1].length;
+          if (level < 6) {
+            newLine = '#' + currentLine;
+          } else {
+            newLine = currentLine.substring(7); // Remove "###### "
+          }
+        } else {
+          newLine = '# ' + currentLine;
+        }
+        
+        const newText = 
+          value.substring(0, lineStart) +
+          newLine +
+          value.substring(actualLineEnd);
+        
+        onChange(newText);
+        
+        // Set cursor at end of heading prefix
+        setTimeout(() => {
+          textarea.focus();
+          const newHeadingMatch = newLine.match(/^(#{1,6})\s/);
+          const cursorPos = lineStart + (newHeadingMatch ? newHeadingMatch[0].length : 0);
+          textarea.setSelectionRange(cursorPos, cursorPos);
+        }, 0);
       }
     },
     { 
@@ -236,7 +275,7 @@ export default function MarkdownEditor({
       </div>
 
       {/* Editor and Preview */}
-      <div className={cn('flex gap-4', showPreview ? 'grid grid-cols-2' : '')}>
+      <div className={cn(showPreview ? 'grid grid-cols-2 gap-4' : 'flex')}>
         {/* Editor */}
         <div className="flex-1">
           <Textarea
