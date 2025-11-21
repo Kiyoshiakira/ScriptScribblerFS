@@ -35,10 +35,17 @@ export function useGooglePicker({ onFilePicked }: GooglePickerOptions) {
     script.async = true;
     script.defer = true;
     script.onload = () => setGapiLoaded(true);
+    script.onerror = () => {
+      console.error('Failed to load Google API script');
+      setGapiLoaded(false);
+    };
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      // Only remove if the script exists in the DOM
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
 
@@ -64,8 +71,19 @@ export function useGooglePicker({ onFilePicked }: GooglePickerOptions) {
 
   // 3. Load the Picker API once gapi is ready
   useEffect(() => {
-    if (gapiLoaded) {
-      window.gapi.load('picker', { 'callback': () => setPickerApiLoaded(true) });
+    if (gapiLoaded && window.gapi) {
+      try {
+        window.gapi.load('picker', { 
+          'callback': () => setPickerApiLoaded(true),
+          'onerror': () => {
+            console.error('Failed to load Google Picker API');
+            setPickerApiLoaded(false);
+          }
+        });
+      } catch (error) {
+        console.error('Error loading Google Picker API:', error);
+        setPickerApiLoaded(false);
+      }
     }
   }, [gapiLoaded]);
 
@@ -82,6 +100,12 @@ export function useGooglePicker({ onFilePicked }: GooglePickerOptions) {
             return;
         }
 
+        // Ensure window.google and window.google.picker are available
+        if (!window.google || !window.google.picker) {
+            toast({ variant: 'destructive', title: 'Google Picker Error', description: 'Google Picker API is not loaded. Please refresh the page and try again.' });
+            return;
+        }
+
         const docsView = new (window.google.picker as any).View((window.google.picker as any).ViewId.DOCS)
             .setMimeTypes("application/vnd.google-apps.document");
             
@@ -92,8 +116,24 @@ export function useGooglePicker({ onFilePicked }: GooglePickerOptions) {
         .addView(docsView)
         .setCallback(async (data: google.picker.ResponseObject) => {
             if (data.action === (window.google.picker as any).Action.PICKED) {
+                // Safely check if docs array exists and has items
+                if (!data.docs || !Array.isArray(data.docs) || data.docs.length === 0) {
+                    toast({ 
+                        variant: 'destructive', 
+                        title: 'Import Failed', 
+                        description: 'No document was selected or document data is missing.' 
+                    });
+                    return;
+                }
                 const doc = data.docs[0];
-                if (!doc) return;
+                if (!doc || !doc.id || !doc.name) {
+                    toast({ 
+                        variant: 'destructive', 
+                        title: 'Import Failed', 
+                        description: 'Selected document is missing required information.' 
+                    });
+                    return;
+                }
 
                 toast({ title: "Importing Document", description: `Fetching '${doc.name}' from Google Drive...`});
                 
@@ -115,8 +155,13 @@ export function useGooglePicker({ onFilePicked }: GooglePickerOptions) {
                     }
 
                     const data = await response.json();
-                    if (!data.success) {
-                        throw new Error(data.error || 'Failed to fetch document');
+                    if (!data || !data.success) {
+                        throw new Error(data?.error || 'Failed to fetch document');
+                    }
+                    
+                    // Ensure document exists with valid structure
+                    if (!data.document || typeof data.document !== 'object') {
+                        throw new Error('Document data is missing or invalid');
                     }
                     
                     // Use the new import functionality to preserve formatting
@@ -127,13 +172,14 @@ export function useGooglePicker({ onFilePicked }: GooglePickerOptions) {
                     } catch (importError) {
                         // Fallback to plain text extraction if structured import fails
                         console.warn('Structured import failed, falling back to plain text:', importError);
-                        const content = data.document.body.content;
+                        const content = data.document?.body?.content || [];
                         let text = '';
-                        if(content){
+                        if(Array.isArray(content)){
                             content.forEach((p: { paragraph?: { elements?: Array<{ textRun?: { content?: string } }> } }) => {
-                                if (p.paragraph && p.paragraph.elements) {
-                                    p.paragraph.elements.forEach((elem: { textRun?: { content?: string } }) => {
-                                        if(elem.textRun && elem.textRun.content){
+                                const elements = p?.paragraph?.elements || [];
+                                if(Array.isArray(elements)){
+                                    elements.forEach((elem: { textRun?: { content?: string } }) => {
+                                        if(elem?.textRun?.content){
                                             text += elem.textRun.content;
                                         }
                                     })

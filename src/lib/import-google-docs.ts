@@ -67,8 +67,8 @@ interface GoogleDocsParagraphElement {
  * @returns A ScriptDocument with structured screenplay blocks
  */
 export function importFromGoogleDocs(googleDoc: GoogleDocsDocument): ScriptDocument {
-  if (!googleDoc?.body?.content) {
-    throw new Error('Invalid Google Docs document structure');
+  if (!googleDoc?.body?.content || !Array.isArray(googleDoc.body.content)) {
+    throw new Error('Invalid Google Docs document structure: missing or invalid body.content');
   }
 
   const blocks: ScriptBlock[] = [];
@@ -76,7 +76,7 @@ export function importFromGoogleDocs(googleDoc: GoogleDocsDocument): ScriptDocum
 
   // Process each structural element in the document
   for (const element of googleDoc.body.content) {
-    if (!element.paragraph) {
+    if (!element?.paragraph) {
       continue; // Skip non-paragraph elements (tables, section breaks, etc.)
     }
 
@@ -107,8 +107,11 @@ export function importFromGoogleDocs(googleDoc: GoogleDocsDocument): ScriptDocum
 function extractTextFromParagraph(paragraph: GoogleDocsParagraph): string {
   let text = '';
   
-  for (const element of paragraph.elements) {
-    if (element.textRun?.content) {
+  // Ensure elements array exists with a default empty array
+  const elements = paragraph?.elements || [];
+  
+  for (const element of elements) {
+    if (element?.textRun?.content) {
       text += element.textRun.content;
     }
   }
@@ -121,11 +124,12 @@ function extractTextFromParagraph(paragraph: GoogleDocsParagraph): string {
  * This uses alignment, indentation, and text style to determine the type
  */
 function inferBlockType(paragraph: GoogleDocsParagraph, text: string): ScriptBlockType {
-  const style = paragraph.paragraphStyle;
+  const style = paragraph?.paragraphStyle || {};
   const alignment = style?.alignment || 'START';
   const indentStart = style?.indentStart?.magnitude || 0;
   const indentEnd = style?.indentEnd?.magnitude || 0;
-  const isBold = paragraph.elements.some(e => e.textRun?.textStyle?.bold);
+  const elements = paragraph?.elements || [];
+  const isBold = elements.some(e => e?.textRun?.textStyle?.bold);
   const hasLetters = /[A-Za-z]/.test(text);
   const isUpperCase = hasLetters && text === text.toUpperCase();
 
@@ -190,7 +194,15 @@ function inferBlockType(paragraph: GoogleDocsParagraph, text: string): ScriptBlo
 export function scriptDocumentToText(doc: ScriptDocument): string {
   let output = '';
   
-  for (const block of doc.blocks) {
+  // Ensure blocks array exists with a default empty array
+  const blocks = doc?.blocks || [];
+  
+  for (const block of blocks) {
+    // Skip blocks with missing or invalid text
+    if (!block || typeof block.text !== 'string') {
+      continue;
+    }
+    
     // Add appropriate spacing and formatting based on block type
     switch (block.type) {
       case ScriptBlockType.SCENE_HEADING:
