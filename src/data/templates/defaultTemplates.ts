@@ -71,13 +71,13 @@ By {{Author}}
     category: 'script',
     content: `{{SceneHeading}}
 
-{{Action}}
+{{OpeningAction}}
 
 {{Character}}
 {{Dialogue}}
 
-{{Action}}`,
-    placeholders: ['SceneHeading', 'Action', 'Character', 'Dialogue'],
+{{ClosingAction}}`,
+    placeholders: ['SceneHeading', 'OpeningAction', 'Character', 'Dialogue', 'ClosingAction'],
   },
   {
     id: 'character-profile',

@@ -19,6 +19,7 @@ export interface Snippet {
   placeholders: string[];
   createdAt: number;
   updatedAt: number;
+  storageType?: 'local' | 'cloud'; // Optional for backward compatibility
 }
 
 export interface PlaceholderValue {

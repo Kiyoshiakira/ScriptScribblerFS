@@ -123,11 +123,18 @@ function EditorViewContent() {
     if (!script || !document) return;
     
     // Insert snippet at the end of the current content
-    const lastBlock = document.blocks[document.blocks.length - 1];
-    if (lastBlock) {
+    if (document.blocks.length === 0) {
+      // Handle empty document - create a first block
+      setBlocks([{
+        id: `block-${Date.now()}`,
+        type: ScriptBlockType.ACTION,
+        text: content,
+      }]);
+    } else {
+      const lastBlock = document.blocks[document.blocks.length - 1];
       insertBlockAfter(lastBlock.id, content, ScriptBlockType.ACTION);
     }
-  }, [script, document, insertBlockAfter]);
+  }, [script, document, insertBlockAfter, setBlocks]);
 
   return (
       <div 

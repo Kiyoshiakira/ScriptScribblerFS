@@ -136,7 +136,11 @@ export function TemplatesPicker({ open, onOpenChange, onTemplateSelect, category
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg">{template.name}</CardTitle>
-                      <Badge variant="secondary" className={getCategoryColor(template.category)}>
+                      <Badge 
+                        variant="secondary" 
+                        className={getCategoryColor(template.category)}
+                        aria-label={`Category: ${template.category}`}
+                      >
                         {getCategoryIcon(template.category)}
                       </Badge>
                     </div>

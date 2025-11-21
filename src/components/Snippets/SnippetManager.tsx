@@ -65,6 +65,13 @@ function replacePlaceholders(content: string, values: PlaceholderValue[]): strin
 const LOCAL_STORAGE_KEY = 'scribbler-snippets';
 
 /**
+ * Check if a snippet is stored locally (vs cloud/Firestore)
+ */
+function isLocalSnippet(snippet: Snippet): boolean {
+  return snippet.storageType === 'local' || snippet.id.startsWith('local-');
+}
+
+/**
  * Load snippets from local storage
  */
 function loadLocalSnippets(): Snippet[] {
@@ -152,8 +159,8 @@ export function SnippetManager({ open, onOpenChange, onSnippetInsert }: SnippetM
     if (!deletingSnippet) return;
 
     try {
-      // Check if it's a cloud snippet (has Firestore ID)
-      if (deletingSnippet.id && deletingSnippet.id.length > 20 && snippetsCollection) {
+      // Check if it's a cloud snippet using helper function
+      if (!isLocalSnippet(deletingSnippet) && snippetsCollection) {
         // Delete from Firestore
         await deleteDoc(doc(snippetsCollection, deletingSnippet.id));
         toast({
@@ -198,9 +205,9 @@ export function SnippetManager({ open, onOpenChange, onSnippetInsert }: SnippetM
     try {
       if (editingSnippet) {
         // Update existing snippet
-        const isCloudSnippet = editingSnippet.id && editingSnippet.id.length > 20;
+        const isLocal = isLocalSnippet(editingSnippet);
         
-        if (isCloudSnippet && snippetsCollection) {
+        if (!isLocal && snippetsCollection) {
           // Update in Firestore
           const snippetData = sanitizeFirestorePayload({
             name: formData.name,
@@ -248,11 +255,12 @@ export function SnippetManager({ open, onOpenChange, onSnippetInsert }: SnippetM
         } else {
           // Save to local storage
           const newSnippet: Snippet = {
-            id: `local-${now}`,
+            id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             ...formData,
             placeholders,
             createdAt: now,
             updatedAt: now,
+            storageType: 'local',
           };
           const updated = [...localSnippets, newSnippet];
           setLocalSnippets(updated);
