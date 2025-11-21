@@ -23,7 +23,7 @@ const ACTION_TYPES = {
   UPDATE_TOAST: "UPDATE_TOAST",
   DISMISS_TOAST: "DISMISS_TOAST",
   REMOVE_TOAST: "REMOVE_TOAST",
-} as const
+} as const satisfies Record<string, string>
 
 let count = 0
 
