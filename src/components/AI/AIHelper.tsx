@@ -52,7 +52,6 @@ export default function AIHelper({ selectedText, onTextGenerated, onAccept }: AI
 
   // Rewrite options
   const [rewriteStyle, setRewriteStyle] = useState<string>('clear and engaging');
-  const [rewriteTone, setRewriteTone] = useState<string>('appropriate');
 
   // Continue options
   const [continueLength, setContinueLength] = useState<number>(200);
@@ -132,7 +131,7 @@ export default function AIHelper({ selectedText, onTextGenerated, onAccept }: AI
           response = await runAiHelperRewrite({
             text: input,
             style: rewriteStyle,
-            tone: rewriteTone,
+            tone: 'appropriate',
           });
           break;
         case 'continue':
@@ -321,7 +320,7 @@ export default function AIHelper({ selectedText, onTextGenerated, onAccept }: AI
 
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Select value={summaryFormat} onValueChange={(v) => setSummaryFormat(v as any)} disabled={isLoading}>
+                <Select value={summaryFormat} onValueChange={(v) => setSummaryFormat(v as 'paragraph' | 'bullets' | 'brief')} disabled={isLoading}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
