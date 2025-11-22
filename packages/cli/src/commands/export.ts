@@ -36,7 +36,12 @@ export async function exportCommand(
     // Generate output filename
     let outputPath = options?.output;
     if (!outputPath) {
-      const sanitizedTitle = doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      // Sanitize filename while preserving readability
+      const sanitizedTitle = doc.title
+        .replace(/[<>:"/\\|?*]/g, '') // Remove filesystem-unsafe characters
+        .replace(/\s+/g, '_') // Replace whitespace with underscores
+        .toLowerCase()
+        .substring(0, 100); // Limit length
       outputPath = `${sanitizedTitle}.${extension}`;
     }
 

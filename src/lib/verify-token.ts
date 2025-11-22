@@ -11,12 +11,21 @@ export interface VerifiedUser {
 
 /**
  * Verify a Firebase ID token using the Firebase REST API
+ * Note: This uses the public API key which is acceptable for token verification
+ * as the security is in the token itself, not the API key.
+ * For production, consider using Firebase Admin SDK with service account.
  */
 export async function verifyIdToken(token: string): Promise<VerifiedUser> {
   try {
+    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+    
+    if (!apiKey) {
+      throw new Error('Firebase API key not configured');
+    }
+    
     // Use Firebase REST API to verify the token
     const response = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`,
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
       {
         method: 'POST',
         headers: {

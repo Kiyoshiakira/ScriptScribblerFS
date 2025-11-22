@@ -40,8 +40,21 @@ export async function listCommand(options?: ListCommandOptions): Promise<void> {
           if (doc.logline) {
             console.log(chalk.gray(`   Logline: ${doc.logline}`));
           }
-          const lastModified = doc.lastModified?.toDate?.() || new Date(doc.lastModified);
-          console.log(chalk.gray(`   Last Modified: ${lastModified.toLocaleString()}`));
+          // Safely handle lastModified date
+          let lastModifiedStr = 'Unknown';
+          try {
+            if (doc.lastModified) {
+              const lastModified = typeof doc.lastModified === 'string' 
+                ? new Date(doc.lastModified) 
+                : doc.lastModified;
+              if (lastModified && !isNaN(lastModified.getTime())) {
+                lastModifiedStr = lastModified.toLocaleString();
+              }
+            }
+          } catch (e) {
+            // Ignore date parsing errors
+          }
+          console.log(chalk.gray(`   Last Modified: ${lastModifiedStr}`));
           console.log();
         });
 

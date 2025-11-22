@@ -7,8 +7,8 @@ export interface Document {
   content: string;
   logline?: string;
   authorId: string;
-  createdAt: any;
-  lastModified: any;
+  createdAt: Date | string | null;
+  lastModified: Date | string | null;
 }
 
 export interface ApiResponse<T> {

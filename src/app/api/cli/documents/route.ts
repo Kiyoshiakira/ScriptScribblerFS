@@ -106,8 +106,8 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('Authorization');
     const token = authHeader?.replace('Bearer ', '');
 
-    // Generate a document ID
-    const docId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Generate a unique document ID using crypto
+    const docId = `doc_${Date.now()}_${crypto.randomUUID().replace(/-/g, '')}`.substring(0, 50);
 
     // Create document using Firestore REST API
     const firestoreDoc = {
