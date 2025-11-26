@@ -128,7 +128,6 @@ export function ToolGate({
       
       {accessResult.trialInfo?.canStartTrial && (
         <TrialStartDialog
-          toolId={toolId}
           toolName={tool?.name ?? toolId}
           trialInfo={accessResult.trialInfo}
           open={showDialog}
@@ -257,7 +256,6 @@ function TrialBadge({ trialInfo }: TrialBadgeProps) {
 }
 
 interface TrialStartDialogProps {
-  toolId: ScribblerTool;
   toolName: string;
   trialInfo: TrialInfo;
   open: boolean;

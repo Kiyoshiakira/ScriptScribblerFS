@@ -248,10 +248,12 @@ export function usePlan() {
 
 /**
  * Mock function to load subscription data
- * TODO: Replace with actual Firestore queries
+ * TODO: Replace with actual Firestore queries using the userId parameter
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function loadMockSubscription(userId: string): Promise<UserSubscription> {
+async function loadMockSubscription(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  userId: string
+): Promise<UserSubscription> {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 100));
 
