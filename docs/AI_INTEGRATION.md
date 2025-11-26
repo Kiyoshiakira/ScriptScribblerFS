@@ -2,6 +2,19 @@
 
 This document describes the AI provider abstraction layer and how to use and extend it.
 
+## Gemini 3.0 Upgrade Notice
+
+**As of November 2025, this codebase has been upgraded to use Gemini 3.0 Pro.**
+
+Key changes in this upgrade:
+- Default model updated from `gemini-2.5-flash` to `gemini-3.0-pro`
+- System instructions are now incorporated directly into prompts (not in `config.systemInstruction`)
+- All generation config parameters validated against Gemini 3.0 OpenAPI spec
+- Enhanced error handling for API errors including Bad Request (400) errors
+- Centralized model configuration in `src/ai/model-config.ts`
+
+To use a different model version, set the `GEMINI_MODEL_OVERRIDE` environment variable.
+
 ## Overview
 
 The Scribbler implements an abstracted AI provider system that allows different AI services (Google AI, OpenAI, local models) to be used interchangeably. This design makes it easy to:
@@ -373,7 +386,7 @@ describe('GoogleAiProvider', () => {
     provider = new GoogleAiProvider({
       name: 'google-ai',
       apiKey: process.env.GEMINI_API_KEY!,
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-3.0-pro', // Default model, uses centralized config
     });
     provider.setUsageLimit(10);
   });

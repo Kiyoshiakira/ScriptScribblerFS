@@ -9,7 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { getDefaultModel, DEFAULT_GENERATION_CONFIG } from '@/ai/model-config';
 import { getWritingAssistPrompt } from '@/lib/ai-system-prompts';
 
 const ScriptBlockSchema = z.object({
@@ -43,18 +43,20 @@ export async function aiWritingAssist(
   return aiWritingAssistFlow(input);
 }
 
+// System instruction for writing assistance (incorporated into prompt for Gemini 3.0 compatibility)
+const systemInstructionText = getWritingAssistPrompt(false); // Set to true if working with Skylantia
+
 const prompt = ai.definePrompt({
   name: 'writingAssistPrompt',
-  model: googleAI.model('gemini-2.5-flash'),
+  model: getDefaultModel(),
   config: {
-    temperature: 0.7,
-    systemInstruction: {
-      parts: [{ text: getWritingAssistPrompt(false) }], // Set to true if working with Skylantia
-    },
+    ...DEFAULT_GENERATION_CONFIG,
   },
   input: { schema: AiWritingAssistInputSchema },
   output: { schema: AiWritingAssistOutputSchema },
-  prompt: `**Context (Previous Blocks):**
+  prompt: `${systemInstructionText}
+
+**Context (Previous Blocks):**
 {{{json precedingBlocks}}}
 
 **Current Block:**

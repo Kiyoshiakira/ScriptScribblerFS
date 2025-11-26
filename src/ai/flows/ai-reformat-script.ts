@@ -8,8 +8,8 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'zod';
+import { getDefaultModel } from '@/ai/model-config';
 
 const AiReformatScriptInputSchema = z.object({
   rawScript: z
@@ -40,7 +40,7 @@ export async function aiReformatScript(
 const prompt = ai.definePrompt(
     {
         name: 'reformatScriptPrompt',
-        model: googleAI.model('gemini-2.5-flash'),
+        model: getDefaultModel(),
         input: { schema: AiReformatScriptInputSchema },
         output: { schema: AiReformatScriptOutputSchema },
         prompt: `You are an expert script formatter specializing in Fountain syntax.

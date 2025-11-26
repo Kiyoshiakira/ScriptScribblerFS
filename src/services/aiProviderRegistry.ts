@@ -3,10 +3,16 @@
  * 
  * Manages registration and selection of AI providers.
  * Provides a central point for accessing configured AI providers.
+ * 
+ * ## Gemini 3.0 Compatibility
+ * 
+ * This registry has been updated to use Gemini 3.0 models by default.
+ * Model selection can be overridden via environment variables.
  */
 
 import { AiProvider, AiProviderConfig } from './aiProvider';
 import { GoogleAiProvider } from './googleAiProvider';
+import { DEFAULT_GEMINI_MODEL, getGeminiModel } from '@/ai/model-config';
 
 /**
  * Available provider types
@@ -126,6 +132,8 @@ export const providerRegistry = new AiProviderRegistry();
 
 /**
  * Helper to initialize provider from environment/settings
+ * 
+ * Uses the centralized model configuration from ai/model-config.ts
  */
 export function initializeProviderFromEnv(): AiProvider | null {
   // Check for Google AI configuration
@@ -134,7 +142,7 @@ export function initializeProviderFromEnv(): AiProvider | null {
     const provider = providerRegistry.createProvider('google-ai', {
       name: 'google-ai',
       apiKey: geminiKey,
-      model: 'gemini-2.0-flash-exp',
+      model: getGeminiModel(), // Use centralized model config
       temperature: 0.7,
       maxTokens: 1024,
     });

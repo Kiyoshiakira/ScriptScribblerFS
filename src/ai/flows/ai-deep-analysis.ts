@@ -8,8 +8,8 @@
  */
 
 import {ai} from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
 import {z} from 'genkit';
+import { getDefaultModel, ANALYTICAL_GENERATION_CONFIG } from '@/ai/model-config';
 
 const AiDeepAnalysisInputSchema = z.object({
   screenplay: z.string().describe('The screenplay text to analyze.'),
@@ -36,9 +36,10 @@ export async function aiDeepAnalysis(
 
 const prompt = ai.definePrompt({
     name: 'deepAnalysisPrompt',
-    model: googleAI.model('gemini-2.5-flash'),
+    model: getDefaultModel(),
     config: {
-        temperature: 0.5,
+        ...ANALYTICAL_GENERATION_CONFIG,
+        temperature: 0.5, // Override for balanced analysis
     },
     input: { schema: AiDeepAnalysisInputSchema },
     output: { schema: AiDeepAnalysisOutputSchema },

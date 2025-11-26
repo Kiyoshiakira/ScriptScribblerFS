@@ -3,6 +3,11 @@
  * 
  * This provider wraps the existing Genkit AI functionality to work with
  * the abstract AI provider interface.
+ * 
+ * ## Gemini 3.0 Compatibility
+ * 
+ * This provider has been upgraded to use Gemini 3.0 models by default.
+ * The model can be overridden via config or environment variable.
  */
 
 import {
@@ -20,6 +25,7 @@ import {
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
+import { DEFAULT_GEMINI_MODEL, getGeminiModel } from '@/ai/model-config';
 
 /**
  * Google AI provider using Gemini models
@@ -29,7 +35,8 @@ export class GoogleAiProvider extends AiProvider {
 
   constructor(config: AiProviderConfig) {
     super(config);
-    this.model = config.model || 'gemini-2.0-flash-exp';
+    // Use centralized model config, allow override from provider config
+    this.model = config.model || getGeminiModel();
   }
 
   /**
@@ -294,6 +301,12 @@ Provide only the expanded text without explanations.`;
 
   /**
    * Handle errors and convert to AiProviderError
+   * 
+   * Provides detailed error handling for Gemini API errors including:
+   * - Rate limiting and quota errors
+   * - Authentication errors
+   * - Bad Request (400) errors from invalid payloads
+   * - Model-specific errors
    */
   private handleError(error: unknown): AiProviderError {
     if (error instanceof AiProviderError) {
@@ -301,9 +314,11 @@ Provide only the expanded text without explanations.`;
     }
 
     const message = error instanceof Error ? error.message : 'Unknown error occurred';
+    const errorString = String(error);
 
     // Check for rate limiting or quota errors (retryable)
-    if (message.includes('quota') || message.includes('rate limit')) {
+    if (message.includes('quota') || message.includes('rate limit') || 
+        message.includes('429') || message.includes('RESOURCE_EXHAUSTED')) {
       return new AiProviderError(
         'Rate limit or quota exceeded. Please try again later.',
         'RATE_LIMIT',
@@ -312,7 +327,9 @@ Provide only the expanded text without explanations.`;
     }
 
     // Check for authentication errors (not retryable)
-    if (message.includes('auth') || message.includes('API key')) {
+    if (message.includes('auth') || message.includes('API key') ||
+        message.includes('401') || message.includes('403') ||
+        message.includes('PERMISSION_DENIED')) {
       return new AiProviderError(
         'Authentication failed. Please check your API key.',
         'AUTH_ERROR',
@@ -320,7 +337,41 @@ Provide only the expanded text without explanations.`;
       );
     }
 
+    // Check for Bad Request errors (invalid payload - not retryable)
+    // These indicate configuration issues that need fixing
+    if (message.includes('400') || message.includes('INVALID_ARGUMENT') ||
+        message.includes('Unknown name') || message.includes('Bad Request')) {
+      console.error('[AI Provider] Bad Request error - check payload configuration:', message);
+      return new AiProviderError(
+        `Invalid request to AI service: ${message}. Please report this issue.`,
+        'BAD_REQUEST',
+        false
+      );
+    }
+
+    // Check for model not found errors (not retryable)
+    if (message.includes('404') || message.includes('NOT_FOUND') ||
+        message.includes('model') && message.includes('not found')) {
+      return new AiProviderError(
+        `AI model not available: ${this.model}. Please check configuration.`,
+        'MODEL_NOT_FOUND',
+        false
+      );
+    }
+
+    // Check for server errors (retryable)
+    if (message.includes('500') || message.includes('502') || 
+        message.includes('503') || message.includes('504') ||
+        message.includes('INTERNAL') || message.includes('UNAVAILABLE')) {
+      return new AiProviderError(
+        'AI service temporarily unavailable. Please try again.',
+        'SERVER_ERROR',
+        true
+      );
+    }
+
     // Default to retryable error (changed from non-retryable for better resilience)
+    console.warn('[AI Provider] Unhandled error type:', message);
     return new AiProviderError(message, 'PROVIDER_ERROR', true);
   }
 }

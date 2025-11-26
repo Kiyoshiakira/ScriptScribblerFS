@@ -8,8 +8,8 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'genkit';
+import { getDefaultModel, ANALYTICAL_GENERATION_CONFIG } from '@/ai/model-config';
 
 const AiDiagnoseAppHealthInputSchema = z.object({
   appState: z
@@ -41,9 +41,9 @@ export async function aiDiagnoseAppHealth(
 
 const prompt = ai.definePrompt({
     name: 'diagnoseAppHealthPrompt',
-    model: googleAI.model('gemini-2.5-flash'),
+    model: getDefaultModel(),
     config: {
-        temperature: 0.1,
+        ...ANALYTICAL_GENERATION_CONFIG,
     },
     input: { schema: AiDiagnoseAppHealthInputSchema },
     output: { schema: AiDiagnoseAppHealthOutputSchema },

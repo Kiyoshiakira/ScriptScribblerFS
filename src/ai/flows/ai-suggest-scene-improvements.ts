@@ -9,8 +9,8 @@
  */
 
 import {ai} from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
 import {z} from 'genkit';
+import { getDefaultModel, DEFAULT_GENERATION_CONFIG } from '@/ai/model-config';
 
 const AiSuggestSceneImprovementsInputSchema = z.object({
   screenplay: z.string().describe('The screenplay text to analyze.'),
@@ -32,9 +32,9 @@ export async function aiSuggestSceneImprovements(
 
 const prompt = ai.definePrompt({
     name: 'suggestSceneImprovementsPrompt',
-    model: googleAI.model('gemini-2.5-flash'),
+    model: getDefaultModel(),
     config: {
-        temperature: 0.7,
+        ...DEFAULT_GENERATION_CONFIG,
     },
     input: { schema: AiSuggestSceneImprovementsInputSchema },
     output: { schema: AiSuggestSceneImprovementsOutputSchema },
