@@ -122,8 +122,9 @@ function LoginCard() {
     };
 
     processRedirectResult();
+  // Note: firestore is accessed via processGoogleSignInSuccess closure, not directly
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [redirectResult, router, toast]);
+  }, [redirectResult, firestore, router, toast]);
 
   const validateInputs = (action: 'signIn' | 'signUp'): string | null => {
     const email = action === 'signIn' ? signInEmail : signUpEmail;
@@ -593,16 +594,15 @@ function LoginCard() {
                 <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                 <p>
                   If sign-in fails, try disabling browser extensions (ad blockers, Dark Reader, etc.) 
-                  or use an incognito window. See our{' '}
+                  or use an incognito window. For detailed troubleshooting, check the{' '}
                   <a 
-                    href="/docs/EXTENSION_COMPATIBILITY.md" 
+                    href="https://github.com/Kiyoshiakira/TheScribbler/blob/main/docs/EXTENSION_COMPATIBILITY.md" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="underline hover:text-primary"
                   >
-                    troubleshooting guide
-                  </a>{' '}
-                  for more help.
+                    extension compatibility guide
+                  </a>.
                 </p>
               </div>
             </div>
