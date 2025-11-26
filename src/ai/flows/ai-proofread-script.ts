@@ -9,7 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { getDefaultModel, PRECISE_GENERATION_CONFIG } from '@/ai/model-config';
 
 const AiProofreadScriptInputSchema = z.object({
   script: z.string().describe('The screenplay text to proofread.'),
@@ -47,9 +47,10 @@ export async function aiProofreadScript(
 
 const prompt = ai.definePrompt({
     name: 'proofreadScriptPrompt',
-    model: googleAI.model('gemini-2.5-flash'),
+    model: getDefaultModel(),
     config: {
-        temperature: 0.1,
+        ...PRECISE_GENERATION_CONFIG,
+        temperature: 0.1, // Override for maximum precision
     },
     input: { schema: AiProofreadScriptInputSchema },
     output: { schema: AiProofreadScriptOutputSchema },

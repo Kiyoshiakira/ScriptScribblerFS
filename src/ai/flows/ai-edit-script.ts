@@ -9,7 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { getDefaultModel, PRECISE_GENERATION_CONFIG } from '@/ai/model-config';
 import { getEditingPrompt } from '@/lib/ai-system-prompts';
 
 const ScriptBlockSchema = z.object({
@@ -46,18 +46,20 @@ export async function aiEditScript(
   return aiEditScriptFlow(input);
 }
 
+// System instruction for editing (incorporated into prompt for Gemini 3.0 compatibility)
+const systemInstructionText = getEditingPrompt(false); // Set to true if working with Skylantia
+
 const prompt = ai.definePrompt({
   name: 'editScriptPrompt',
-  model: googleAI.model('gemini-2.5-flash'),
+  model: getDefaultModel(),
   config: {
-    temperature: 0.3,
-    systemInstruction: {
-      parts: [{ text: getEditingPrompt(false) }], // Set to true if working with Skylantia
-    },
+    ...PRECISE_GENERATION_CONFIG,
   },
   input: { schema: AiEditScriptInputSchema },
   output: { schema: AiEditScriptOutputSchema },
-  prompt: `**User Instruction:** {{{instruction}}}
+  prompt: `${systemInstructionText}
+
+**User Instruction:** {{{instruction}}}
 
 **Context (Screenplay Blocks):**
 {{{json context}}}

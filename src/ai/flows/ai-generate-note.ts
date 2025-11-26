@@ -9,8 +9,8 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'genkit';
+import { getDefaultModel, ANALYTICAL_GENERATION_CONFIG } from '@/ai/model-config';
 
 const AiGenerateNoteInputSchema = z.object({
   prompt: z.string().describe('A simple prompt to generate a note about.'),
@@ -46,9 +46,10 @@ export async function aiGenerateNote(
 
 const prompt = ai.definePrompt({
     name: 'generateNotePrompt',
-    model: googleAI.model('gemini-2.5-flash'),
+    model: getDefaultModel(),
     config: {
-        temperature: 0.5,
+        ...ANALYTICAL_GENERATION_CONFIG,
+        temperature: 0.5, // Override for balanced creativity
     },
     input: { schema: AiGenerateNoteInputSchema },
     output: { schema: AiGenerateNoteOutputSchema },

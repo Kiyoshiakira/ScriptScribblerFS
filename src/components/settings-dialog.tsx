@@ -537,8 +537,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
               <div className="space-y-2">
                 <Label>AI Model</Label>
-                <div className='p-3 border rounded-md bg-muted/50 text-sm text-muted-foreground'>
-                    The application is configured to use the <strong>gemini-2.0-flash-exp</strong> model for all AI operations.
+                <div className='p-3 border rounded-md bg-muted/50 text-sm text-muted-foreground space-y-2'>
+                    <p>The application uses <strong>Gemini 3.0 Pro</strong> (gemini-3.0-pro) for all AI operations.</p>
+                    <p className="text-xs">
+                        This model provides enhanced reasoning, instruction following, and creative writing capabilities.
+                        To use a different model, set the <code className="px-1 py-0.5 bg-background rounded">GEMINI_MODEL_OVERRIDE</code> environment variable.
+                    </p>
                 </div>
               </div>
 

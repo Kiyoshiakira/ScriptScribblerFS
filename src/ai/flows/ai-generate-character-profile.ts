@@ -8,8 +8,8 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'genkit';
+import { getDefaultModel, DEFAULT_GENERATION_CONFIG } from '@/ai/model-config';
 
 const AiGenerateCharacterProfileInputSchema = z.object({
   characterDescription: z
@@ -48,9 +48,9 @@ export async function aiGenerateCharacterProfile(
 
 const prompt = ai.definePrompt({
     name: 'generateCharacterProfilePrompt',
-    model: googleAI.model('gemini-2.5-flash'),
+    model: getDefaultModel(),
     config: {
-        temperature: 0.7,
+        ...DEFAULT_GENERATION_CONFIG,
     },
     input: { schema: AiGenerateCharacterProfileInputSchema },
     output: { schema: AiGenerateCharacterProfileOutputSchema },

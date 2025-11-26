@@ -9,8 +9,8 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'genkit';
+import { getDefaultModel, PRECISE_GENERATION_CONFIG } from '@/ai/model-config';
 import { generateSystemPrompt } from '@/lib/ai-system-prompts';
 import {
   aiGenerateCharacterProfile,
@@ -202,20 +202,18 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
     }
     
     // For general questions, use a simple prompt with enhanced system instructions
+    // System instruction incorporated into prompt for Gemini 3.0 compatibility
+    const systemInstructionText = generateSystemPrompt({
+      includeScreenplayFormat: true,
+      includeSkylantia: false,
+      customInstructions: 'You are a helpful assistant for a screenwriting application. Provide clear, actionable advice.',
+    });
+    
     const generalPrompt = ai.definePrompt({
       name: 'generalQuestionPrompt',
-      model: googleAI.model('gemini-2.5-flash'),
+      model: getDefaultModel(),
       config: {
-        temperature: 0.3,
-        systemInstruction: {
-          parts: [{
-            text: generateSystemPrompt({
-              includeScreenplayFormat: true,
-              includeSkylantia: false,
-              customInstructions: 'You are a helpful assistant for a screenwriting application. Provide clear, actionable advice.',
-            }),
-          }],
-        },
+        ...PRECISE_GENERATION_CONFIG,
       },
       input: { 
         schema: z.object({
@@ -228,7 +226,9 @@ const aiAgentOrchestratorFlow = ai.defineFlow(
           response: z.string(),
         })
       },
-      prompt: `The user asked: {{{request}}}
+      prompt: `${systemInstructionText}
+
+The user asked: {{{request}}}
 
 Current screenplay document:
 {{{json document}}}
