@@ -29,7 +29,11 @@ export function useRedirectResult(auth: Auth | null): RedirectResultState {
 
     // Set isProcessing to true when starting to check for redirect results
     // This ensures the loading state is shown while getRedirectResult is pending
-    setState({ isProcessing: true, userCredential: null, error: null });
+    setState((prev) => 
+      prev.isProcessing && !prev.userCredential && !prev.error 
+        ? prev 
+        : { isProcessing: true, userCredential: null, error: null }
+    );
 
     const handleRedirectResult = async () => {
       try {
