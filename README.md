@@ -354,7 +354,7 @@ Double-click `start-dev.bat` in the repository root to start the dev server in a
 ### macOS / Linux
 Double-click `start-dev.command` (or run `./start-dev.command` in a terminal) to start the dev server.
 
-> **Note:** On macOS, you may need to right-click and select "Open" the first time, or mark the file as executable with `chmod +x start-dev.command`.
+> **Note:** On macOS, you may need to right-click and select "Open" the first time, or mark the file as executable with `chmod +x ./start-dev.command`.
 
 ### Electron Window (Native App Wrapper)
 Run `npm run electron:dev` to launch the dev server inside an Electron window. This spawns `npm run dev` internally and opens a native window pointed at [http://localhost:9002](http://localhost:9002).

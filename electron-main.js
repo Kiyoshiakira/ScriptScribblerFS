@@ -75,7 +75,7 @@ function createWindow(url) {
 }
 
 function startDevServerAndOpen() {
-  // Start the existing dev script (assumes `npm run dev` exists and serves on localhost:9002)
+  // Start the existing dev script (assumes `npm run dev` exists)
   serverProcess = spawn('npm', ['run', 'dev'], {
     cwd: path.resolve(__dirname),
     shell: true,
