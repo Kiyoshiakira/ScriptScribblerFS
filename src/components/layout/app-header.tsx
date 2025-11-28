@@ -197,6 +197,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
                 title: title,
                 content: content,
                 logline: '', // Initialize logline as empty string instead of leaving it undefined
+                projectType: 'script', // Mark as script for .scrite/.scribbler imports
                 authorId: user.uid,
                 createdAt: serverTimestamp(),
                 lastModified: serverTimestamp(),
@@ -427,6 +428,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
             title: projectData.title || 'Untitled Story Import',
             content: projectData.content || '',
             logline: projectData.logline || '',
+            projectType: 'story', // Mark as story for .story imports
             authorId: user.uid,
             createdAt: serverTimestamp(),
             lastModified: serverTimestamp(),
@@ -571,6 +573,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
         title: parsedData.title,
         logline: parsedData.logline || '',
         content: '',
+        projectType: 'story', // Mark as story for .md imports
         authorId: user.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -642,6 +645,7 @@ export default function AppHeader({ activeView, setView }: AppHeaderProps) {
         title: parsedData.title,
         logline: parsedData.logline || '',
         content: '',
+        projectType: 'story', // Mark as story for .docx imports
         authorId: user.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),

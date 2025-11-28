@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, addDoc, serverTimestamp, deleteDoc, doc, getDocs, writeBatch, query, orderBy } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, writeBatch, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Book, Edit, Loader2, Plus, Trash, Users, UserCheck, ExternalLink } from 'lucide-react';
+import { Book, Edit, Loader2, Trash, Users, UserCheck, ExternalLink, Clapperboard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentScript } from '@/context/current-script-context';
 import { Skeleton } from '../ui/skeleton';
@@ -27,11 +27,14 @@ import type { View } from '../layout/AppLayout';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from 'next/link';
+import { normalizeProjectType, getDefaultViewForProjectType } from '@/lib/project-utils';
+import { Badge } from '../ui/badge';
 
 
 interface Script {
     id: string;
     title: string;
+    projectType?: string;
     lastModified: {
         toDate: () => Date;
     } | null;
@@ -73,9 +76,11 @@ export default function ProfileView({ setView }: ProfileViewProps) {
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<{ photoURL?: string, coverImageUrl?: string, bio?: string }>(userDocRef);
 
 
-    const handleOpenScript = (scriptId: string) => {
-        setCurrentScriptId(scriptId);
-        setView('dashboard');
+    const handleOpenScript = (script: Script) => {
+        setCurrentScriptId(script.id);
+        const projectType = normalizeProjectType(script);
+        const defaultView = getDefaultViewForProjectType(projectType);
+        setView(defaultView as View);
     };
     
     const handleSelectiveDelete = async (scriptId: string) => {
@@ -168,11 +173,27 @@ export default function ProfileView({ setView }: ProfileViewProps) {
             <div className='mt-6'>
                 {scripts && scripts.length > 0 ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {scripts.map((script) => (
+                        {scripts.map((script) => {
+                             const projectType = normalizeProjectType(script);
+                             const isStory = projectType === 'story';
+                             return (
                              <Card key={script.id} className="flex flex-col">
                                 <CardHeader>
                                     <CardTitle className="font-headline flex items-start justify-between">
                                         <span className="truncate pr-4">{script.title}</span>
+                                        <Badge variant={isStory ? 'default' : 'secondary'} className="shrink-0">
+                                            {isStory ? (
+                                                <>
+                                                    <Book className="mr-1 h-3 w-3" />
+                                                    Story
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Clapperboard className="mr-1 h-3 w-3" />
+                                                    Script
+                                                </>
+                                            )}
+                                        </Badge>
                                     </CardTitle>
                                     <CardDescription>
                                         Last modified: {script.lastModified ? new Date(script.lastModified.toDate()).toLocaleDateString() : 'Just now'}
@@ -181,7 +202,7 @@ export default function ProfileView({ setView }: ProfileViewProps) {
                                 <CardContent className="flex-grow" />
                                 <CardContent className="flex flex-col gap-2">
                                     <div className="flex gap-2">
-                                        <Button onClick={() => handleOpenScript(script.id)} className="flex-1">
+                                        <Button onClick={() => handleOpenScript(script)} className="flex-1">
                                             <Book className="mr-2 h-4 w-4" />
                                             Edit
                                         </Button>
@@ -203,15 +224,15 @@ export default function ProfileView({ setView }: ProfileViewProps) {
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
-                                                <AlertDialogTitle>Delete Script Components</AlertDialogTitle>
+                                                <AlertDialogTitle>Delete {isStory ? 'Story' : 'Script'} Components</AlertDialogTitle>
                                                 <AlertDialogDescription>
-                                                    This action can be destructive. Select the components you want to permanently delete. Unchecking "Script" will clear its sub-collections but keep the script document itself.
+                                                    This action can be destructive. Select the components you want to permanently delete. Unchecking &quot;{isStory ? 'Story' : 'Script'}&quot; will clear its sub-collections but keep the document itself.
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <div className="space-y-4 my-4">
                                                 <div className="flex items-center space-x-2">
                                                     <Checkbox id="del-script" checked={deleteScriptDoc} onCheckedChange={(c) => setDeleteScriptDoc(c as boolean)} />
-                                                    <Label htmlFor="del-script" className="font-semibold">Script</Label>
+                                                    <Label htmlFor="del-script" className="font-semibold">{isStory ? 'Story' : 'Script'}</Label>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
                                                     <Checkbox id="del-chars" checked={deleteCharacters} onCheckedChange={(c) => setDeleteCharacters(c as boolean)} />
@@ -237,14 +258,14 @@ export default function ProfileView({ setView }: ProfileViewProps) {
                                     </AlertDialog>
                                 </CardContent>
                             </Card>
-                        ))}
+                        )})}
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
                         <Book className="mx-auto h-12 w-12" />
-                        <h3 className="mt-4 text-lg font-medium">No Scripts Found</h3>
+                        <h3 className="mt-4 text-lg font-medium">No Projects Found</h3>
                         <p className="mt-1 text-sm">
-                            Your created and imported scripts will appear here.
+                            Your created and imported scripts and stories will appear here.
                         </p>
                     </div>
                 )}
@@ -307,7 +328,7 @@ export default function ProfileView({ setView }: ProfileViewProps) {
             
             <Tabs defaultValue="scripts" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="scripts">My Scripts</TabsTrigger>
+                <TabsTrigger value="scripts">My Projects</TabsTrigger>
                 <TabsTrigger value="friends">My Friends</TabsTrigger>
                 <TabsTrigger value="collabs">My Collabs</TabsTrigger>
               </TabsList>
