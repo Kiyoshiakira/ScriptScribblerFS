@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * SINGLE-TOOL COMPONENT: This is a StoryScribbler component.
+ * It uses ONLY useCurrentStory() - never mix with other tool hooks.
+ * See src/context/current-script-context.tsx for the Tool Separation Pattern.
+ */
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

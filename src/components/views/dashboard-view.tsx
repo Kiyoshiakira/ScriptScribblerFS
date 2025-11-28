@@ -1,9 +1,21 @@
 
 'use client';
 
+/**
+ * MULTI-TOOL VIEW: Dashboard hosts both ScriptScribbler and StoryScribbler panels.
+ * This is one of the EXCEPTIONS where we use multiple tool hooks.
+ * See src/context/current-script-context.tsx for the Tool Separation Pattern.
+ * 
+ * When adding new tools, update this file to:
+ * 1. Import the new tool's hook (e.g., useCurrentSonnet)
+ * 2. Add project creation logic for the new tool
+ * 3. Add a new panel tab for the tool
+ */
+
 import { useState } from "react";
 import { useUser, useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { useCurrentScript } from "@/context/current-script-context";
+// Dashboard uses BOTH hooks because it hosts multiple tool panels
+import { useCurrentScript, useCurrentStory } from "@/context/current-script-context";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
@@ -27,7 +39,9 @@ interface DashboardViewProps {
 export default function DashboardView({ setView, activePanel, setActivePanel }: DashboardViewProps) {
     const { user } = useUser();
     const firestore = useFirestore();
+    // Use both hooks since Dashboard hosts both Script and Story panels
     const { currentScriptId, setCurrentScriptId } = useCurrentScript();
+    const { currentStoryId, setCurrentStoryId } = useCurrentStory();
     const { toast } = useToast();
     const { currentTool } = useTool();
     const { settings } = useSettings();
@@ -81,7 +95,12 @@ export default function DashboardView({ setView, activePanel, setActivePanel }: 
                     ? 'A new untitled story has been added to your collection.'
                     : 'A new untitled script has been added to your collection.',
             });
-            setCurrentScriptId(newDoc.id);
+            // Set the appropriate project ID based on type
+            if (isStory) {
+                setCurrentStoryId(newDoc.id);
+            } else {
+                setCurrentScriptId(newDoc.id);
+            }
             setView(isStory ? 'outline' : 'editor');
         } catch (error) {
             console.error('Error creating new project:', error);
@@ -127,7 +146,12 @@ export default function DashboardView({ setView, activePanel, setActivePanel }: 
                 title: isStory ? 'AI-Assisted Story Created' : 'AI-Assisted Script Created',
                 description: `Open the AI assistant to start creating your ${projectType}.`,
             });
-            setCurrentScriptId(newDoc.id);
+            // Set the appropriate project ID based on type
+            if (isStory) {
+                setCurrentStoryId(newDoc.id);
+            } else {
+                setCurrentScriptId(newDoc.id);
+            }
             setView(isStory ? 'outline' : 'editor');
         } catch (error) {
             console.error('Error creating AI project:', error);
@@ -171,7 +195,12 @@ export default function DashboardView({ setView, activePanel, setActivePanel }: 
                 title: isStory ? 'Story Created' : 'Document Created',
                 description: `A new ${projectType} from template has been created.`,
             });
-            setCurrentScriptId(newDoc.id);
+            // Set the appropriate project ID based on type
+            if (isStory) {
+                setCurrentStoryId(newDoc.id);
+            } else {
+                setCurrentScriptId(newDoc.id);
+            }
             setView(isStory ? 'outline' : 'editor');
         } catch (error) {
             console.error('Error creating document from template:', error);
@@ -223,7 +252,7 @@ export default function DashboardView({ setView, activePanel, setActivePanel }: 
                             {projectLinkingMode === 'shared' ? (
                                 <>
                                     <Link2 className="h-3 w-3" />
-                                    <span>Shared Project</span>
+                                    <span>Scribbler Link</span>
                                 </>
                             ) : (
                                 <>

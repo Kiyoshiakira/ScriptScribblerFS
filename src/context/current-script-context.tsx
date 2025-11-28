@@ -1,5 +1,45 @@
 'use client';
 
+/**
+ * =============================================================================
+ * TOOL SEPARATION PATTERN - READ THIS BEFORE ADDING NEW TOOLS
+ * =============================================================================
+ * 
+ * Each Scribbler tool (ScriptScribbler, StoryScribbler, and future tools) must
+ * have COMPLETE SEPARATION of state and functionality by default.
+ * 
+ * RULES FOR TOOL SEPARATION:
+ * 
+ * 1. EACH TOOL GETS ITS OWN HOOK
+ *    - ScriptScribbler components → useCurrentScript()
+ *    - StoryScribbler components → useCurrentStory()
+ *    - Future tools → create useCurrentToolName() hook
+ * 
+ * 2. NEVER MIX TOOL HOOKS IN SINGLE-TOOL COMPONENTS
+ *    - A Chapters component should ONLY use useCurrentStory()
+ *    - A Scenes component should ONLY use useCurrentScript()
+ *    - This ensures tools work independently
+ * 
+ * 3. EXCEPTION: MULTI-TOOL VIEWS (like Dashboard)
+ *    - Components that host multiple tools (Dashboard, Settings, etc.)
+ *    - These MUST import and use ALL relevant hooks
+ *    - Example: Dashboard uses both useCurrentScript() AND useCurrentStory()
+ * 
+ * 4. SCRIBBLER LINK (Shared Mode)
+ *    - When projectLinkingMode === 'shared', tools share the same project
+ *    - This is handled automatically by the setters - they sync both IDs
+ *    - Components don't need to know about linking - just use their tool's hook
+ * 
+ * 5. ADDING A NEW TOOL (e.g., SonnetScribbler)
+ *    a) Add new state: currentSonnetId, setCurrentSonnetIdState
+ *    b) Add new localStorage key: SONNET_STORAGE_KEY
+ *    c) Create new hook: useCurrentSonnet()
+ *    d) Update Dashboard to use the new hook
+ *    e) All SonnetScribbler components use ONLY useCurrentSonnet()
+ * 
+ * =============================================================================
+ */
+
 import React, { createContext, useState, useEffect, ReactNode, useContext, useCallback } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
