@@ -17,7 +17,6 @@ import { sanitizeFirestorePayload } from '@/lib/firestore-utils';
 import { TemplatesPicker, TemplateManager } from '@/components/Templates';
 import { ScriptDashboardPanel, StoryDashboardPanel } from './dashboard-panels';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
-import { cn } from '@/lib/utils';
 
 interface DashboardViewProps {
   setView: (view: View) => void;
