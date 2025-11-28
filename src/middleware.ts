@@ -5,8 +5,13 @@ import type { NextRequest } from 'next/server';
  * Security middleware to add CSP and Permissions-Policy headers
  * This protects against XSS, clickjacking, and unauthorized API access
  */
-export function middleware(request: NextRequest) {
+export function middleware(_request: NextRequest) {
   const response = NextResponse.next();
+
+  // Do not apply strict CSP in development to avoid blocking HMR / dev extensions.
+  if (process.env.NODE_ENV !== 'production') {
+    return response;
+  }
 
   // Generate a nonce for inline scripts (for CSP)
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
