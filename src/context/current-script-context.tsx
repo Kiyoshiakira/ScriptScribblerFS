@@ -4,51 +4,38 @@ import React, { createContext, useState, useEffect, ReactNode, useContext, useCa
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { useSettings } from './settings-context';
-import { useTool } from './tool-context';
 
 const SCRIPT_STORAGE_KEY = 'scriptscribbler-current-script-id';
 const STORY_STORAGE_KEY = 'storyscribbler-current-script-id';
 
 interface CurrentScriptContextType {
+  // Per-tool project IDs
   currentScriptId: string | null;
   setCurrentScriptId: (id: string | null) => void;
+  currentStoryId: string | null;
+  setCurrentStoryId: (id: string | null) => void;
   isCurrentScriptLoading: boolean;
-  // Per-tool project IDs for separate mode
-  scriptScribblerScriptId: string | null;
-  setScriptScribblerScriptId: (id: string | null) => void;
-  storyScribblerScriptId: string | null;
-  setStoryScribblerScriptId: (id: string | null) => void;
 }
 
 export const CurrentScriptContext = createContext<CurrentScriptContextType>({
   currentScriptId: null,
   setCurrentScriptId: () => {},
+  currentStoryId: null,
+  setCurrentStoryId: () => {},
   isCurrentScriptLoading: true,
-  // Per-tool project IDs for separate mode
-  scriptScribblerScriptId: null,
-  setScriptScribblerScriptId: () => {},
-  storyScribblerScriptId: null,
-  setStoryScribblerScriptId: () => {},
 });
 
 export const CurrentScriptProvider = ({ children }: { children: ReactNode }) => {
-  const [scriptScribblerScriptId, setScriptScribblerScriptId] = useState<string | null>(null);
-  const [storyScribblerScriptId, setStoryScribblerScriptId] = useState<string | null>(null);
+  const [currentScriptId, setCurrentScriptIdState] = useState<string | null>(null);
+  const [currentStoryId, setCurrentStoryIdState] = useState<string | null>(null);
   const [isLoadedFromStorage, setIsLoadedFromStorage] = useState(false);
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { settings, isSettingsLoading } = useSettings();
-  const { currentTool } = useTool();
 
   // Get the appropriate storage key and state based on the current mode
   const projectLinkingMode = settings.projectLinkingMode || 'shared';
   const isSharedMode = projectLinkingMode === 'shared';
-  
-  // In shared mode, always use scriptScribblerScriptId
-  // In separate mode, use the appropriate ID based on current tool
-  const currentScriptId = isSharedMode 
-    ? scriptScribblerScriptId 
-    : (currentTool === 'ScriptScribbler' ? scriptScribblerScriptId : storyScribblerScriptId);
 
   // 1. Load from localStorage on initial mount
   useEffect(() => {
@@ -57,10 +44,10 @@ export const CurrentScriptProvider = ({ children }: { children: ReactNode }) => 
       const storyId = window.localStorage.getItem(STORY_STORAGE_KEY);
       
       if (scriptId) {
-        setScriptScribblerScriptId(scriptId);
+        setCurrentScriptIdState(scriptId);
       }
       if (storyId) {
-        setStoryScribblerScriptId(storyId);
+        setCurrentStoryIdState(storyId);
       }
     } catch (error) {
       console.warn(`[CurrentScriptContext] Error reading localStorage:`, error);
@@ -84,33 +71,33 @@ export const CurrentScriptProvider = ({ children }: { children: ReactNode }) => 
   // 2. If no script is set, default to the most recent one from Firestore
   useEffect(() => {
     if (isLoadedFromStorage && !isUserLoading && !areScriptsLoading && !isSettingsLoading) {
-      // In shared mode, only set scriptScribblerScriptId if it's not set
-      if (isSharedMode && !scriptScribblerScriptId) {
+      // In shared mode, only set currentScriptId if it's not set
+      if (isSharedMode && !currentScriptId) {
         if (latestScripts && latestScripts.length > 0) {
-          setScriptScribblerScriptId(latestScripts[0].id);
+          setCurrentScriptIdState(latestScripts[0].id);
         } else {
-          setScriptScribblerScriptId(null);
+          setCurrentScriptIdState(null);
         }
       }
       // In separate mode, set both if they're not set
       else if (!isSharedMode) {
-        if (!scriptScribblerScriptId) {
+        if (!currentScriptId) {
           if (latestScripts && latestScripts.length > 0) {
-            setScriptScribblerScriptId(latestScripts[0].id);
+            setCurrentScriptIdState(latestScripts[0].id);
           } else {
-            setScriptScribblerScriptId(null);
+            setCurrentScriptIdState(null);
           }
         }
-        if (!storyScribblerScriptId) {
+        if (!currentStoryId) {
           if (latestScripts && latestScripts.length > 0) {
-            setStoryScribblerScriptId(latestScripts[0].id);
+            setCurrentStoryIdState(latestScripts[0].id);
           } else {
-            setStoryScribblerScriptId(null);
+            setCurrentStoryIdState(null);
           }
         }
       }
     }
-  }, [isLoadedFromStorage, scriptScribblerScriptId, storyScribblerScriptId, isUserLoading, areScriptsLoading, latestScripts, isSharedMode, isSettingsLoading]);
+  }, [isLoadedFromStorage, currentScriptId, currentStoryId, isUserLoading, areScriptsLoading, latestScripts, isSharedMode, isSettingsLoading]);
 
   // Helper function to sync a project ID to localStorage
   const syncToLocalStorage = useCallback((key: string, id: string | null) => {
@@ -121,56 +108,33 @@ export const CurrentScriptProvider = ({ children }: { children: ReactNode }) => 
     }
   }, []);
 
+  // Setter for currentScriptId with localStorage sync
   const setCurrentScriptId = useCallback((id: string | null) => {
     try {
-      if (isSharedMode) {
-        // In shared mode, update both scriptScribblerScriptId and storyScribblerScriptId
-        syncToLocalStorage(SCRIPT_STORAGE_KEY, id);
-        setScriptScribblerScriptId(id);
-        syncToLocalStorage(STORY_STORAGE_KEY, id);
-        setStoryScribblerScriptId(id);
-      } else {
-        // In separate mode, update the appropriate ID based on current tool
-        if (currentTool === 'ScriptScribbler') {
-          syncToLocalStorage(SCRIPT_STORAGE_KEY, id);
-          setScriptScribblerScriptId(id);
-        } else {
-          syncToLocalStorage(STORY_STORAGE_KEY, id);
-          setStoryScribblerScriptId(id);
-        }
-      }
-    } catch (error) {
-      console.warn(`[CurrentScriptContext] Error setting localStorage:`, error);
-    }
-  }, [isSharedMode, currentTool, syncToLocalStorage]);
-
-  // Direct setter for scriptScribblerScriptId with localStorage sync
-  const handleSetScriptScribblerScriptId = useCallback((id: string | null) => {
-    try {
       syncToLocalStorage(SCRIPT_STORAGE_KEY, id);
-      setScriptScribblerScriptId(id);
-      // In shared mode, also update storyScribblerScriptId
+      setCurrentScriptIdState(id);
+      // In shared mode, also update currentStoryId
       if (isSharedMode) {
         syncToLocalStorage(STORY_STORAGE_KEY, id);
-        setStoryScribblerScriptId(id);
+        setCurrentStoryIdState(id);
       }
     } catch (error) {
-      console.warn(`[CurrentScriptContext] Error setting scriptScribblerScriptId:`, error);
+      console.warn(`[CurrentScriptContext] Error setting currentScriptId:`, error);
     }
   }, [isSharedMode, syncToLocalStorage]);
 
-  // Direct setter for storyScribblerScriptId with localStorage sync
-  const handleSetStoryScribblerScriptId = useCallback((id: string | null) => {
+  // Setter for currentStoryId with localStorage sync
+  const setCurrentStoryId = useCallback((id: string | null) => {
     try {
       syncToLocalStorage(STORY_STORAGE_KEY, id);
-      setStoryScribblerScriptId(id);
-      // In shared mode, also update scriptScribblerScriptId
+      setCurrentStoryIdState(id);
+      // In shared mode, also update currentScriptId
       if (isSharedMode) {
         syncToLocalStorage(SCRIPT_STORAGE_KEY, id);
-        setScriptScribblerScriptId(id);
+        setCurrentScriptIdState(id);
       }
     } catch (error) {
-      console.warn(`[CurrentScriptContext] Error setting storyScribblerScriptId:`, error);
+      console.warn(`[CurrentScriptContext] Error setting currentStoryId:`, error);
     }
   }, [isSharedMode, syncToLocalStorage]);
   
@@ -179,12 +143,9 @@ export const CurrentScriptProvider = ({ children }: { children: ReactNode }) => 
   const value = { 
       currentScriptId,
       setCurrentScriptId,
+      currentStoryId,
+      setCurrentStoryId,
       isCurrentScriptLoading,
-      // Per-tool project IDs for separate mode
-      scriptScribblerScriptId,
-      setScriptScribblerScriptId: handleSetScriptScribblerScriptId,
-      storyScribblerScriptId,
-      setStoryScribblerScriptId: handleSetStoryScribblerScriptId,
   };
 
   return (

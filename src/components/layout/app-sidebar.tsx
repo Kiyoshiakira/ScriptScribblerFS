@@ -67,13 +67,13 @@ interface AppSidebarProps {
 }
 
 export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
-  const { scriptScribblerScriptId, storyScribblerScriptId } = useCurrentScript();
+  const { currentScriptId, currentStoryId } = useCurrentScript();
   const { isMobile, setOpenMobile } = useSidebar();
   const { currentTool, setCurrentTool } = useTool();
   
   // Per-tool disabled state
-  const noScriptLoaded = !scriptScribblerScriptId;
-  const noStoryLoaded = !storyScribblerScriptId;
+  const noScriptLoaded = !currentScriptId;
+  const noStoryLoaded = !currentStoryId;
   
   // Determine if tool buttons should be disabled based on current tool
   const isToolDisabled = currentTool === 'ScriptScribbler' ? noScriptLoaded : noStoryLoaded;
