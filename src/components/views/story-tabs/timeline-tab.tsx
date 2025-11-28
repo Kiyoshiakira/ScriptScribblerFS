@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { useCurrentScript } from '@/context/current-script-context';
+import { useCurrentStory } from '@/context/current-script-context';
 import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { sanitizeFirestorePayload } from '@/lib/firestore-utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -46,15 +46,15 @@ const EVENT_CATEGORIES = ['Plot', 'Character', 'World', 'Flashback', 'Foreshadow
 export default function TimelineTab() {
   const { user } = useUser();
   const firestore = useFirestore();
-  const { currentScriptId } = useCurrentScript();
+  const { currentStoryId } = useCurrentStory();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
   const timelineCollection = useMemoFirebase(
-    () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'timeline') : null),
-    [firestore, user, currentScriptId]
+    () => (user && firestore && currentStoryId ? collection(firestore, 'users', user.uid, 'scripts', currentStoryId, 'timeline') : null),
+    [firestore, user, currentStoryId]
   );
 
   const { data: timelineEvents, isLoading } = useCollection<TimelineEvent>(timelineCollection);
@@ -184,7 +184,7 @@ export default function TimelineTab() {
   }
 
   // Handle case when no project is selected
-  if (!currentScriptId) {
+  if (!currentStoryId) {
     return (
       <div className="h-full overflow-y-auto">
         <div className="flex items-center justify-between mb-4">

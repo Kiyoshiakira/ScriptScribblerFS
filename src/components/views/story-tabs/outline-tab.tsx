@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { useCurrentScript } from '@/context/current-script-context';
+import { useCurrentStory } from '@/context/current-script-context';
 import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { sanitizeFirestorePayload } from '@/lib/firestore-utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,15 +36,15 @@ interface OutlineItem {
 export default function OutlineTab() {
   const { user } = useUser();
   const firestore = useFirestore();
-  const { currentScriptId } = useCurrentScript();
+  const { currentStoryId } = useCurrentStory();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<OutlineItem | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   const outlineCollection = useMemoFirebase(
-    () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'outline') : null),
-    [firestore, user, currentScriptId]
+    () => (user && firestore && currentStoryId ? collection(firestore, 'users', user.uid, 'scripts', currentStoryId, 'outline') : null),
+    [firestore, user, currentStoryId]
   );
 
   const { data: outlineItems, isLoading } = useCollection<OutlineItem>(outlineCollection);
@@ -244,7 +244,7 @@ export default function OutlineTab() {
   }
 
   // Handle case when no project is selected
-  if (!currentScriptId) {
+  if (!currentStoryId) {
     return (
       <div className="h-full overflow-y-auto">
         <div className="flex items-center justify-between mb-4">

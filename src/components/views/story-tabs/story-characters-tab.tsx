@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { useCurrentScript } from '@/context/current-script-context';
+import { useCurrentStory } from '@/context/current-script-context';
 import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { sanitizeFirestorePayload } from '@/lib/firestore-utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -49,14 +49,14 @@ const CHARACTER_ROLES = ['Protagonist', 'Antagonist', 'Supporting', 'Minor', 'Ot
 export default function StoryCharactersTab() {
   const { user } = useUser();
   const firestore = useFirestore();
-  const { currentScriptId } = useCurrentScript();
+  const { currentStoryId } = useCurrentStory();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<StoryCharacter | null>(null);
 
   const charactersCollection = useMemoFirebase(
-    () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'storyCharacters') : null),
-    [firestore, user, currentScriptId]
+    () => (user && firestore && currentStoryId ? collection(firestore, 'users', user.uid, 'scripts', currentStoryId, 'storyCharacters') : null),
+    [firestore, user, currentStoryId]
   );
 
   const { data: characters, isLoading } = useCollection<StoryCharacter>(charactersCollection);
@@ -189,7 +189,7 @@ export default function StoryCharactersTab() {
   }
 
   // Handle case when no project is selected
-  if (!currentScriptId) {
+  if (!currentStoryId) {
     return (
       <div className="h-full overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
