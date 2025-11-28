@@ -86,5 +86,5 @@ export function getDefaultProjectTitle(projectType: ProjectType): string {
 export function getDefaultProjectContent(projectType: ProjectType): string {
   return projectType === 'story'
     ? 'Chapter 1\n\nYour story begins here...'
-    : 'SCENE 1\n\nINT. ROOM - DAY\n\nA new story begins.';
+    : 'SCENE 1\n\nINT. ROOM - DAY\n\nThe scene begins.';
 }
