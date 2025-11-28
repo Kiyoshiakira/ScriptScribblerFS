@@ -13,12 +13,22 @@ interface CurrentScriptContextType {
   currentScriptId: string | null;
   setCurrentScriptId: (id: string | null) => void;
   isCurrentScriptLoading: boolean;
+  // Per-tool project IDs for separate mode
+  scriptScribblerScriptId: string | null;
+  setScriptScribblerScriptId: (id: string | null) => void;
+  storyScribblerScriptId: string | null;
+  setStoryScribblerScriptId: (id: string | null) => void;
 }
 
 export const CurrentScriptContext = createContext<CurrentScriptContextType>({
   currentScriptId: null,
   setCurrentScriptId: () => {},
   isCurrentScriptLoading: true,
+  // Per-tool project IDs for separate mode
+  scriptScribblerScriptId: null,
+  setScriptScribblerScriptId: () => {},
+  storyScribblerScriptId: null,
+  setStoryScribblerScriptId: () => {},
 });
 
 export const CurrentScriptProvider = ({ children }: { children: ReactNode }) => {
@@ -141,6 +151,52 @@ export const CurrentScriptProvider = ({ children }: { children: ReactNode }) => 
       console.warn(`[CurrentScriptContext] Error setting localStorage:`, error);
     }
   }, [isSharedMode, currentTool]);
+
+  // Direct setter for scriptScribblerScriptId with localStorage sync
+  const handleSetScriptScribblerScriptId = useCallback((id: string | null) => {
+    try {
+      if (id) {
+        window.localStorage.setItem(SCRIPT_STORAGE_KEY, id);
+      } else {
+        window.localStorage.removeItem(SCRIPT_STORAGE_KEY);
+      }
+      setScriptScribblerScriptId(id);
+      // In shared mode, also update storyScribblerScriptId
+      if (isSharedMode) {
+        if (id) {
+          window.localStorage.setItem(STORY_STORAGE_KEY, id);
+        } else {
+          window.localStorage.removeItem(STORY_STORAGE_KEY);
+        }
+        setStoryScribblerScriptId(id);
+      }
+    } catch (error) {
+      console.warn(`[CurrentScriptContext] Error setting scriptScribblerScriptId:`, error);
+    }
+  }, [isSharedMode]);
+
+  // Direct setter for storyScribblerScriptId with localStorage sync
+  const handleSetStoryScribblerScriptId = useCallback((id: string | null) => {
+    try {
+      if (id) {
+        window.localStorage.setItem(STORY_STORAGE_KEY, id);
+      } else {
+        window.localStorage.removeItem(STORY_STORAGE_KEY);
+      }
+      setStoryScribblerScriptId(id);
+      // In shared mode, also update scriptScribblerScriptId
+      if (isSharedMode) {
+        if (id) {
+          window.localStorage.setItem(SCRIPT_STORAGE_KEY, id);
+        } else {
+          window.localStorage.removeItem(SCRIPT_STORAGE_KEY);
+        }
+        setScriptScribblerScriptId(id);
+      }
+    } catch (error) {
+      console.warn(`[CurrentScriptContext] Error setting storyScribblerScriptId:`, error);
+    }
+  }, [isSharedMode]);
   
   const isCurrentScriptLoading = !isLoadedFromStorage || isUserLoading || areScriptsLoading || isSettingsLoading;
   
@@ -148,6 +204,11 @@ export const CurrentScriptProvider = ({ children }: { children: ReactNode }) => 
       currentScriptId,
       setCurrentScriptId,
       isCurrentScriptLoading,
+      // Per-tool project IDs for separate mode
+      scriptScribblerScriptId,
+      setScriptScribblerScriptId: handleSetScriptScribblerScriptId,
+      storyScribblerScriptId,
+      setStoryScribblerScriptId: handleSetStoryScribblerScriptId,
   };
 
   return (

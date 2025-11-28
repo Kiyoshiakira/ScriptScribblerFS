@@ -82,32 +82,32 @@ function StatCard({ title, value, icon, isLoading }: { title: string; value: num
 export default function StoryDashboardPanel({ setView, onCreate }: StoryDashboardPanelProps) {
   const { user } = useUser();
   const firestore = useFirestore();
-  const { currentScriptId } = useCurrentScript();
+  const { storyScribblerScriptId } = useCurrentScript();
 
-  // Story Scribbler collections
+  // Story Scribbler collections - use storyScribblerScriptId explicitly
   const outlineCollection = useMemoFirebase(
-    () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'outline') : null),
-    [firestore, user, currentScriptId]
+    () => (user && firestore && storyScribblerScriptId ? collection(firestore, 'users', user.uid, 'scripts', storyScribblerScriptId, 'outline') : null),
+    [firestore, user, storyScribblerScriptId]
   );
   const chaptersCollection = useMemoFirebase(
-    () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'chapters') : null),
-    [firestore, user, currentScriptId]
+    () => (user && firestore && storyScribblerScriptId ? collection(firestore, 'users', user.uid, 'scripts', storyScribblerScriptId, 'chapters') : null),
+    [firestore, user, storyScribblerScriptId]
   );
   const storyCharactersCollection = useMemoFirebase(
-    () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'storyCharacters') : null),
-    [firestore, user, currentScriptId]
+    () => (user && firestore && storyScribblerScriptId ? collection(firestore, 'users', user.uid, 'scripts', storyScribblerScriptId, 'storyCharacters') : null),
+    [firestore, user, storyScribblerScriptId]
   );
   const worldBuildingCollection = useMemoFirebase(
-    () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'worldBuilding') : null),
-    [firestore, user, currentScriptId]
+    () => (user && firestore && storyScribblerScriptId ? collection(firestore, 'users', user.uid, 'scripts', storyScribblerScriptId, 'worldBuilding') : null),
+    [firestore, user, storyScribblerScriptId]
   );
   const timelineCollection = useMemoFirebase(
-    () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'timeline') : null),
-    [firestore, user, currentScriptId]
+    () => (user && firestore && storyScribblerScriptId ? collection(firestore, 'users', user.uid, 'scripts', storyScribblerScriptId, 'timeline') : null),
+    [firestore, user, storyScribblerScriptId]
   );
   const storyNotesCollection = useMemoFirebase(
-    () => (user && firestore && currentScriptId ? collection(firestore, 'users', user.uid, 'scripts', currentScriptId, 'storyNotes') : null),
-    [firestore, user, currentScriptId]
+    () => (user && firestore && storyScribblerScriptId ? collection(firestore, 'users', user.uid, 'scripts', storyScribblerScriptId, 'storyNotes') : null),
+    [firestore, user, storyScribblerScriptId]
   );
 
   const { data: outlineItems, isLoading: isOutlineLoading } = useCollection<OutlineItem>(outlineCollection);
@@ -117,8 +117,8 @@ export default function StoryDashboardPanel({ setView, onCreate }: StoryDashboar
   const { data: timelineEvents, isLoading: isTimelineLoading } = useCollection<TimelineEvent>(timelineCollection);
   const { data: storyNotes, isLoading: isStoryNotesLoading } = useCollection<StoryNote>(storyNotesCollection);
 
-  // Empty state when no project is loaded
-  if (!currentScriptId) {
+  // Empty state when no story project is loaded
+  if (!storyScribblerScriptId) {
     return (
       <Card className="p-8 text-center">
         <Book className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
