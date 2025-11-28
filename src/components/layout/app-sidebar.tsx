@@ -67,10 +67,16 @@ interface AppSidebarProps {
 }
 
 export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
-  const { currentScriptId } = useCurrentScript();
+  const { currentScriptId, currentStoryId } = useCurrentScript();
   const { isMobile, setOpenMobile } = useSidebar();
   const { currentTool, setCurrentTool } = useTool();
+  
+  // Per-tool disabled state
   const noScriptLoaded = !currentScriptId;
+  const noStoryLoaded = !currentStoryId;
+  
+  // Determine if tool buttons should be disabled based on current tool
+  const isToolDisabled = currentTool === 'ScriptScribbler' ? noScriptLoaded : noStoryLoaded;
 
   const handleViewChange = (view: View | 'profile-edit') => {
     setView(view);
@@ -164,8 +170,8 @@ export default function AppSidebar({ activeView, setView }: AppSidebarProps) {
                   onClick={() => handleViewChange(item.view)}
                   isActive={activeView === item.view}
                   tooltip={item.label}
-                  aria-disabled={noScriptLoaded}
-                  className={cn(noScriptLoaded && 'opacity-50 cursor-not-allowed')}
+                  aria-disabled={isToolDisabled}
+                  className={cn(isToolDisabled && 'opacity-50 cursor-not-allowed')}
                 >
                   <item.icon />
                   <span>{item.label}</span>
